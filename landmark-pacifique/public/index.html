@@ -1469,16 +1469,18 @@ async function addUser(){
 }
 
 (async function init(){
+  // Vérifie d'abord les paramètres URL (pilf / invite) — priorité sur la session admin
+  const isPilf = await checkPilfParam();
+  if(isPilf) return;
+  const isInvite = await checkInviteParam();
+  if(isInvite) return;
   // Restaure la session JWT si elle est encore valide
   const session = getSession();
   if(session){
     enterAdmin(session.role, session.name);
     return;
   }
-  const isPilf = await checkPilfParam();
-  if(isPilf) return;
-  const isInvite = await checkInviteParam();
-  if(!isInvite) renderPublic();
+  renderPublic();
 })();
 
 async function logToSheets(type, data) {
