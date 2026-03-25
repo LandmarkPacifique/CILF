@@ -530,7 +530,7 @@ async function getCfg() {
 }
 
 const DEF = [
-  {id:1, animateur:"", titre:"", date:"", heure:"", heureFin:"", zoom:"", zoomId:"", animateurEmail:"", ccDate:"", ccHeure:"", ccHeureFin:""},
+  {id:1, animateur:"", titre:"", date:"", heure:"", heureFin:"", animateurEmail:"", ccDate:"", ccHeure:"", ccHeureFin:""},
 ];
 // ── NAVIGATION ────────────────────────────────────────────────────────────────
 function goPage(id){
@@ -710,11 +710,119 @@ async function selectIntroInvite(id){
   window._cachedIntros = intros;
   const intro = getSelIntro(intros);
   if(!intro){ alert("Introduction introuvable, veuillez réessayer."); return; }
+  // Store intro for invite form — graduate fills their name/email to generate the link
+  window._inviteLinkIntro = intro;
   document.getElementById("guest-recap").innerHTML=buildRecap(intro);
   document.getElementById("guest-form-subtitle").textContent="Envoi d'une invitation personnalisée à mon invité(e)";
   goPage("page-form-guest");
 }
 
+
+// ── INVITE LINK SYSTEM ────────────────────────────────────────────────────────
+function makeInviteToken(introId, gradName, gradEmail){
+  const data = JSON.stringify({iid: String(introId), gn: gradName, ge: gradEmail, ts: Date.now()});
+  return btoa(unescape(encodeURIComponent(data)));
+}
+function parseInviteToken(token){
+  try {
+    return JSON.parse(decodeURIComponent(escape(atob(token))));
+  } catch(e){ return null; }
+}
+function getInviteLink(introId, gradName, gradEmail){
+  const token = makeInviteToken(introId, gradName, gradEmail);
+  return window.location.origin + window.location.pathname + '?invite=' + token;
+}
+
+// Called on page load — checks for ?invite= in URL
+async function checkInviteParam(){
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('invite');
+  if(!token) return false;
+  goPage('page-invite');
+  const data = parseInviteToken(token);
+  if(!data || !data.iid){
+    document.getElementById('invite-loading').style.display='none';
+    document.getElementById('invite-invalid').style.display='block';
+    return true;
+  }
+  // Store for submit
+  window._inviteData = data;
+  // Load intros and find the right one
+  try {
+    const intros = await getIntros();
+    window._cachedIntros = intros;
+    const intro = intros.find(o => String(o.id) === String(data.iid));
+    if(!intro) throw new Error('intro not found');
+    document.getElementById('invite-loading').style.display='none';
+    document.getElementById('invite-content').style.display='block';
+    document.getElementById('invite-recap').innerHTML = buildRecap(intro);
+    document.getElementById('invite-grad-notice').innerHTML =
+      '🤝 Vous avez été invité(e) par <strong>' + data.gn + '</strong>';
+    window._inviteIntro = intro;
+  } catch(e){
+    document.getElementById('invite-loading').style.display='none';
+    document.getElementById('invite-invalid').style.display='block';
+  }
+  return true;
+}
+
+async function submitInvite(){
+  const fn = document.getElementById('inv-first').value.trim();
+  const ln = document.getElementById('inv-last').value.trim();
+  const em = document.getElementById('inv-email').value.trim();
+  const err = document.getElementById('invite-error');
+  if(!fn||!ln||!em){err.textContent="Veuillez remplir tous les champs.";err.style.display="block";return;}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){err.textContent="Email invalide.";err.style.display="block";return;}
+  err.style.display="none";
+  const intro = window._inviteIntro;
+  const data  = window._inviteData;
+  if(!intro||!data){err.textContent="Erreur : invitation invalide.";err.style.display="block";return;}
+  const btn = document.getElementById('invite-submit');
+  btn.disabled=true; btn.textContent="Envoi…";
+  const tah=fmtTZ(intro.date,intro.heure,"TAH","TAH"),nc=fmtTZ(intro.date,intro.heure,"TAH","NC"),fr=fmtTZ(intro.date,intro.heure,"TAH","FR");
+  const hFin=intro.heureFin||autoEndTime(intro.heure);
+  const tahFin=hFin?fmtTZ(intro.date,hFin,"TAH","TAH").split("·")[1]||"":"";
+  const ncFin=hFin?fmtTZ(intro.date,hFin,"TAH","NC").split("·")[1]||"":"";
+  const frFin=hFin?fmtTZ(intro.date,hFin,"TAH","FR").split("·")[1]||"":"";
+  const ccHFin=intro.ccHeureFin||(intro.ccHeure?autoEndTime1h(intro.ccHeure):"");
+  const ccTAH=intro.ccDate&&intro.ccHeure?fmtTZ(intro.ccDate,intro.ccHeure,"TAH","TAH"):"";
+  const ccNC=intro.ccDate&&intro.ccHeure?fmtTZ(intro.ccDate,intro.ccHeure,"TAH","NC"):"";
+  const ccFR=intro.ccDate&&intro.ccHeure?fmtTZ(intro.ccDate,intro.ccHeure,"TAH","FR"):"";
+  const ccTAHFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","TAH").split("·")[1]||"":"";
+  const ccNCFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","NC").split("·")[1]||"":"";
+  const ccFRFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","FR").split("·")[1]||"":"";
+  const sessionUTC=toUTC(intro.date,intro.heure);
+  const t3h=sessionUTC-3*3600, t30=sessionUTC-1800;
+  try{
+    await fetch("https://hook.us2.make.com/2njt9kkq4ovz75l0yg3otstsda4ug6ry", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        type:"guest_self",
+        guest_name:fn+" "+ln,
+        guest_email:em,
+        grad_name:data.gn,
+        grad_email:data.ge,
+        animateur:intro.animateur,
+        titre:intro.titre,
+        introduction_id:intro.id,
+        date_tah:tah, date_nc:nc, date_fr:fr,
+        heure_fin_tah:tahFin, heure_fin_nc:ncFin, heure_fin_fr:frFin,
+        cc_tah:ccTAH, cc_nc:ccNC, cc_fr:ccFR,
+        cc_fin_tah:ccTAHFin, cc_fin_nc:ccNCFin, cc_fin_fr:ccFRFin,
+        t3h:t3h, t30:t30
+      })
+    });
+  }catch(e){console.error("Make webhook invite:",e);}
+  btn.disabled=false;
+  showConfirm(
+    "Réservation confirmée !",
+    `Bienvenue ${fn} ! Un email de confirmation vous a été envoyé. À bientôt !`,
+    t3h, t30
+  );
+}
+
+// ── MODIFY selectIntroInvite to generate and include invite link ──────────────
 // ── BREVO ──────────────────────────────────────────────────────────────────────
 async function brevoSend(cfg, emailJobs){
   // Envoie via le proxy Google Apps Script (évite le blocage CORS de Brevo)
@@ -745,27 +853,18 @@ async function submitSolo(){
   const intro = getSelIntro(intros);
   if(!intro){ err.textContent="Erreur : introduction introuvable."; err.style.display="block"; return; }
   const tah=fmtTZ(intro.date,intro.heure,"TAH","TAH"),nc=fmtTZ(intro.date,intro.heure,"TAH","NC"),fr=fmtTZ(intro.date,intro.heure,"TAH","FR");
-  const cfg = await getCfg();
+  const hFin=intro.heureFin||autoEndTime(intro.heure);
+  const tahFin=hFin?fmtTZ(intro.date,hFin,"TAH","TAH").split("·")[1]||"":"";
+  const ncFin=hFin?fmtTZ(intro.date,hFin,"TAH","NC").split("·")[1]||"":"";
+  const frFin=hFin?fmtTZ(intro.date,hFin,"TAH","FR").split("·")[1]||"":"";
+  const ccHFin=intro.ccHeureFin||(intro.ccHeure?autoEndTime1h(intro.ccHeure):"");
+  const ccTAH=intro.ccDate&&intro.ccHeure?fmtTZ(intro.ccDate,intro.ccHeure,"TAH","TAH"):"";
+  const ccNC=intro.ccDate&&intro.ccHeure?fmtTZ(intro.ccDate,intro.ccHeure,"TAH","NC"):"";
+  const ccFR=intro.ccDate&&intro.ccHeure?fmtTZ(intro.ccDate,intro.ccHeure,"TAH","FR"):"";
+  const ccTAHFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","TAH").split("·")[1]||"":"";
+  const ccNCFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","NC").split("·")[1]||"":"";
+  const ccFRFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","FR").split("·")[1]||"":"";
   const btn=document.getElementById("solo-submit");btn.disabled=true;btn.textContent="Envoi…";
-  const params={animateur:intro.animateur,titre:intro.titre,date_tah:tah,date_nc:nc,date_fr:fr,zoom_link:intro.zoom,zoom_id:intro.zoomId||"",grad_name:fn+" "+ln,grad_email:em};
-  try{
-    const proxyUrl = getCfg().appsScriptUrl || getCfg()["apps-script"] || "";
-    if(proxyUrl){
-      await fetch(proxyUrl, {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({
-          type:"solo",
-          prenom:fn, nom:ln, email:em,
-          telephone:document.getElementById("s-phone").value.trim(),
-          animateur:intro.animateur, titre:intro.titre,
-          date_tah:tah, date_nc:nc, date_fr:fr,
-          timestamp:new Date().toISOString(),
-          params
-        })
-      });
-    }
-  }catch(e){console.error("Brevo proxy:",e);}
   // Webhook Make (email graduate)
   try{
     await fetch("https://hook.us2.make.com/2njt9kkq4ovz75l0yg3otstsda4ug6ry", {
@@ -779,14 +878,15 @@ async function submitSolo(){
         animateur:intro.animateur,
         titre:intro.titre,
         date_tah:tah, date_nc:nc, date_fr:fr,
-        zoom_link:intro.zoom,
-        zoom_id:intro.zoomId||""
+        heure_fin_tah:tahFin, heure_fin_nc:ncFin, heure_fin_fr:frFin,
+        cc_tah:ccTAH, cc_nc:ccNC, cc_fr:ccFR,
+        cc_fin_tah:ccTAHFin, cc_fin_nc:ccNCFin, cc_fin_fr:ccFRFin
       })
     });
   }catch(e){console.error("Make webhook solo:",e);}
-btn.disabled=false;btn.textContent="Confirmer ma participation";
+  btn.disabled=false;btn.textContent="Confirmer ma participation";
   logToSheets("graduate",{prenom:fn,nom:ln,email:em,telephone:document.getElementById("s-phone").value.trim(),pays:"",animateur:intro.animateur,titre:intro.titre,date_tah:fmtTZ(intro.date,intro.heure,"TAH","TAH"),introduction_id:intro.id});
-  showConfirm("Inscription confirmée !",`Merci pour ton inscription, ${fn} ! Un email de confirmation t'a été envoyé.`,null,null);
+  showConfirm("Inscription confirmée !",`Bienvenue ${fn} ! Un email de confirmation vous a été envoyé.`,null,null);
 }
 
 // ── SUBMIT WITH GUEST ─────────────────────────────────────────────────────────
@@ -805,34 +905,20 @@ async function submitWithGuest(){
   const intro = getSelIntro(intros);
   if(!intro){ err.textContent="Erreur : introduction introuvable."; err.style.display="block"; return; }
   const tah=fmtTZ(intro.date,intro.heure,"TAH","TAH"),nc=fmtTZ(intro.date,intro.heure,"TAH","NC"),fr=fmtTZ(intro.date,intro.heure,"TAH","FR");
+  const hFin=intro.heureFin||autoEndTime(intro.heure);
+  const tahFin=hFin?fmtTZ(intro.date,hFin,"TAH","TAH").split("·")[1]||"":"";
+  const ncFin=hFin?fmtTZ(intro.date,hFin,"TAH","NC").split("·")[1]||"":"";
+  const frFin=hFin?fmtTZ(intro.date,hFin,"TAH","FR").split("·")[1]||"":"";
+  const ccHFin=intro.ccHeureFin||(intro.ccHeure?autoEndTime1h(intro.ccHeure):"");
+  const ccTAH=intro.ccDate&&intro.ccHeure?fmtTZ(intro.ccDate,intro.ccHeure,"TAH","TAH"):"";
+  const ccNC=intro.ccDate&&intro.ccHeure?fmtTZ(intro.ccDate,intro.ccHeure,"TAH","NC"):"";
+  const ccFR=intro.ccDate&&intro.ccHeure?fmtTZ(intro.ccDate,intro.ccHeure,"TAH","FR"):"";
+  const ccTAHFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","TAH").split("·")[1]||"":"";
+  const ccNCFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","NC").split("·")[1]||"":"";
+  const ccFRFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","FR").split("·")[1]||"":"";
   const sessionUTC=toUTC(intro.date,intro.heure);
   const t3h=sessionUTC-3*3600,t30=sessionUTC-1800;
-  const cfg=getCfg();
   const btn=document.getElementById("guest-submit");btn.disabled=true;btn.textContent="Envoi en cours…";
-  const siteUrl=window.location.origin+window.location.pathname;
-  const params={animateur:intro.animateur,titre:intro.titre,date_tah:tah,date_nc:nc,date_fr:fr,zoom_link:intro.zoom,zoom_id:intro.zoomId||"",grad_name:gfn+" "+gln,grad_email:gem,guest_name:ufn+" "+uln,guest_email:uem,inscription_link:siteUrl};
-  try{
-    const proxyUrl = getCfg().appsScriptUrl || getCfg()["apps-script"] || "";
-    if(proxyUrl){
-      await fetch(proxyUrl, {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({
-          type:"guest",
-          prenom:ufn, nom:uln, email:uem,
-          guest_email:uem, guest_name:ufn+" "+uln,
-          grad_email:gem, grad_name:gfn+" "+gln,
-          graduate:gfn+" "+gln,
-          animateur:intro.animateur, titre:intro.titre,
-          anim_email:intro.animateurEmail||"",
-          date_tah:tah, date_nc:nc, date_fr:fr,
-          t3h:t3h, t30:t30,
-          timestamp:new Date().toISOString(),
-          params
-        })
-      });
-    }
-  }catch(e){console.error("Brevo proxy:",e);}
   // Webhook Make (emails)
   try{
     await fetch("https://hook.us2.make.com/2njt9kkq4ovz75l0yg3otstsda4ug6ry", {
@@ -846,9 +932,13 @@ async function submitWithGuest(){
         guest_email:uem,
         animateur:intro.animateur,
         titre:intro.titre,
+        introduction_id:intro.id,
         date_tah:tah, date_nc:nc, date_fr:fr,
-        zoom_link:intro.zoom,
-        zoom_id:intro.zoomId||""
+        heure_fin_tah:tahFin, heure_fin_nc:ncFin, heure_fin_fr:frFin,
+        cc_tah:ccTAH, cc_nc:ccNC, cc_fr:ccFR,
+        cc_fin_tah:ccTAHFin, cc_fin_nc:ccNCFin, cc_fin_fr:ccFRFin,
+        invite_link:getInviteLink(intro.id, gfn+" "+gln, gem),
+        t3h:t3h, t30:t30
       })
     });
   }catch(e){console.error("Make webhook:",e);}
@@ -907,7 +997,7 @@ function draftUpdate(i,k,v){
 function addIntro(){
   if(!draft){ alert("Veuillez patienter, chargement en cours."); return; }
   const newId=Date.now();
-  draft.push({id:newId,animateur:"",titre:"",date:"",heure:"",heureFin:"",zoom:"",zoomId:"",animateurEmail:"",ccDate:"",ccHeure:"",ccHeureFin:""});
+  draft.push({id:newId,animateur:"",titre:"",date:"",heure:"",heureFin:"",animateurEmail:"",ccDate:"",ccHeure:"",ccHeureFin:""});
   const wrap=document.getElementById("admin-forms");
   wrap.appendChild(makeAdminForm(draft[draft.length-1],draft.length-1));
 }
@@ -949,7 +1039,7 @@ async function saveAll(){
 // ── PILF ──────────────────────────────────────────────────────────────────────
 var pilfDraft = null;
 var DEF_PILF = [
-  {id:1, animateur:"", titre:"", date:"", heure:"", heureFin:"", zoom:"", zoomId:"", animateurEmail:"", ccDate:"", ccHeure:"", ccHeureFin:""},
+  {id:1, animateur:"", titre:"", date:"", heure:"", heureFin:"", animateurEmail:"", ccDate:"", ccHeure:"", ccHeureFin:""},
 ];
 async function getPilfIntros() {
   try { return await apiFetch('/api/intros?slug=pilf'); }
@@ -1042,7 +1132,7 @@ function pilfUpdate(i, k, v){
 
 function addPilfIntro(){
   if(!pilfDraft) pilfDraft = getPilfIntros().map(o=>({...o}));
-  pilfDraft.push({id:Date.now(),animateur:"",titre:"",date:"",heure:"",heureFin:"",zoom:"",zoomId:"",animateurEmail:""});
+  pilfDraft.push({id:Date.now(),animateur:"",titre:"",date:"",heure:"",heureFin:"",animateurEmail:""});
   const wrap = document.getElementById('pilf-forms');
   wrap.appendChild(makePilfForm(pilfDraft[pilfDraft.length-1], pilfDraft.length-1));
 }
@@ -1089,7 +1179,10 @@ function openPilfGuestForm(i){
   goPage('page-form-guest');
 }
 
-renderPublic();
+(async function init(){
+  const isInvite = await checkInviteParam();
+  if(!isInvite) renderPublic();
+})();
 
 async function logToSheets(type, data) {
   const url = getCfg().appsScriptUrl || "";
@@ -1108,5 +1201,47 @@ async function logToSheets(type, data) {
   window.goPage=function(id){orig(id);setLogos();};
 })();
 </script>
+
+<div id="page-invite" class="page">
+  <header>
+    <div style="display:flex;align-items:center">
+      <img class="logo-img-small" src="" alt="Landmark Pacifique" style="height:120px;width:auto;object-fit:contain;display:block;cursor:pointer">
+    </div>
+    <nav class="header-nav">
+      <button class="nav-btn" onclick="goPage('page-home')">Accueil</button>
+    </nav>
+  </header>
+  <div class="form-wrap">
+    <div class="form-card">
+      <div id="invite-loading" style="text-align:center;padding:20px;color:#7a8a9a;font-size:14px">Chargement…</div>
+      <div id="invite-content" style="display:none">
+        <p class="section-label" style="margin-bottom:4px">Invitation personnelle</p>
+        <h2 class="form-title" id="invite-title">Réserver ma place</h2>
+        <p class="form-subtitle" id="invite-subtitle"></p>
+        <div id="invite-recap" class="form-recap" style="margin-bottom:20px"></div>
+        <span class="form-section-label">Vos informations</span>
+        <div class="form-group">
+          <label class="form-label">Prénom</label>
+          <input class="form-input" type="text" id="inv-first" placeholder="Votre prénom">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nom</label>
+          <input class="form-input" type="text" id="inv-last" placeholder="Votre nom">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input class="form-input" type="email" id="inv-email" placeholder="votre@email.com">
+        </div>
+        <div class="form-error" id="invite-error"></div>
+        <button class="submit-btn" id="invite-submit" onclick="submitInvite()">Confirmer ma réservation</button>
+        <p class="form-notice" id="invite-grad-notice" style="margin-top:16px;font-size:12px;color:#7a8a9a"></p>
+      </div>
+      <div id="invite-invalid" style="display:none;text-align:center;padding:20px">
+        <div style="font-size:32px;margin-bottom:12px">⚠️</div>
+        <p style="font-size:14px;color:#5a6a7a">Ce lien d'invitation est invalide ou a expiré.<br>Demandez un nouveau lien à votre graduate.</p>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
