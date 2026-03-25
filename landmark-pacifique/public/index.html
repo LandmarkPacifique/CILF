@@ -393,8 +393,6 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
     <div class="cfg-tabs">
       <button class="cfg-tab active" onclick="switchTab('introductions',this)">CILF</button>
       <button class="cfg-tab" onclick="switchTab('pilf',this)">PILF / HILF</button>
-      <button class="cfg-tab" onclick="switchTab('brevo',this)">Config. emails</button>
-      <button class="cfg-tab" onclick="switchTab('templates',this)">Textes emails</button>
       <button class="cfg-tab" onclick="switchTab('settings',this)">Paramètres</button>
     </div>
 
@@ -415,582 +413,6 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
     </div>
 
 
-    <div id="tab-brevo" class="cfg-panel">
-      <h2 class="admin-h2">Configuration Brevo</h2>
-      <p class="admin-desc">Le Google Apps Script gère l'envoi des emails via Brevo (côté serveur, sans problème CORS). Collez uniquement l'URL du script ci-dessous — les clés Brevo sont configurées directement dans le script via <code style="background:var(--cream-3);padding:1px 5px;border-radius:4px;font-size:11px">setConfig()</code>.</p>
-      <div class="notice"><strong>Configuration unique — environ 15 minutes</strong>Suivez les étapes puis collez vos identifiants ci-dessous.</div>
-      <div class="admin-card">
-        <h3 style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--navy-deep);margin-bottom:14px">Étapes</h3>
-        <ol class="step-list">
-          <li>Créez un compte gratuit sur <a href="https://www.brevo.com" target="_blank">brevo.com</a> avec votre email OVH</li>
-          <li>Allez dans <strong>Paramètres → Clés API</strong>, créez une clé et copiez-la ci-dessous</li>
-          <li>Allez dans <strong>Expéditeurs</strong>, ajoutez votre email OVH et validez-le</li>
-          <li>Allez dans <strong>Emails transactionnels → Templates</strong>, créez 6 templates avec les textes de l'onglet "Textes emails" — notez leurs IDs</li>
-          <li>Remplissez les champs ci-dessous et cliquez Enregistrer</li>
-        </ol>
-      </div>
-      <div class="admin-card">
-        <label class="fl" style="margin-top:0">URL Google Apps Script <span style="font-size:10px;color:#aab8c4">(liste participants)</span></label>
-        <input class="ai" type="url" id="cfg-apps-script" placeholder="https://script.google.com/macros/s/.../exec">
-        <div style="background:var(--cyan-pale);border:1px solid rgba(56,216,240,.2);border-radius:8px;padding:10px 14px;margin:6px 0 12px;font-size:12px;color:var(--navy)">Ce script gère à la fois l'inscription dans Google Sheets ET l'envoi des emails Brevo. Copiez le code depuis l'onglet "Textes emails" → "Script Google Sheets".</div>
-        <label class="fl">Clé API Brevo</label><input class="ai" type="text" id="cfg-key" placeholder="user_xxxxxxxxxxxxxxxx" placeholder="xkeysib-xxx">
-        <label class="fl">Email OVH expéditeur</label><input class="ai" type="text" id="cfg-from" placeholder="contact@landmark-pacifique.fr" placeholder="contact@landmark-pacifique.fr">
-        <label class="fl">Nom affiché (expéditeur)</label><input class="ai" type="text" id="cfg-name" placeholder="Landmark Pacifique">
-        <label class="fl">Email leadeur (notifications)</label><input class="ai" type="email" id="cfg-anim" placeholder="animateur@landmark-pacifique.fr">
-        <div class="ag2" style="margin-top:14px">
-          <div><label class="fl" style="margin-top:0">ID template 1 — invitation invité</label><input class="ai" type="number" id="cfg-t1" placeholder="1"></div>
-          <div><label class="fl" style="margin-top:0">ID template 2 — confirmation invité</label><input class="ai" type="number" id="cfg-t2" placeholder="2"></div>
-          <div><label class="fl" style="margin-top:0">ID template 3 — rappel ~1h avant</label><input class="ai" type="number" id="cfg-t3" placeholder="3"></div>
-          <div><label class="fl" style="margin-top:0">ID template 4 — rappel 30 min avant</label><input class="ai" type="number" id="cfg-t4" placeholder="4"></div>
-          <div><label class="fl" style="margin-top:0">ID template 5 — notif. leadeur</label><input class="ai" type="number" id="cfg-t5" placeholder="5"></div>
-          <div><label class="fl" style="margin-top:0">ID template 6 — confirm. graduate seul</label><input class="ai" type="number" id="cfg-t6" placeholder="6"></div>
-        </div>
-        <button class="save-btn" style="margin-top:18px" onclick="saveBrevo()">Enregistrer la configuration Brevo</button>
-      </div>
-    </div>
-
-    <div id="tab-templates" class="cfg-panel">
-      <h2 class="admin-h2">Textes des emails</h2>
-      <p class="admin-desc" style="margin-bottom:18px">Basculez entre <strong>Texte brut</strong> et <strong>HTML</strong>. Cliquez <strong>Aperçu ↗</strong> pour visualiser le rendu exact dans votre navigateur.</p>
-      
-      <div class="admin-card tpl-card" style="margin-bottom:18px">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;flex-wrap:wrap;gap:8px">
-          <h3>Email 1 — Invitation initiale à l'invité(e)</h3>
-          <div style="display:flex;gap:6px;flex-shrink:0">
-            <button class="tpl-mode-btn active" data-mode="plain" data-num="1" onclick="setTplMode(this,'plain',1)" style="background:var(--cyan-pale);border:1px solid rgba(56,216,240,.4);border-radius:6px;padding:4px 12px;font-size:11px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--navy-deep);">Texte brut</button>
-            <button class="tpl-mode-btn" data-mode="html" data-num="1" onclick="setTplMode(this,'html',1)" style="background:none;border:1px solid var(--cream-3);border-radius:6px;padding:4px 12px;font-size:11px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;color:#7a8a9a;">HTML</button>
-          </div>
-        </div>
-        <p class="tpl-meta">Envoyé par le graduate pour inviter · Objet : Tu es invité(e) à une introduction Landmark</p>
-        <textarea class="tpl-ta" id="tpl-plain-1" readonly>Bonjour {{guest_name}},
-
-Nous souhaitions t'inviter personnellement à participer à une introduction, à l'invitation de {{grad_name}}.
-
-Tu peux t'inscrire directement via ce lien :
-👉 {{inscription_link}}
-
-À bientôt,
-L'équipe de Landmark Pacifique</textarea>
-        <textarea class="tpl-ta" id="tpl-html-1" readonly style="display:none;font-size:11px">&lt;!DOCTYPE html&gt;
-&lt;html lang="fr"&gt;&lt;head&gt;&lt;meta charset="UTF-8"&gt;&lt;meta name="viewport" content="width=device-width,initial-scale=1"&gt;&lt;/head&gt;
-&lt;body style="margin:0;padding:0;background:#f5f0e8;font-family:'DM Sans',Arial,sans-serif;"&gt;
-&lt;table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f0e8;padding:32px 16px;"&gt;
-  &lt;tr&gt;&lt;td align="center"&gt;
-    &lt;table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,30,60,.12);"&gt;
-      &lt;tr&gt;&lt;td&gt;&lt;table width="100%" cellpadding="0" cellspacing="0" style="background:#001535;padding:22px 32px;text-align:center;border-bottom:1px solid rgba(56,216,240,.2)"&gt;
-          &lt;tr&gt;&lt;td&gt;&lt;img class="logo-img-small" src="" alt="Landmark Pacifique" style="height:80px;width:auto;display:block;margin:0 auto 12px"&gt;&lt;/td&gt;&lt;/tr&gt;
-        &lt;/table&gt;&lt;/td&gt;&lt;/tr&gt;
-      &lt;tr&gt;&lt;td style="padding:32px 32px 28px;"&gt;
-        &lt;p style="margin:0 0 4px;font-size:16px;color:#001535;font-family:Arial,sans-serif;"&gt;Bonjour &lt;strong&gt;{{guest_name}}&lt;/strong&gt;,&lt;/p&gt;
-        &lt;p style="margin:0 0 16px;font-size:14px;color:#3a4a5a;line-height:1.7;font-family:Arial,sans-serif;"&gt;Nous souhaitions t'inviter personnellement à participer à une &lt;strong&gt;introduction au Landmark Forum&lt;/strong&gt;, à l'invitation de &lt;strong&gt;{{grad_name}}&lt;/strong&gt;.&lt;/p&gt;
-        &lt;table cellpadding="0" cellspacing="0" style="width:100%;margin:24px 0;"&gt;
-          &lt;tr&gt;&lt;td style="background:#38d8f0;border-radius:50px;padding:14px 28px;text-align:center;"&gt;
-            &lt;a href="{{inscription_link}}" style="color:#001535;font-size:15px;font-weight:700;text-decoration:none;font-family:Arial,sans-serif;"&gt;Réserver ma place →&lt;/a&gt;
-          &lt;/td&gt;&lt;/tr&gt;
-        &lt;/table&gt;
-        &lt;p style="margin:0;font-size:13px;color:#7a8a9a;text-align:center;font-family:Arial,sans-serif;"&gt;Nous te recommandons de t'inscrire dès maintenant pour réserver ta place.&lt;/p&gt;&lt;/td&gt;&lt;/tr&gt;
-      &lt;tr&gt;&lt;td&gt;&lt;table width="100%" cellpadding="0" cellspacing="0" style="&lt;/table&gt;&lt;/td&gt;&lt;/tr&gt;
-    &lt;/table&gt;
-  &lt;/td&gt;&lt;/tr&gt;
-&lt;/table&gt;
-&lt;/body&gt;&lt;/html&gt;</textarea>
-        <div style="display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap">
-          <button class="copy-btn" onclick="copyTplActive(1)" style="margin:0">Copier</button>
-          <button class="copy-btn" onclick="previewTpl(1)" style="margin:0;color:var(--navy-mid)">Aperçu ↗</button>
-          <span style="font-size:11px;color:#8a9aaa;font-family:monospace">{{guest_name}} {{grad_name}} {{date_tah}} {{zoom_link}}</span>
-        </div>
-      </div>
-      <div class="admin-card tpl-card" style="margin-bottom:18px">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;flex-wrap:wrap;gap:8px">
-          <h3>Email 2 — Confirmation d'inscription à l'invité(e)</h3>
-          <div style="display:flex;gap:6px;flex-shrink:0">
-            <button class="tpl-mode-btn active" data-mode="plain" data-num="2" onclick="setTplMode(this,'plain',2)" style="background:var(--cyan-pale);border:1px solid rgba(56,216,240,.4);border-radius:6px;padding:4px 12px;font-size:11px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--navy-deep);">Texte brut</button>
-            <button class="tpl-mode-btn" data-mode="html" data-num="2" onclick="setTplMode(this,'html',2)" style="background:none;border:1px solid var(--cream-3);border-radius:6px;padding:4px 12px;font-size:11px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;color:#7a8a9a;">HTML</button>
-          </div>
-        </div>
-        <p class="tpl-meta">Envoyé immédiatement après inscription · Objet : Confirmation de ta participation</p>
-        <textarea class="tpl-ta" id="tpl-plain-2" readonly>'Ia Ora Na et Bonjour {{guest_name}},
-
-Merci pour ton choix de participer à une introduction au Forum de Landmark.
-
-📅 Ta introduction :
-Tahiti : {{date_tah}}
-Nouvelle-Calédonie : {{date_nc}}
-France : {{date_fr}}
-
-Tu recevras le lien Zoom environ 1h avant.
-
-🌱 Rejoins la communauté : https://gokollab.com/communaute-francophone-landmark/home
-
-À très bientôt,
-{{grad_name}}</textarea>
-        <textarea class="tpl-ta" id="tpl-html-2" readonly style="display:none;font-size:11px">&lt;!DOCTYPE html&gt;
-&lt;html lang="fr"&gt;&lt;head&gt;&lt;meta charset="UTF-8"&gt;&lt;meta name="viewport" content="width=device-width,initial-scale=1"&gt;&lt;/head&gt;
-&lt;body style="margin:0;padding:0;background:#f5f0e8;font-family:'DM Sans',Arial,sans-serif;"&gt;
-&lt;table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f0e8;padding:32px 16px;"&gt;
-  &lt;tr&gt;&lt;td align="center"&gt;
-    &lt;table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,30,60,.12);"&gt;
-      &lt;tr&gt;&lt;td&gt;&lt;table width="100%" cellpadding="0" cellspacing="0" style="background:#001535;padding:22px 32px;text-align:center;border-bottom:1px solid rgba(56,216,240,.2)"&gt;
-          &lt;tr&gt;&lt;td&gt;&lt;img class="logo-img-small" src="" alt="Landmark Pacifique" style="height:80px;width:auto;display:block;margin:0 auto 12px"&gt;&lt;/td&gt;&lt;/tr&gt;
-        &lt;/table&gt;&lt;/td&gt;&lt;/tr&gt;
-      &lt;tr&gt;&lt;td style="padding:32px 32px 28px;"&gt;
-        &lt;p style="margin:0 0 4px;font-size:13px;color:#38d8f0;letter-spacing:.1em;text-transform:uppercase;font-weight:500;font-family:Arial,sans-serif;"&gt;'Ia Ora Na 🌺&lt;/p&gt;
-        &lt;p style="margin:0 0 4px;font-size:16px;color:#001535;font-family:Arial,sans-serif;"&gt;Bonjour &lt;strong&gt;{{guest_name}}&lt;/strong&gt;,&lt;/p&gt;
-        &lt;p style="margin:0 0 16px;font-size:14px;color:#3a4a5a;line-height:1.7;font-family:Arial,sans-serif;"&gt;Merci pour ton choix de participer à une &lt;strong&gt;introduction au Forum de Landmark&lt;/strong&gt;.&lt;/p&gt;
-        &lt;table width="100%" cellpadding="0" cellspacing="0" style="background:#e0f8ff;border-radius:10px;margin:16px 0;"&gt;
-              &lt;tr&gt;
-                &lt;td style="padding:14px 18px;"&gt;
-                  &lt;p style="margin:0 0 10px;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#0060a0;font-family:Arial,sans-serif;"&gt;📅 Ta introduction&lt;/p&gt;
-                  &lt;table width="100%" cellpadding="0" cellspacing="0"&gt;
-                    &lt;tr&gt;&lt;td style="padding:4px 0;font-size:13px;color:#7ab8d8;font-family:Arial,sans-serif;width:110px;"&gt;Tahiti&lt;/td&gt;&lt;td style="padding:4px 0;font-size:13px;color:#001535;font-weight:600;font-family:Arial,sans-serif;"&gt;{{date_tah}}&lt;/td&gt;&lt;/tr&gt;
-                    &lt;tr&gt;&lt;td style="padding:4px 0;font-size:13px;color:#7ab8d8;font-family:Arial,sans-serif;"&gt;Nouvelle-Calédonie&lt;/td&gt;&lt;td style="padding:4px 0;font-size:13px;color:#001535;font-weight:600;font-family:Arial,sans-serif;"&gt;{{date_nc}}&lt;/td&gt;&lt;/tr&gt;
-                    &lt;tr&gt;&lt;td style="padding:4px 0;font-size:13px;color:#7ab8d8;font-family:Arial,sans-serif;"&gt;France&lt;/td&gt;&lt;td style="padding:4px 0;font-size:13px;color:#001535;font-weight:600;font-family:Arial,sans-serif;"&gt;{{date_fr}}&lt;/td&gt;&lt;/tr&gt;
-                  &lt;/table&gt;
-                &lt;/td&gt;
-              &lt;/tr&gt;
-            &lt;/table&gt;
-        &lt;table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f0e8;border-left:3px solid #38d8f0;border-radius:0 8px 8px 0;margin:16px 0;"&gt;
-          &lt;tr&gt;&lt;td style="padding:14px 16px;"&gt;
-            &lt;p style="margin:0 0 5px;font-size:13px;font-weight:600;color:#001535;font-family:Arial,sans-serif;"&gt;⏱️ Connexion&lt;/p&gt;
-            &lt;p style="margin:0;font-size:13px;color:#3a4a5a;line-height:1.6;font-family:Arial,sans-serif;"&gt;Tu recevras un email avec le lien de connexion environ &lt;strong&gt;1h avant&lt;/strong&gt; le début de l'introduction.&lt;/p&gt;
-          &lt;/td&gt;&lt;/tr&gt;
-        &lt;/table&gt;
-        &lt;p style="margin:0 0 16px;font-size:14px;color:#3a4a5a;line-height:1.7;font-family:Arial,sans-serif;"&gt;Je serai présent(e) pour t'accompagner en cas de souci technique.&lt;/p&gt;
-        &lt;table width="100%" cellpadding="0" cellspacing="0" style="background:#e0f8ff;border-radius:10px;margin:16px 0;"&gt;
-              &lt;tr&gt;&lt;td style="padding:16px 18px;"&gt;
-                &lt;p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#001535;font-family:Arial,sans-serif;"&gt;🌱 Communauté&lt;/p&gt;
-                &lt;a href="https://gokollab.com/communaute-francophone-landmark/home" style="color:#0060a0;font-size:13px;font-family:Arial,sans-serif;"&gt;🔗 Rejoindre la communauté francophone Landmark&lt;/a&gt;&lt;br&gt;
-                &lt;span style="font-size:12px;color:#7ab8d8;font-family:Arial,sans-serif;"&gt;
-                  &lt;a href="https://apps.apple.com/us/app/gokollab/id6484272411" style="color:#0060a0;"&gt;📱 iPhone&lt;/a&gt;&amp;nbsp;&amp;nbsp;
-                  &lt;a href="https://play.google.com/store/apps/details?id=net.clientclub.app.kollab" style="color:#0060a0;"&gt;🤖 Android&lt;/a&gt;
-                &lt;/span&gt;
-              &lt;/td&gt;&lt;/tr&gt;
-            &lt;/table&gt;
-        &lt;p style="margin:0 0 16px;font-size:14px;color:#3a4a5a;line-height:1.7;font-family:Arial,sans-serif;"&gt;Je me réjouis de partager cette expérience avec toi.&lt;/p&gt;
-        &lt;p style="margin:0 0 20px;font-size:14px;color:#001535;font-style:italic;font-family:Arial,sans-serif;"&gt;👉 Qu'est-ce que tu souhaites voir évoluer ou transformer dans ta vie à travers cette introduction ?&lt;/p&gt;
-        &lt;p style="margin:0;font-size:14px;color:#001535;font-family:Arial,sans-serif;"&gt;À très bientôt,&lt;br&gt;&lt;strong&gt;{{grad_name}}&lt;/strong&gt;&lt;/p&gt;&lt;/td&gt;&lt;/tr&gt;
-      &lt;tr&gt;&lt;td&gt;&lt;table width="100%" cellpadding="0" cellspacing="0" style="&lt;/table&gt;&lt;/td&gt;&lt;/tr&gt;
-    &lt;/table&gt;
-  &lt;/td&gt;&lt;/tr&gt;
-&lt;/table&gt;
-&lt;/body&gt;&lt;/html&gt;</textarea>
-        <div style="display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap">
-          <button class="copy-btn" onclick="copyTplActive(2)" style="margin:0">Copier</button>
-          <button class="copy-btn" onclick="previewTpl(2)" style="margin:0;color:var(--navy-mid)">Aperçu ↗</button>
-          <span style="font-size:11px;color:#8a9aaa;font-family:monospace">{{guest_name}} {{grad_name}} {{date_tah}} {{zoom_link}}</span>
-        </div>
-      </div>
-      <div class="admin-card tpl-card" style="margin-bottom:18px">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;flex-wrap:wrap;gap:8px">
-          <h3>Email 3 — Lien Zoom + préparation (~1h avant)</h3>
-          <div style="display:flex;gap:6px;flex-shrink:0">
-            <button class="tpl-mode-btn active" data-mode="plain" data-num="3" onclick="setTplMode(this,'plain',3)" style="background:var(--cyan-pale);border:1px solid rgba(56,216,240,.4);border-radius:6px;padding:4px 12px;font-size:11px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--navy-deep);">Texte brut</button>
-            <button class="tpl-mode-btn" data-mode="html" data-num="3" onclick="setTplMode(this,'html',3)" style="background:none;border:1px solid var(--cream-3);border-radius:6px;padding:4px 12px;font-size:11px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;color:#7a8a9a;">HTML</button>
-          </div>
-        </div>
-        <p class="tpl-meta">Envoyé automatiquement ~1h avant · Objet : Ton lien Zoom + comment te préparer</p>
-        <textarea class="tpl-ta" id="tpl-plain-3" readonly>'Ia Ora Na et Bonjour {{guest_name}},
-
-L'introduction commence aujourd'hui !
-
-👉 Lien Zoom : {{zoom_link}}
-   ID : {{zoom_id}}
-
-Pour bien te préparer :
-• Endroit calme, 2h30 sans interruption
-• Tester son/caméra → http://zoom.us/test
-• Caméra allumée, connecte-toi 10 min à l'avance
-
-À très bientôt,
-{{grad_name}}</textarea>
-        <textarea class="tpl-ta" id="tpl-html-3" readonly style="display:none;font-size:11px">&lt;!DOCTYPE html&gt;
-&lt;html lang="fr"&gt;&lt;head&gt;&lt;meta charset="UTF-8"&gt;&lt;meta name="viewport" content="width=device-width,initial-scale=1"&gt;&lt;/head&gt;
-&lt;body style="margin:0;padding:0;background:#f5f0e8;font-family:'DM Sans',Arial,sans-serif;"&gt;
-&lt;table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f0e8;padding:32px 16px;"&gt;
-  &lt;tr&gt;&lt;td align="center"&gt;
-    &lt;table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,30,60,.12);"&gt;
-      &lt;tr&gt;&lt;td&gt;&lt;table width="100%" cellpadding="0" cellspacing="0" style="background:#001535;padding:22px 32px;text-align:center;border-bottom:1px solid rgba(56,216,240,.2)"&gt;
-          &lt;tr&gt;&lt;td&gt;&lt;img class="logo-img-small" src="" alt="Landmark Pacifique" style="height:80px;width:auto;display:block;margin:0 auto 12px"&gt;&lt;/td&gt;&lt;/tr&gt;
-        &lt;/table&gt;&lt;/td&gt;&lt;/tr&gt;
-      &lt;tr&gt;&lt;td style="padding:32px 32px 28px;"&gt;
-        &lt;p style="margin:0 0 4px;font-size:13px;color:#38d8f0;letter-spacing:.1em;text-transform:uppercase;font-weight:500;font-family:Arial,sans-serif;"&gt;'Ia Ora Na 🌺&lt;/p&gt;
-        &lt;p style="margin:0 0 4px;font-size:16px;color:#001535;font-family:Arial,sans-serif;"&gt;Bonjour &lt;strong&gt;{{guest_name}}&lt;/strong&gt;,&lt;/p&gt;
-        &lt;p style="margin:0 0 16px;font-size:14px;color:#3a4a5a;line-height:1.7;font-family:Arial,sans-serif;"&gt;Merci d'avoir accepté mon invitation à l'introduction du Forum de Landmark aujourd'hui.&lt;/p&gt;
-        &lt;table cellpadding="0" cellspacing="0" style="width:100%;margin:20px 0;"&gt;
-              &lt;tr&gt;&lt;td style="background:#001535;border-radius:50px;padding:14px 24px;text-align:center;"&gt;
-                &lt;a href="{{zoom_link}}" style="color:#38d8f0;font-size:16px;font-weight:700;text-decoration:none;font-family:Arial,sans-serif;"&gt;👉 Rejoindre sur Zoom&lt;/a&gt;
-                &lt;p style="margin:8px 0 0;font-size:12px;color:rgba(122,184,216,.7);font-family:Arial,sans-serif;"&gt;ID : {{zoom_id}}&lt;/p&gt;
-              &lt;/td&gt;&lt;/tr&gt;
-            &lt;/table&gt;
-        &lt;p style="margin:0 0 8px;font-size:13px;color:#3a4a5a;font-family:Arial,sans-serif;"&gt;👉 Le plus recommandé : ordinateur (Mac/PC) ou tablette.&lt;br&gt;
-          &lt;a href="https://zoom.us/download" style="color:#0060a0;font-size:13px;"&gt;💻 Télécharger Zoom&lt;/a&gt; &amp;nbsp;
-          &lt;a href="https://apps.apple.com/app/zoom-cloud-meetings/id546505307" style="color:#0060a0;font-size:13px;"&gt;📱 iPhone&lt;/a&gt; &amp;nbsp;
-          &lt;a href="https://play.google.com/store/apps/details?id=us.zoom.videomeetings" style="color:#0060a0;font-size:13px;"&gt;🤖 Android&lt;/a&gt;
-        &lt;/p&gt;
-        &lt;table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f0e8;border-radius:10px;margin:16px 0;"&gt;
-          &lt;tr&gt;&lt;td style="padding:16px 18px;"&gt;
-            &lt;p style="margin:0 0 10px;font-size:13px;font-weight:600;color:#001535;font-family:Arial,sans-serif;"&gt;⏱️ Pour vivre pleinement cette introduction&lt;/p&gt;
-            &lt;p style="margin:0 0 4px;font-size:13px;color:#3a4a5a;font-family:Arial,sans-serif;"&gt;• Endroit calme, peu de distractions&lt;/p&gt;
-            &lt;p style="margin:0 0 4px;font-size:13px;color:#3a4a5a;font-family:Arial,sans-serif;"&gt;• Confortablement assis(e), idéalement avec une table&lt;/p&gt;
-            &lt;p style="margin:0 0 4px;font-size:13px;color:#3a4a5a;font-family:Arial,sans-serif;"&gt;• Indisponible ~2h30 — préviens ton entourage&lt;/p&gt;
-            &lt;p style="margin:0 0 4px;font-size:13px;color:#3a4a5a;font-family:Arial,sans-serif;"&gt;• Un domaine de ta vie sur lequel tu veux avoir un impact&lt;/p&gt;
-            &lt;p style="margin:0 0 12px;font-size:13px;color:#3a4a5a;font-family:Arial,sans-serif;"&gt;• Papier et stylo à portée de main&lt;/p&gt;
-            &lt;p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#001535;font-family:Arial,sans-serif;"&gt;🔌 Technique&lt;/p&gt;
-            &lt;p style="margin:0 0 4px;font-size:13px;color:#3a4a5a;font-family:Arial,sans-serif;"&gt;• Appareil chargé — tester son/caméra/micro → &lt;a href="http://zoom.us/test" style="color:#0060a0;"&gt;zoom.us/test&lt;/a&gt;&lt;/p&gt;
-            &lt;p style="margin:0 0 4px;font-size:13px;color:#3a4a5a;font-family:Arial,sans-serif;"&gt;• Caméra allumée pendant toute la durée&lt;/p&gt;
-            &lt;p style="margin:0;font-size:13px;color:#3a4a5a;font-family:Arial,sans-serif;"&gt;• Connecte-toi &lt;strong&gt;10 min à l'avance&lt;/strong&gt;&lt;/p&gt;
-          &lt;/td&gt;&lt;/tr&gt;
-        &lt;/table&gt;
-        &lt;table width="100%" cellpadding="0" cellspacing="0" style="background:#e0f8ff;border-radius:10px;margin:16px 0;"&gt;
-              &lt;tr&gt;&lt;td style="padding:16px 18px;"&gt;
-                &lt;p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#001535;font-family:Arial,sans-serif;"&gt;🌱 Communauté&lt;/p&gt;
-                &lt;a href="https://gokollab.com/communaute-francophone-landmark/home" style="color:#0060a0;font-size:13px;font-family:Arial,sans-serif;"&gt;🔗 Rejoindre la communauté francophone Landmark&lt;/a&gt;&lt;br&gt;
-                &lt;span style="font-size:12px;color:#7ab8d8;font-family:Arial,sans-serif;"&gt;
-                  &lt;a href="https://apps.apple.com/us/app/gokollab/id6484272411" style="color:#0060a0;"&gt;📱 iPhone&lt;/a&gt;&amp;nbsp;&amp;nbsp;
-                  &lt;a href="https://play.google.com/store/apps/details?id=net.clientclub.app.kollab" style="color:#0060a0;"&gt;🤖 Android&lt;/a&gt;
-                &lt;/span&gt;
-              &lt;/td&gt;&lt;/tr&gt;
-            &lt;/table&gt;
-        &lt;p style="margin:0 0 16px;font-size:14px;color:#3a4a5a;line-height:1.7;font-family:Arial,sans-serif;"&gt;Merci encore pour ta présence, ça compte vraiment.&lt;/p&gt;
-        &lt;p style="margin:0 0 20px;font-size:14px;color:#001535;font-style:italic;font-family:Arial,sans-serif;"&gt;👉 Qu'est-ce qui serait important pour toi de vivre ou de voir évoluer aujourd'hui ?&lt;/p&gt;
-        &lt;p style="margin:0;font-size:14px;color:#001535;font-family:Arial,sans-serif;"&gt;À très bientôt,&lt;br&gt;&lt;strong&gt;{{grad_name}}&lt;/strong&gt;&lt;/p&gt;&lt;/td&gt;&lt;/tr&gt;
-      &lt;tr&gt;&lt;td&gt;&lt;table width="100%" cellpadding="0" cellspacing="0" style="&lt;/table&gt;&lt;/td&gt;&lt;/tr&gt;
-    &lt;/table&gt;
-  &lt;/td&gt;&lt;/tr&gt;
-&lt;/table&gt;
-&lt;/body&gt;&lt;/html&gt;</textarea>
-        <div style="display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap">
-          <button class="copy-btn" onclick="copyTplActive(3)" style="margin:0">Copier</button>
-          <button class="copy-btn" onclick="previewTpl(3)" style="margin:0;color:var(--navy-mid)">Aperçu ↗</button>
-          <span style="font-size:11px;color:#8a9aaa;font-family:monospace">{{guest_name}} {{grad_name}} {{date_tah}} {{zoom_link}}</span>
-        </div>
-      </div>
-      <div class="admin-card tpl-card" style="margin-bottom:18px">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;flex-wrap:wrap;gap:8px">
-          <h3>Email 4 — Rappel 30 min avant</h3>
-          <div style="display:flex;gap:6px;flex-shrink:0">
-            <button class="tpl-mode-btn active" data-mode="plain" data-num="4" onclick="setTplMode(this,'plain',4)" style="background:var(--cyan-pale);border:1px solid rgba(56,216,240,.4);border-radius:6px;padding:4px 12px;font-size:11px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--navy-deep);">Texte brut</button>
-            <button class="tpl-mode-btn" data-mode="html" data-num="4" onclick="setTplMode(this,'html',4)" style="background:none;border:1px solid var(--cream-3);border-radius:6px;padding:4px 12px;font-size:11px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;color:#7a8a9a;">HTML</button>
-          </div>
-        </div>
-        <p class="tpl-meta">Envoyé automatiquement 30 min avant · Objet : C'est dans 30 minutes</p>
-        <textarea class="tpl-ta" id="tpl-plain-4" readonly>Bonjour {{guest_name}},
-
-L'introduction commence dans 30 minutes !
-
-👉 Lien Zoom : {{zoom_link}} (ID : {{zoom_id}})
-
-À tout de suite !
-{{grad_name}}</textarea>
-        <textarea class="tpl-ta" id="tpl-html-4" readonly style="display:none;font-size:11px">&lt;!DOCTYPE html&gt;
-&lt;html lang="fr"&gt;&lt;head&gt;&lt;meta charset="UTF-8"&gt;&lt;meta name="viewport" content="width=device-width,initial-scale=1"&gt;&lt;/head&gt;
-&lt;body style="margin:0;padding:0;background:#f5f0e8;font-family:'DM Sans',Arial,sans-serif;"&gt;
-&lt;table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f0e8;padding:32px 16px;"&gt;
-  &lt;tr&gt;&lt;td align="center"&gt;
-    &lt;table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,30,60,.12);"&gt;
-      &lt;tr&gt;&lt;td&gt;&lt;table width="100%" cellpadding="0" cellspacing="0" style="background:#001535;padding:22px 32px;text-align:center;border-bottom:1px solid rgba(56,216,240,.2)"&gt;
-          &lt;tr&gt;&lt;td&gt;&lt;img class="logo-img-small" src="" alt="Landmark Pacifique" style="height:80px;width:auto;display:block;margin:0 auto 12px"&gt;&lt;/td&gt;&lt;/tr&gt;
-        &lt;/table&gt;&lt;/td&gt;&lt;/tr&gt;
-      &lt;tr&gt;&lt;td style="padding:32px 32px 28px;"&gt;
-        &lt;p style="margin:0 0 6px;font-size:16px;font-weight:600;color:#38d8f0;font-family:Arial,sans-serif;"&gt;⏰ C'est dans 30 minutes !&lt;/p&gt;
-        &lt;p style="margin:0 0 4px;font-size:16px;color:#001535;font-family:Arial,sans-serif;"&gt;Bonjour &lt;strong&gt;{{guest_name}}&lt;/strong&gt;,&lt;/p&gt;
-        &lt;p style="margin:0 0 16px;font-size:14px;color:#3a4a5a;line-height:1.7;font-family:Arial,sans-serif;"&gt;L'introduction commence dans &lt;strong&gt;30 minutes&lt;/strong&gt;. Rejoins maintenant pour être bien installé(e) !&lt;/p&gt;
-        &lt;table cellpadding="0" cellspacing="0" style="width:100%;margin:20px 0;"&gt;
-              &lt;tr&gt;&lt;td style="background:#001535;border-radius:50px;padding:14px 24px;text-align:center;"&gt;
-                &lt;a href="{{zoom_link}}" style="color:#38d8f0;font-size:16px;font-weight:700;text-decoration:none;font-family:Arial,sans-serif;"&gt;👉 Rejoindre sur Zoom&lt;/a&gt;
-                &lt;p style="margin:8px 0 0;font-size:12px;color:rgba(122,184,216,.7);font-family:Arial,sans-serif;"&gt;ID : {{zoom_id}}&lt;/p&gt;
-              &lt;/td&gt;&lt;/tr&gt;
-            &lt;/table&gt;
-        &lt;table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f0e8;border-radius:10px;margin:0 0 20px;"&gt;
-          &lt;tr&gt;&lt;td style="padding:14px 16px;"&gt;
-            &lt;p style="margin:0 0 5px;font-size:13px;color:#3a4a5a;font-family:Arial,sans-serif;"&gt;• Endroit calme ✓&lt;/p&gt;
-            &lt;p style="margin:0 0 5px;font-size:13px;color:#3a4a5a;font-family:Arial,sans-serif;"&gt;• Micro et caméra testés → &lt;a href="http://zoom.us/test" style="color:#0060a0;"&gt;zoom.us/test&lt;/a&gt;&lt;/p&gt;
-            &lt;p style="margin:0;font-size:13px;color:#3a4a5a;font-family:Arial,sans-serif;"&gt;• Connecte-toi 10 min à l'avance&lt;/p&gt;
-          &lt;/td&gt;&lt;/tr&gt;
-        &lt;/table&gt;
-        &lt;p style="margin:0;font-size:14px;color:#001535;font-family:Arial,sans-serif;"&gt;À tout de suite !&lt;br&gt;&lt;strong&gt;{{grad_name}}&lt;/strong&gt;&lt;/p&gt;&lt;/td&gt;&lt;/tr&gt;
-      &lt;tr&gt;&lt;td&gt;&lt;table width="100%" cellpadding="0" cellspacing="0" style="&lt;/table&gt;&lt;/td&gt;&lt;/tr&gt;
-    &lt;/table&gt;
-  &lt;/td&gt;&lt;/tr&gt;
-&lt;/table&gt;
-&lt;/body&gt;&lt;/html&gt;</textarea>
-        <div style="display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap">
-          <button class="copy-btn" onclick="copyTplActive(4)" style="margin:0">Copier</button>
-          <button class="copy-btn" onclick="previewTpl(4)" style="margin:0;color:var(--navy-mid)">Aperçu ↗</button>
-          <span style="font-size:11px;color:#8a9aaa;font-family:monospace">{{guest_name}} {{grad_name}} {{date_tah}} {{zoom_link}}</span>
-        </div>
-      </div>
-      <div class="admin-card tpl-card" style="margin-bottom:18px">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;flex-wrap:wrap;gap:8px">
-          <h3>Email 5 — Notification animateur</h3>
-          <div style="display:flex;gap:6px;flex-shrink:0">
-            <button class="tpl-mode-btn active" data-mode="plain" data-num="5" onclick="setTplMode(this,'plain',5)" style="background:var(--cyan-pale);border:1px solid rgba(56,216,240,.4);border-radius:6px;padding:4px 12px;font-size:11px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--navy-deep);">Texte brut</button>
-            <button class="tpl-mode-btn" data-mode="html" data-num="5" onclick="setTplMode(this,'html',5)" style="background:none;border:1px solid var(--cream-3);border-radius:6px;padding:4px 12px;font-size:11px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;color:#7a8a9a;">HTML</button>
-          </div>
-        </div>
-        <p class="tpl-meta">Envoyé immédiatement au leadeur · Objet : Nouvelle inscription</p>
-        <textarea class="tpl-ta" id="tpl-plain-5" readonly>Bonjour {{animateur}},
-
-Nouvelle inscription pour votre introduction.
-
-INVITÉ(E) : {{guest_name}} — {{guest_email}}
-Inscrit(e) par : {{grad_name}} — {{grad_email}}
-introduction : {{titre}} · TAH : {{date_tah}}</textarea>
-        <textarea class="tpl-ta" id="tpl-html-5" readonly style="display:none;font-size:11px">&lt;!DOCTYPE html&gt;
-&lt;html lang="fr"&gt;&lt;head&gt;&lt;meta charset="UTF-8"&gt;&lt;meta name="viewport" content="width=device-width,initial-scale=1"&gt;&lt;/head&gt;
-&lt;body style="margin:0;padding:0;background:#f5f0e8;font-family:'DM Sans',Arial,sans-serif;"&gt;
-&lt;table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f0e8;padding:32px 16px;"&gt;
-  &lt;tr&gt;&lt;td align="center"&gt;
-    &lt;table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,30,60,.12);"&gt;
-      &lt;tr&gt;&lt;td&gt;&lt;table width="100%" cellpadding="0" cellspacing="0" style="background:#001535;padding:22px 32px;text-align:center;border-bottom:1px solid rgba(56,216,240,.2)"&gt;
-          &lt;tr&gt;&lt;td&gt;&lt;img class="logo-img-small" src="" alt="Landmark Pacifique" style="height:80px;width:auto;display:block;margin:0 auto 12px"&gt;&lt;/td&gt;&lt;/tr&gt;
-        &lt;/table&gt;&lt;/td&gt;&lt;/tr&gt;
-      &lt;tr&gt;&lt;td style="padding:32px 32px 28px;"&gt;
-        &lt;p style="margin:0 0 4px;font-size:16px;color:#001535;font-family:Arial,sans-serif;"&gt;Bonjour &lt;strong&gt;{{animateur}}&lt;/strong&gt;,&lt;/p&gt;
-        &lt;p style="margin:0 0 16px;font-size:14px;color:#3a4a5a;line-height:1.7;font-family:Arial,sans-serif;"&gt;Nouvelle inscription pour votre introduction.&lt;/p&gt;
-        &lt;table width="100%" cellpadding="0" cellspacing="0" style="background:#e0f8ff;border-radius:10px;margin:0 0 14px;"&gt;
-          &lt;tr&gt;&lt;td style="padding:16px 18px;"&gt;
-            &lt;p style="margin:0 0 6px;font-size:11px;font-weight:600;color:#0060a0;letter-spacing:.1em;text-transform:uppercase;font-family:Arial,sans-serif;"&gt;Invité(e)&lt;/p&gt;
-            &lt;p style="margin:0 0 4px;font-size:15px;color:#001535;font-weight:600;font-family:Arial,sans-serif;"&gt;{{guest_name}}&lt;/p&gt;
-            &lt;p style="margin:0;font-size:13px;color:#7ab8d8;font-family:Arial,sans-serif;"&gt;{{guest_email}}&lt;/p&gt;
-          &lt;/td&gt;&lt;/tr&gt;
-        &lt;/table&gt;
-        &lt;table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f0e8;border-radius:10px;margin:0 0 14px;"&gt;
-          &lt;tr&gt;&lt;td style="padding:14px 18px;"&gt;
-            &lt;p style="margin:0 0 4px;font-size:11px;font-weight:600;color:#7a8a9a;letter-spacing:.1em;text-transform:uppercase;font-family:Arial,sans-serif;"&gt;Inscrit(e) par&lt;/p&gt;
-            &lt;p style="margin:0 0 4px;font-size:14px;color:#001535;font-weight:600;font-family:Arial,sans-serif;"&gt;{{grad_name}}&lt;/p&gt;
-            &lt;p style="margin:0;font-size:13px;color:#7a8a9a;font-family:Arial,sans-serif;"&gt;{{grad_email}}&lt;/p&gt;
-          &lt;/td&gt;&lt;/tr&gt;
-        &lt;/table&gt;
-        &lt;table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2d8c4;border-radius:10px;"&gt;
-          &lt;tr&gt;&lt;td style="padding:12px 16px;"&gt;
-            &lt;p style="margin:0 0 4px;font-size:13px;color:#7a8a9a;font-family:Arial,sans-serif;"&gt;introduction : &lt;strong style="color:#001535;"&gt;{{titre}}&lt;/strong&gt;&lt;/p&gt;
-            &lt;p style="margin:0;font-size:13px;color:#7a8a9a;font-family:Arial,sans-serif;"&gt;TAH : &lt;strong style="color:#001535;"&gt;{{date_tah}}&lt;/strong&gt;&lt;/p&gt;
-          &lt;/td&gt;&lt;/tr&gt;
-        &lt;/table&gt;&lt;/td&gt;&lt;/tr&gt;
-      &lt;tr&gt;&lt;td&gt;&lt;table width="100%" cellpadding="0" cellspacing="0" style="&lt;/table&gt;&lt;/td&gt;&lt;/tr&gt;
-    &lt;/table&gt;
-  &lt;/td&gt;&lt;/tr&gt;
-&lt;/table&gt;
-&lt;/body&gt;&lt;/html&gt;</textarea>
-        <div style="display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap">
-          <button class="copy-btn" onclick="copyTplActive(5)" style="margin:0">Copier</button>
-          <button class="copy-btn" onclick="previewTpl(5)" style="margin:0;color:var(--navy-mid)">Aperçu ↗</button>
-          <span style="font-size:11px;color:#8a9aaa;font-family:monospace">{{guest_name}} {{grad_name}} {{date_tah}} {{zoom_link}}</span>
-        </div>
-      </div>
-      <div class="admin-card tpl-card" style="margin-bottom:18px">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px;flex-wrap:wrap;gap:8px">
-          <h3>Email 6 — Confirmation graduate seul</h3>
-          <div style="display:flex;gap:6px;flex-shrink:0">
-            <button class="tpl-mode-btn active" data-mode="plain" data-num="6" onclick="setTplMode(this,'plain',6)" style="background:var(--cyan-pale);border:1px solid rgba(56,216,240,.4);border-radius:6px;padding:4px 12px;font-size:11px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;color:var(--navy-deep);">Texte brut</button>
-            <button class="tpl-mode-btn" data-mode="html" data-num="6" onclick="setTplMode(this,'html',6)" style="background:none;border:1px solid var(--cream-3);border-radius:6px;padding:4px 12px;font-size:11px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;color:#7a8a9a;">HTML</button>
-          </div>
-        </div>
-        <p class="tpl-meta">Envoyé au graduate qui participe seul · Objet : Votre inscription est confirmée</p>
-        <textarea class="tpl-ta" id="tpl-plain-6" readonly>Bonjour {{grad_name}},
-
-Votre participation est confirmée.
-
-{{animateur}} — {{titre}}
-TAH : {{date_tah}} · NC : {{date_nc}} · FR : {{date_fr}}
-Zoom : {{zoom_link}} (ID : {{zoom_id}})
-
-À bientôt,
-L'équipe Landmark Pacifique</textarea>
-        <textarea class="tpl-ta" id="tpl-html-6" readonly style="display:none;font-size:11px">&lt;!DOCTYPE html&gt;
-&lt;html lang="fr"&gt;&lt;head&gt;&lt;meta charset="UTF-8"&gt;&lt;meta name="viewport" content="width=device-width,initial-scale=1"&gt;&lt;/head&gt;
-&lt;body style="margin:0;padding:0;background:#f5f0e8;font-family:'DM Sans',Arial,sans-serif;"&gt;
-&lt;table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f0e8;padding:32px 16px;"&gt;
-  &lt;tr&gt;&lt;td align="center"&gt;
-    &lt;table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,30,60,.12);"&gt;
-      &lt;tr&gt;&lt;td&gt;&lt;table width="100%" cellpadding="0" cellspacing="0" style="background:#001535;padding:22px 32px;text-align:center;border-bottom:1px solid rgba(56,216,240,.2)"&gt;
-          &lt;tr&gt;&lt;td&gt;&lt;img class="logo-img-small" src="" alt="Landmark Pacifique" style="height:80px;width:auto;display:block;margin:0 auto 12px"&gt;&lt;/td&gt;&lt;/tr&gt;
-        &lt;/table&gt;&lt;/td&gt;&lt;/tr&gt;
-      &lt;tr&gt;&lt;td style="padding:32px 32px 28px;"&gt;
-        &lt;p style="margin:0 0 4px;font-size:16px;color:#001535;font-family:Arial,sans-serif;"&gt;Bonjour &lt;strong&gt;{{grad_name}}&lt;/strong&gt;,&lt;/p&gt;
-        &lt;p style="margin:0 0 16px;font-size:14px;color:#3a4a5a;line-height:1.7;font-family:Arial,sans-serif;"&gt;Votre participation à l'introduction est &lt;strong&gt;confirmée&lt;/strong&gt;.&lt;/p&gt;
-        &lt;table width="100%" cellpadding="0" cellspacing="0" style="background:#e0f8ff;border-radius:12px;margin:16px 0;"&gt;
-          &lt;tr&gt;&lt;td style="padding:18px 20px;"&gt;
-            &lt;p style="margin:0 0 8px;font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#0060a0;font-family:Arial,sans-serif;"&gt;Votre introduction&lt;/p&gt;
-            &lt;p style="margin:0 0 12px;font-size:14px;color:#001535;font-weight:600;font-family:Arial,sans-serif;"&gt;{{animateur}} — {{titre}}&lt;/p&gt;
-            &lt;table width="100%" cellpadding="0" cellspacing="0"&gt;
-              &lt;tr&gt;&lt;td style="padding:3px 0;font-size:13px;color:#7ab8d8;width:120px;font-family:Arial,sans-serif;"&gt;Tahiti&lt;/td&gt;&lt;td style="padding:3px 0;font-size:13px;color:#001535;font-weight:500;font-family:Arial,sans-serif;"&gt;{{date_tah}}&lt;/td&gt;&lt;/tr&gt;
-              &lt;tr&gt;&lt;td style="padding:3px 0;font-size:13px;color:#7ab8d8;font-family:Arial,sans-serif;"&gt;Nouvelle-Calédonie&lt;/td&gt;&lt;td style="padding:3px 0;font-size:13px;color:#001535;font-weight:500;font-family:Arial,sans-serif;"&gt;{{date_nc}}&lt;/td&gt;&lt;/tr&gt;
-              &lt;tr&gt;&lt;td style="padding:3px 0;font-size:13px;color:#7ab8d8;font-family:Arial,sans-serif;"&gt;France&lt;/td&gt;&lt;td style="padding:3px 0;font-size:13px;color:#001535;font-weight:500;font-family:Arial,sans-serif;"&gt;{{date_fr}}&lt;/td&gt;&lt;/tr&gt;
-            &lt;/table&gt;
-          &lt;/td&gt;&lt;/tr&gt;
-        &lt;/table&gt;
-        &lt;table cellpadding="0" cellspacing="0" style="width:100%;margin:20px 0;"&gt;
-              &lt;tr&gt;&lt;td style="background:#001535;border-radius:50px;padding:14px 24px;text-align:center;"&gt;
-                &lt;a href="{{zoom_link}}" style="color:#38d8f0;font-size:16px;font-weight:700;text-decoration:none;font-family:Arial,sans-serif;"&gt;👉 Rejoindre sur Zoom&lt;/a&gt;
-                &lt;p style="margin:8px 0 0;font-size:12px;color:rgba(122,184,216,.7);font-family:Arial,sans-serif;"&gt;ID : {{zoom_id}}&lt;/p&gt;
-              &lt;/td&gt;&lt;/tr&gt;
-            &lt;/table&gt;
-        &lt;p style="margin:0;font-size:14px;color:#001535;font-family:Arial,sans-serif;"&gt;À très bientôt,&lt;br&gt;L'équipe Landmark Pacifique&lt;/p&gt;&lt;/td&gt;&lt;/tr&gt;
-      &lt;tr&gt;&lt;td&gt;&lt;table width="100%" cellpadding="0" cellspacing="0" style="&lt;/table&gt;&lt;/td&gt;&lt;/tr&gt;
-    &lt;/table&gt;
-  &lt;/td&gt;&lt;/tr&gt;
-&lt;/table&gt;
-&lt;/body&gt;&lt;/html&gt;</textarea>
-        <div style="display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap">
-          <button class="copy-btn" onclick="copyTplActive(6)" style="margin:0">Copier</button>
-          <button class="copy-btn" onclick="previewTpl(6)" style="margin:0;color:var(--navy-mid)">Aperçu ↗</button>
-          <span style="font-size:11px;color:#8a9aaa;font-family:monospace">{{guest_name}} {{grad_name}} {{date_tah}} {{zoom_link}}</span>
-        </div>
-      </div>
-      <div class="admin-card tpl-card" style="margin-bottom:18px">
-        <h3 style="font-family:'Cormorant Garamond',serif;font-size:16px;color:var(--navy-deep);margin-bottom:3px">Script Google Sheets</h3>
-        <p class="tpl-meta">Collez ce code sur script.google.com → Déployez → copiez l'URL dans "Config. emails"</p>
-        <textarea class="tpl-ta" id="tpl-apps-script" readonly style="height:400px;font-size:11px">// ============================================================
-// LANDMARK PACIFIQUE — Proxy Google Apps Script
-// Gère : inscription Google Sheets + envoi emails via Brevo
-// À déployer sur script.google.com comme Application Web
-// ============================================================
-
-var BREVO_API_KEY = "VOTRE_CLE_API_BREVO_ICI";
-var SPREADSHEET_ID = "1nMbsf-Bs4M6NQslgq_e9P4SXpuGtcPu5TVaJzgopJsI";
-
-function doPost(e) {
-  try {
-    var data = JSON.parse(e.postData.contents);
-    var cfg  = PropertiesService.getScriptProperties();
-    var BREVO_KEY   = cfg.getProperty("BREVO_KEY")   || "";
-    var FROM_EMAIL  = cfg.getProperty("FROM_EMAIL")   || "";
-    var FROM_NAME   = cfg.getProperty("FROM_NAME")    || "Landmark Pacifique";
-    var ANIM_EMAIL  = cfg.getProperty("ANIM_EMAIL")   || "";
-    var TPL_GUEST_CONFIRM = cfg.getProperty("TPL_GUEST_CONFIRM") || "";
-    var TPL_GRAD_CONFIRM  = cfg.getProperty("TPL_GRAD_CONFIRM")  || "";
-    var TPL_REMIND_3H     = cfg.getProperty("TPL_REMIND_3H")     || "";
-    var TPL_REMIND_30MIN  = cfg.getProperty("TPL_REMIND_30MIN")  || "";
-    var TPL_ANIM_NOTIF    = cfg.getProperty("TPL_ANIM_NOTIF")    || "";
-    var TPL_SOLO_CONFIRM  = cfg.getProperty("TPL_SOLO_CONFIRM")  || "";
-
-    var ss      = SpreadsheetApp.openById("1nMbsf-Bs4M6NQslgq_e9P4SXpuGtcPu5TVaJzgopJsI");
-    var headers = ["Date d'inscription","Date de l'introduction","Leader","Invité par","Nom complet","Gradué","Téléphone","Adresse email"];
-
-    // ── Enregistrement Sheets ────────────────────────────────────────────────
-    if (data.type === "graduate" || data.type === "solo") {
-      var s = ss.getSheetByName("CILF Graduate") || ss.insertSheet("CILF Graduate");
-      if (s.getLastRow() === 0) s.appendRow(headers);
-      s.appendRow([
-        data.timestamp, data.date_tah, data.animateur, "",
-        (data.prenom||"") + " " + (data.nom||""),
-        "Oui", data.telephone||"", data.email
-      ]);
-    }
-    if (data.type === "guest") {
-      var s2 = ss.getSheetByName("CILF Guest") || ss.insertSheet("CILF Guest");
-      if (s2.getLastRow() === 0) s2.appendRow(headers);
-      s2.appendRow([
-        data.timestamp, data.date_tah, data.animateur, data.graduate||"",
-        (data.prenom||"") + " " + (data.nom||""),
-        "Non", data.telephone||"", data.email
-      ]);
-    }
-
-    // ── Envoi emails via Brevo ───────────────────────────────────────────────
-    if (BREVO_KEY) {
-      var params = data.params || {};
-
-      if (data.type === "guest") {
-        // Email 2 : confirmation invité
-        brevoSend(BREVO_KEY, FROM_EMAIL, FROM_NAME,
-          data.guest_email, data.guest_name,
-          parseInt(TPL_GUEST_CONFIRM), params);
-
-        // Email au graduate
-        brevoSend(BREVO_KEY, FROM_EMAIL, FROM_NAME,
-          data.grad_email, data.grad_name,
-          parseInt(TPL_GRAD_CONFIRM), params);
-
-        // Rappel 3h avant (scheduledAt)
-        if (data.t3h && data.t3h > Date.now()/1000) {
-          var d3h = new Date(data.t3h * 1000);
-          brevoSend(BREVO_KEY, FROM_EMAIL, FROM_NAME,
-            data.guest_email, data.guest_name,
-            parseInt(TPL_REMIND_3H), params, d3h.toISOString());
-        }
-
-        // Rappel 30min avant (scheduledAt)
-        if (data.t30 && data.t30 > Date.now()/1000) {
-          var d30 = new Date(data.t30 * 1000);
-          brevoSend(BREVO_KEY, FROM_EMAIL, FROM_NAME,
-            data.guest_email, data.guest_name,
-            parseInt(TPL_REMIND_30MIN), params, d30.toISOString());
-        }
-
-        // Notification animateur
-        var animDest = data.anim_email || ANIM_EMAIL;
-        if (animDest) {
-          brevoSend(BREVO_KEY, FROM_EMAIL, FROM_NAME,
-            animDest, data.animateur,
-            parseInt(TPL_ANIM_NOTIF), params);
-        }
-      }
-
-      if (data.type === "solo") {
-        // Confirmation graduate seul
-        brevoSend(BREVO_KEY, FROM_EMAIL, FROM_NAME,
-          data.email, (data.prenom||"") + " " + (data.nom||""),
-          parseInt(TPL_SOLO_CONFIRM), params);
-      }
-    }
-
-    return ContentService
-      .createTextOutput(JSON.stringify({status:"ok"}))
-      .setMimeType(ContentService.MimeType.JSON);
-
-  } catch(err) {
-    return ContentService
-      .createTextOutput(JSON.stringify({status:"error",message:err.toString()}))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}
-
-function brevoSend(apiKey, fromEmail, fromName, toEmail, toName, templateId, params, scheduledAt) {
-  if (!apiKey || !templateId || !toEmail) return;
-  var payload = {
-    sender: {name: fromName, email: fromEmail},
-    to: [{email: toEmail, name: toName || toEmail}],
-    templateId: templateId,
-    params: params || {}
-  };
-  if (scheduledAt) payload.scheduledAt = scheduledAt;
-  var options = {
-    method: "post",
-    contentType: "application/json",
-    headers: {"api-key": apiKey},
-    payload: JSON.stringify(payload),
-    muteHttpExceptions: true
-  };
-  UrlFetchApp.fetch("https://api.brevo.com/v3/smtp/email", options);
-}
-
-// ── Configuration (à exécuter une fois) ────────────────────────────────────
-// Lancez cette fonction manuellement dans Apps Script pour sauvegarder vos clés
-function setConfig() {
-  var props = PropertiesService.getScriptProperties();
-  props.setProperties({
-    "BREVO_KEY":          "VOTRE_CLE_API_BREVO",
-    "FROM_EMAIL":         "votre@email.com",
-    "FROM_NAME":          "Landmark Pacifique",
-    "ANIM_EMAIL":         "animateur@email.com",
-    "TPL_GUEST_CONFIRM":  "2",
-    "TPL_GRAD_CONFIRM":   "2",
-    "TPL_REMIND_3H":      "3",
-    "TPL_REMIND_30MIN":   "4",
-    "TPL_ANIM_NOTIF":     "5",
-    "TPL_SOLO_CONFIRM":   "6"
-  });
-  Logger.log("Configuration sauvegardée !");
-}</textarea>
-        <div style="display:flex;gap:10px;margin-top:10px">
-          <button class="copy-btn" onclick="(function(b){var t=document.getElementById('tpl-apps-script');try{navigator.clipboard.writeText(t.value);}catch{t.select();}b.textContent='Copié !';setTimeout(()=>b.textContent='Copier',2000)})(this)" style="margin:0">Copier</button>
-          <a href="https://script.google.com" target="_blank" style="display:inline-flex;align-items:center;font-size:12px;color:var(--navy-mid);text-decoration:underline;padding:8px 0">Ouvrir script.google.com ↗</a>
-        </div>
-      </div>
-    </div>
 
     <div id="tab-settings" class="cfg-panel">
       <h2 class="admin-h2">Paramètres</h2>
@@ -1030,14 +452,22 @@ function makeAdminForm(intro, i) {
         <input class="ai" type="date" value="${intro.date}" oninput="draftUpdate(${i},'date',this.value)"></div>
       <div><label class="fl" style="margin-top:0">Heure début (TAH)</label>
         <input class="ai" type="time" value="${intro.heure}" oninput="draftUpdate(${i},'heure',this.value)"></div>
-      <div><label class="fl" style="margin-top:0">Heure fin (TAH)</label>
-        <input class="ai" type="time" value="${intro.heureFin||''}" oninput="draftUpdate(${i},'heureFin',this.value)"></div>
+      <div><label class="fl" style="margin-top:0">Heure fin (TAH) <span style="font-size:10px;color:#aab8c4">(calculée auto +2h si vide)</span></label>
+        <input class="ai" type="time" value="${intro.heureFin||''}" oninput="draftUpdate(${i},'heureFin',this.value)" id="heureFin-cilf-${i}"></div>
       <div></div>
     </div>
-    <label class="fl">Lien Zoom</label>
-    <input class="ai" type="url" value="${intro.zoom}" oninput="draftUpdate(${i},'zoom',this.value)">
-    <label class="fl">ID Zoom</label>
-    <input class="ai" type="text" value="${intro.zoomId||''}" oninput="draftUpdate(${i},'zoomId',this.value)">
+    <div style="background:var(--cyan-pale);border:1px solid rgba(56,216,240,.2);border-radius:10px;padding:14px 16px;margin-top:14px">
+      <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--navy-mid);margin-bottom:10px">Creation Call</div>
+      <div class="ag2">
+        <div><label class="fl" style="margin-top:0">Date Creation Call (TAH)</label>
+          <input class="ai" type="date" value="${intro.ccDate||''}" oninput="draftUpdate(${i},'ccDate',this.value)"></div>
+        <div><label class="fl" style="margin-top:0">Heure début (TAH)</label>
+          <input class="ai" type="time" value="${intro.ccHeure||''}" oninput="draftUpdate(${i},'ccHeure',this.value)"></div>
+        <div><label class="fl" style="margin-top:0">Heure fin (TAH) <span style="font-size:10px;color:#aab8c4">(auto +2h)</span></label>
+          <input class="ai" type="time" value="${intro.ccHeureFin||''}" oninput="draftUpdate(${i},'ccHeureFin',this.value)"></div>
+        <div></div>
+      </div>
+    </div>
     <label class="fl">Email Leadeur <span style="font-size:10px;color:#aab8c4">(notifications)</span></label>
     <input class="ai" type="email" value="${intro.animateurEmail||''}" placeholder="animateur@email.com" oninput="draftUpdate(${i},'animateurEmail',this.value)">
     <div class="ptz">
@@ -1100,7 +530,7 @@ async function getCfg() {
 }
 
 const DEF = [
-  {id:1, animateur:"", titre:"", date:"", heure:"", heureFin:"", zoom:"", zoomId:"", animateurEmail:""},
+  {id:1, animateur:"", titre:"", date:"", heure:"", heureFin:"", zoom:"", zoomId:"", animateurEmail:"", ccDate:"", ccHeure:"", ccHeureFin:""},
 ];
 async function getIntros() {
   try { return await apiFetch('/api/intros?slug=cilf'); }
@@ -1150,9 +580,32 @@ async function renderPublic(){
     const tah   = fmtTZ(intro.date,intro.heure,"TAH","TAH");
     const nc    = fmtTZ(intro.date,intro.heure,"TAH","NC");
     const fr    = fmtTZ(intro.date,intro.heure,"TAH","FR");
-    const endTAH = intro.heureFin ? fmtTZ(intro.date,intro.heureFin,"TAH","TAH").split("·")[1]||"" : "";
-    const endNC  = intro.heureFin ? fmtTZ(intro.date,intro.heureFin,"TAH","NC").split("·")[1]||"" : "";
-    const endFR  = intro.heureFin ? fmtTZ(intro.date,intro.heureFin,"TAH","FR").split("·")[1]||"" : "";
+    const hFin  = intro.heureFin || autoEndTime(intro.heure);
+    const endTAH = hFin ? fmtTZ(intro.date,hFin,"TAH","TAH").split("·")[1]||"" : "";
+    const endNC  = hFin ? fmtTZ(intro.date,hFin,"TAH","NC").split("·")[1]||"" : "";
+    const endFR  = hFin ? fmtTZ(intro.date,hFin,"TAH","FR").split("·")[1]||"" : "";
+    // Creation Call
+    const ccTAH  = intro.ccDate && intro.ccHeure ? fmtTZ(intro.ccDate,intro.ccHeure,"TAH","TAH") : "";
+    const ccNC   = intro.ccDate && intro.ccHeure ? fmtTZ(intro.ccDate,intro.ccHeure,"TAH","NC") : "";
+    const ccFR   = intro.ccDate && intro.ccHeure ? fmtTZ(intro.ccDate,intro.ccHeure,"TAH","FR") : "";
+    const ccHFin = intro.ccHeureFin || (intro.ccHeure ? autoEndTime(intro.ccHeure) : "");
+    const ccEndTAH = (intro.ccDate && ccHFin) ? fmtTZ(intro.ccDate,ccHFin,"TAH","TAH").split("·")[1]||"" : "";
+    const ccEndNC  = (intro.ccDate && ccHFin) ? fmtTZ(intro.ccDate,ccHFin,"TAH","NC").split("·")[1]||"" : "";
+    const ccEndFR  = (intro.ccDate && ccHFin) ? fmtTZ(intro.ccDate,ccHFin,"TAH","FR").split("·")[1]||"" : "";
+    const ccBlock = ccTAH ? `
+          <tr><td colspan="2" style="padding:10px 0 4px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--navy-mid)">Creation Call</td></tr>
+          <tr style="border-bottom:1px solid var(--cream-2)">
+            <td style="padding:7px 0;font-size:12px;font-weight:600;color:var(--navy);width:140px">Tahiti</td>
+            <td style="padding:7px 0;font-size:13px;font-weight:500;color:var(--navy-deep)">${ccTAH}${ccEndTAH?" — "+ccEndTAH:""}</td>
+          </tr>
+          <tr style="border-bottom:1px solid var(--cream-2)">
+            <td style="padding:7px 0;font-size:12px;font-weight:600;color:var(--navy)">Nouvelle-Calédonie</td>
+            <td style="padding:7px 0;font-size:13px;font-weight:500;color:var(--navy-deep)">${ccNC}${ccEndNC?" — "+ccEndNC:""}</td>
+          </tr>
+          <tr>
+            <td style="padding:7px 0;font-size:12px;font-weight:600;color:var(--navy)">France</td>
+            <td style="padding:7px 0;font-size:13px;font-weight:500;color:var(--navy-deep)">${ccFR}${ccEndFR?" — "+ccEndFR:""}</td>
+          </tr>` : "";
     const c=document.createElement("div");
     c.className="intro-card";
     c.innerHTML=`
@@ -1161,6 +614,7 @@ async function renderPublic(){
         <h3 class="intro-card-name">${intro.animateur}</h3>
         <p class="intro-card-theme">${intro.titre}</p>
         <table style="width:100%;border-collapse:collapse;margin-top:4px">
+          <tr><td colspan="2" style="padding:4px 0 4px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--navy-mid)">Introduction au Forum</td></tr>
           <tr style="border-bottom:1px solid var(--cream-2)">
             <td style="padding:7px 0;font-size:12px;font-weight:600;color:var(--navy);width:140px">Tahiti</td>
             <td style="padding:7px 0;font-size:13px;font-weight:500;color:var(--navy-deep)">${tah}${endTAH?" — "+endTAH:""}</td>
@@ -1169,10 +623,11 @@ async function renderPublic(){
             <td style="padding:7px 0;font-size:12px;font-weight:600;color:var(--navy)">Nouvelle-Calédonie</td>
             <td style="padding:7px 0;font-size:13px;font-weight:500;color:var(--navy-deep)">${nc}${endNC?" — "+endNC:""}</td>
           </tr>
-          <tr>
+          <tr style="border-bottom:${ccTAH?'1px solid var(--cream-2)':'none'}">
             <td style="padding:7px 0;font-size:12px;font-weight:600;color:var(--navy)">France</td>
             <td style="padding:7px 0;font-size:13px;font-weight:500;color:var(--navy-deep)">${fr}${endFR?" — "+endFR:""}</td>
           </tr>
+          ${ccBlock}
         </table>
       </div>
       <div class="intro-card-bottom">
@@ -1185,19 +640,42 @@ async function renderPublic(){
 
 // ── SELECTION & NAVIGATION FLOW ───────────────────────────────────────────────
 let selIdx = null;
+function autoEndTime(h){
+  if(!h) return '';
+  const [hh,mm] = h.split(':').map(Number);
+  const total = hh*60+mm+120;
+  return String(Math.floor(total/60)%24).padStart(2,'0')+':'+String(total%60).padStart(2,'0');
+}
 function buildRecap(intro){
+  const hFin   = intro.heureFin || autoEndTime(intro.heure);
   const tah    = fmtTZ(intro.date, intro.heure,    'TAH', 'TAH');
-  const tahFin = intro.heureFin ? fmtTZ(intro.date, intro.heureFin, 'TAH', 'TAH').split('·')[1]||'' : '';
+  const tahFin = hFin ? fmtTZ(intro.date, hFin, 'TAH', 'TAH').split('·')[1]||'' : '';
   const nc     = fmtTZ(intro.date, intro.heure,    'TAH', 'NC');
-  const ncFin  = intro.heureFin ? fmtTZ(intro.date, intro.heureFin, 'TAH', 'NC').split('·')[1]||'' : '';
+  const ncFin  = hFin ? fmtTZ(intro.date, hFin, 'TAH', 'NC').split('·')[1]||'' : '';
   const fr     = fmtTZ(intro.date, intro.heure,    'TAH', 'FR');
-  const frFin  = intro.heureFin ? fmtTZ(intro.date, intro.heureFin, 'TAH', 'FR').split('·')[1]||'' : '';
-  return `<strong>${intro.animateur} — ${intro.titre}</strong>`
+  const frFin  = hFin ? fmtTZ(intro.date, hFin, 'TAH', 'FR').split('·')[1]||'' : '';
+  // Creation Call
+  const ccHFin = intro.ccHeureFin || (intro.ccHeure ? autoEndTime(intro.ccHeure) : '');
+  const ccTAH  = intro.ccDate && intro.ccHeure ? fmtTZ(intro.ccDate,intro.ccHeure,'TAH','TAH') : '';
+  const ccTAHF = (intro.ccDate && ccHFin) ? fmtTZ(intro.ccDate,ccHFin,'TAH','TAH').split('·')[1]||'' : '';
+  const ccNC   = intro.ccDate && intro.ccHeure ? fmtTZ(intro.ccDate,intro.ccHeure,'TAH','NC') : '';
+  const ccNCF  = (intro.ccDate && ccHFin) ? fmtTZ(intro.ccDate,ccHFin,'TAH','NC').split('·')[1]||'' : '';
+  const ccFR   = intro.ccDate && intro.ccHeure ? fmtTZ(intro.ccDate,intro.ccHeure,'TAH','FR') : '';
+  const ccFRF  = (intro.ccDate && ccHFin) ? fmtTZ(intro.ccDate,ccHFin,'TAH','FR').split('·')[1]||'' : '';
+  let html = `<strong>${intro.animateur} — ${intro.titre}</strong>`
     + `<table style="margin-top:8px;width:100%;border-collapse:collapse">`
+    + `<tr><td colspan="2" style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--navy-mid);padding:4px 0">Introduction au Forum</td></tr>`
     + `<tr><td style="font-size:12px;font-weight:600;color:var(--navy);padding:4px 0;width:140px">Tahiti</td><td style="font-size:13px;color:var(--navy-deep);padding:4px 0">${tah}${tahFin?' — à'+tahFin:''}</td></tr>`
     + `<tr><td style="font-size:12px;font-weight:600;color:var(--navy);padding:4px 0">Nouvelle-Calédonie</td><td style="font-size:13px;color:var(--navy-deep);padding:4px 0">${nc}${ncFin?' — à'+ncFin:''}</td></tr>`
-    + `<tr><td style="font-size:12px;font-weight:600;color:var(--navy);padding:4px 0">France</td><td style="font-size:13px;color:var(--navy-deep);padding:4px 0">${fr}${frFin?' — à'+frFin:''}</td></tr>`
-    + `</table>`;
+    + `<tr><td style="font-size:12px;font-weight:600;color:var(--navy);padding:4px 0">France</td><td style="font-size:13px;color:var(--navy-deep);padding:4px 0">${fr}${frFin?' — à'+frFin:''}</td></tr>`;
+  if(ccTAH){
+    html += `<tr><td colspan="2" style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--navy-mid);padding:8px 0 4px">Creation Call</td></tr>`
+      + `<tr><td style="font-size:12px;font-weight:600;color:var(--navy);padding:4px 0;width:140px">Tahiti</td><td style="font-size:13px;color:var(--navy-deep);padding:4px 0">${ccTAH}${ccTAHF?' — à'+ccTAHF:''}</td></tr>`
+      + `<tr><td style="font-size:12px;font-weight:600;color:var(--navy);padding:4px 0">Nouvelle-Calédonie</td><td style="font-size:13px;color:var(--navy-deep);padding:4px 0">${ccNC}${ccNCF?' — à'+ccNCF:''}</td></tr>`
+      + `<tr><td style="font-size:12px;font-weight:600;color:var(--navy);padding:4px 0">France</td><td style="font-size:13px;color:var(--navy-deep);padding:4px 0">${ccFR}${ccFRF?' — à'+ccFRF:''}</td></tr>`;
+  }
+  html += `</table>`;
+  return html;
 }
 async function selectIntro(i){
   selIdx=i;
@@ -1392,15 +870,16 @@ async function renderAdmin(){
   wrap.innerHTML="";
   draft.forEach((intro,i)=>wrap.appendChild(makeAdminForm(intro,i)));
   // Config fields
-  ["cfg-apps-script","cfg-key","cfg-from","cfg-name","cfg-anim","cfg-t1","cfg-t2","cfg-t3","cfg-t4","cfg-t5","cfg-t6"].forEach(id=>{
-    const el=document.getElementById(id); if(!el)return;
-    const key=id.replace("cfg-","");
-    el.value=cfg[key]||"";
-  });
+
 }
 function draftUpdate(i,k,v){
   if(!draft) draft=getIntros().map(o=>({...o}));
   draft[i][k]=v;
+  // Auto-calcul heure de fin (+2h) si heure début changée et fin vide
+  if(k==="heure" && !draft[i].heureFin){
+    const el=document.getElementById(`heureFin-cilf-${i}`);
+    if(el && !el.value){ const a=autoEndTime(v); el.value=a; draft[i].heureFin=a; }
+  }
   if(k==="date"||k==="heure"||k==="heureFin"){
     const d=draft[i];
     document.getElementById(`ptz-tah-${i}`).textContent=fmtTZ(d.date,d.heure,"TAH","TAH");
@@ -1453,7 +932,7 @@ async function saveAll(){
 // ── PILF ──────────────────────────────────────────────────────────────────────
 var pilfDraft = null;
 var DEF_PILF = [
-  {id:1, animateur:"", titre:"", date:"", heure:"", heureFin:"", zoom:"", zoomId:"", animateurEmail:""},
+  {id:1, animateur:"", titre:"", date:"", heure:"", heureFin:"", zoom:"", zoomId:"", animateurEmail:"", ccDate:"", ccHeure:"", ccHeureFin:""},
 ];
 async function getPilfIntros() {
   try { return await apiFetch('/api/intros?slug=pilf'); }
@@ -1482,14 +961,22 @@ function makePilfForm(intro, i) {
         <input class="ai" type="date" value="${intro.date}" oninput="pilfUpdate(${i},'date',this.value)"></div>
       <div><label class="fl" style="margin-top:0">Heure début (TAH)</label>
         <input class="ai" type="time" value="${intro.heure}" oninput="pilfUpdate(${i},'heure',this.value)"></div>
-      <div><label class="fl" style="margin-top:0">Heure fin (TAH)</label>
+      <div><label class="fl" style="margin-top:0">Heure fin (TAH) <span style="font-size:10px;color:#aab8c4">(auto +2h)</span></label>
         <input class="ai" type="time" value="${intro.heureFin||''}" oninput="pilfUpdate(${i},'heureFin',this.value)"></div>
       <div></div>
     </div>
-    <label class="fl">Lien Zoom</label>
-    <input class="ai" type="url" value="${intro.zoom}" oninput="pilfUpdate(${i},'zoom',this.value)">
-    <label class="fl">ID Zoom</label>
-    <input class="ai" type="text" value="${intro.zoomId||''}" oninput="pilfUpdate(${i},'zoomId',this.value)">
+    <div style="background:var(--cyan-pale);border:1px solid rgba(56,216,240,.2);border-radius:10px;padding:14px 16px;margin-top:14px">
+      <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--navy-mid);margin-bottom:10px">Creation Call</div>
+      <div class="ag2">
+        <div><label class="fl" style="margin-top:0">Date Creation Call (TAH)</label>
+          <input class="ai" type="date" value="${intro.ccDate||''}" oninput="pilfUpdate(${i},'ccDate',this.value)"></div>
+        <div><label class="fl" style="margin-top:0">Heure début (TAH)</label>
+          <input class="ai" type="time" value="${intro.ccHeure||''}" oninput="pilfUpdate(${i},'ccHeure',this.value)"></div>
+        <div><label class="fl" style="margin-top:0">Heure fin (TAH) <span style="font-size:10px;color:#aab8c4">(auto +2h)</span></label>
+          <input class="ai" type="time" value="${intro.ccHeureFin||''}" oninput="pilfUpdate(${i},'ccHeureFin',this.value)"></div>
+        <div></div>
+      </div>
+    </div>
     <label class="fl">Email Leadeur <span style="font-size:10px;color:#aab8c4">(notifications)</span></label>
     <input class="ai" type="email" value="${intro.animateurEmail||''}" placeholder="animateur@email.com" oninput="pilfUpdate(${i},'animateurEmail',this.value)">
     <div class="ptz">
@@ -1519,6 +1006,12 @@ async function renderPilf(){
 function pilfUpdate(i, k, v){
   if(!pilfDraft) pilfDraft = getPilfIntros().map(o=>({...o}));
   pilfDraft[i][k] = v;
+  if(k==='heure' && !pilfDraft[i].heureFin){
+    const a=autoEndTime(v); pilfDraft[i].heureFin=a;
+  }
+  if(k==='ccHeure' && !pilfDraft[i].ccHeureFin){
+    const a=autoEndTime(v); pilfDraft[i].ccHeureFin=a;
+  }
   if(k==='date'||k==='heure'||k==='heureFin'){
     const d = pilfDraft[i];
     const tEl = document.getElementById('pptz-tah-'+i);
