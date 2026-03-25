@@ -786,7 +786,7 @@ async function submitSolo(){
   }catch(e){console.error("Make webhook solo:",e);}
 btn.disabled=false;btn.textContent="Confirmer ma participation";
   logToSheets("graduate",{prenom:fn,nom:ln,email:em,telephone:document.getElementById("s-phone").value.trim(),pays:"",animateur:intro.animateur,titre:intro.titre,date_tah:fmtTZ(intro.date,intro.heure,"TAH","TAH"),introduction_id:intro.id});
-  showConfirm("Inscription confirmée !",`Merci pour ton inscription, ${fn} ! Un email de confirmation vous a été envoyé.`,null,null);
+  showConfirm("Inscription confirmée !",`Merci pour ton inscription, ${fn} ! Un email de confirmation t'a été envoyé.`,null,null);
 }
 
 // ── SUBMIT WITH GUEST ─────────────────────────────────────────────────────────
