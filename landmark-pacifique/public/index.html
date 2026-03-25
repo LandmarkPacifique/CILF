@@ -671,6 +671,74 @@ function switchTab(id,btn){
 function logout(){ goPage("page-home"); }
 
 // ── RENDER PUBLIC CARDS ───────────────────────────────────────────────────────
+function buildPublicCard(intro, badgeLabel, type) {
+  const tah   = fmtTZ(intro.date,intro.heure,"TAH","TAH");
+  const nc    = fmtTZ(intro.date,intro.heure,"TAH","NC");
+  const fr    = fmtTZ(intro.date,intro.heure,"TAH","FR");
+  const hFin  = intro.heureFin || autoEndTime(intro.heure);
+  const endTAH = hFin ? fmtTZ(intro.date,hFin,"TAH","TAH").split("·")[1]||"" : "";
+  const endNC  = hFin ? fmtTZ(intro.date,hFin,"TAH","NC").split("·")[1]||"" : "";
+  const endFR  = hFin ? fmtTZ(intro.date,hFin,"TAH","FR").split("·")[1]||"" : "";
+  const ccTAH  = intro.ccDate && intro.ccHeure ? fmtTZ(intro.ccDate,intro.ccHeure,"TAH","TAH") : "";
+  const ccNC   = intro.ccDate && intro.ccHeure ? fmtTZ(intro.ccDate,intro.ccHeure,"TAH","NC") : "";
+  const ccFR   = intro.ccDate && intro.ccHeure ? fmtTZ(intro.ccDate,intro.ccHeure,"TAH","FR") : "";
+  const ccHFin = intro.ccHeureFin || (intro.ccHeure ? autoEndTime1h(intro.ccHeure) : "");
+  const ccEndTAH = (intro.ccDate && ccHFin) ? fmtTZ(intro.ccDate,ccHFin,"TAH","TAH").split("·")[1]||"" : "";
+  const ccEndNC  = (intro.ccDate && ccHFin) ? fmtTZ(intro.ccDate,ccHFin,"TAH","NC").split("·")[1]||"" : "";
+  const ccEndFR  = (intro.ccDate && ccHFin) ? fmtTZ(intro.ccDate,ccHFin,"TAH","FR").split("·")[1]||"" : "";
+  const ccBlock = ccTAH ? `
+        <tr><td colspan="2" style="padding:10px 0 4px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--navy-mid)">Creation Call</td></tr>
+        <tr style="border-bottom:1px solid var(--cream-2)">
+          <td style="padding:7px 0;font-size:12px;font-weight:600;color:var(--navy);width:140px">Tahiti</td>
+          <td style="padding:7px 0;font-size:13px;font-weight:500;color:var(--navy-deep)">${ccTAH}${ccEndTAH?" à "+ccEndTAH:""}</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--cream-2)">
+          <td style="padding:7px 0;font-size:12px;font-weight:600;color:var(--navy)">Nouvelle-Calédonie</td>
+          <td style="padding:7px 0;font-size:13px;font-weight:500;color:var(--navy-deep)">${ccNC}${ccEndNC?" à "+ccEndNC:""}</td>
+        </tr>
+        <tr>
+          <td style="padding:7px 0;font-size:12px;font-weight:600;color:var(--navy)">France</td>
+          <td style="padding:7px 0;font-size:13px;font-weight:500;color:var(--navy-deep)">${ccFR}${ccEndFR?" à "+ccEndFR:""}</td>
+        </tr>` : "";
+  const isPilf = type === 'pilf';
+  const badgeStyle = isPilf
+    ? 'color:var(--navy);background:#e8f0ff;border:1px solid rgba(0,48,160,.15)'
+    : '';
+  const bottomButtons = isPilf
+    ? `<button class="btn-dark" onclick="selectPilfIntro('${intro.id}')">Je m'inscris →</button>
+       <button class="btn-outline-cyan" onclick="selectPilfIntroInvite('${intro.id}')">✉ Envoyer une invitation à mon invité</button>`
+    : `<button class="btn-dark" onclick="selectIntro('${intro.id}')">Je m'inscris →</button>
+       <button class="btn-outline-cyan" onclick="selectIntroInvite('${intro.id}')">✉ Envoyer une invitation à mon invité</button>`;
+  const c = document.createElement("div");
+  c.className = "intro-card";
+  c.innerHTML = `
+    <div class="intro-card-top">
+      <span class="intro-badge" style="${badgeStyle}">${badgeLabel}</span>
+      <h3 class="intro-card-name">${intro.animateur}</h3>
+      <p class="intro-card-theme">${intro.titre||''}</p>
+      <table style="width:100%;border-collapse:collapse;margin-top:4px">
+        <tr><td colspan="2" style="padding:4px 0 4px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--navy-mid)">Introduction au Forum</td></tr>
+        <tr style="border-bottom:1px solid var(--cream-2)">
+          <td style="padding:7px 0;font-size:12px;font-weight:600;color:var(--navy);width:140px">Tahiti</td>
+          <td style="padding:7px 0;font-size:13px;font-weight:500;color:var(--navy-deep)">${tah}${endTAH?" à "+endTAH:""}</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--cream-2)">
+          <td style="padding:7px 0;font-size:12px;font-weight:600;color:var(--navy)">Nouvelle-Calédonie</td>
+          <td style="padding:7px 0;font-size:13px;font-weight:500;color:var(--navy-deep)">${nc}${endNC?" à "+endNC:""}</td>
+        </tr>
+        <tr style="border-bottom:${ccTAH?'1px solid var(--cream-2)':'none'}">
+          <td style="padding:7px 0;font-size:12px;font-weight:600;color:var(--navy)">France</td>
+          <td style="padding:7px 0;font-size:13px;font-weight:500;color:var(--navy-deep)">${fr}${endFR?" à "+endFR:""}</td>
+        </tr>
+        ${ccBlock}
+      </table>
+    </div>
+    <div class="intro-card-bottom">
+      ${bottomButtons}
+    </div>`;
+  return c;
+}
+
 async function renderPublic(){
   const grid=document.getElementById("intros-grid");
   if(!grid)return;
@@ -678,66 +746,36 @@ async function renderPublic(){
   const intros = await getIntros();
   window._cachedIntros = intros;
   grid.innerHTML="";
-  intros.forEach((intro,i)=>{
-    const tah   = fmtTZ(intro.date,intro.heure,"TAH","TAH");
-    const nc    = fmtTZ(intro.date,intro.heure,"TAH","NC");
-    const fr    = fmtTZ(intro.date,intro.heure,"TAH","FR");
-    const hFin  = intro.heureFin || autoEndTime(intro.heure);
-    const endTAH = hFin ? fmtTZ(intro.date,hFin,"TAH","TAH").split("·")[1]||"" : "";
-    const endNC  = hFin ? fmtTZ(intro.date,hFin,"TAH","NC").split("·")[1]||"" : "";
-    const endFR  = hFin ? fmtTZ(intro.date,hFin,"TAH","FR").split("·")[1]||"" : "";
-    // Creation Call
-    const ccTAH  = intro.ccDate && intro.ccHeure ? fmtTZ(intro.ccDate,intro.ccHeure,"TAH","TAH") : "";
-    const ccNC   = intro.ccDate && intro.ccHeure ? fmtTZ(intro.ccDate,intro.ccHeure,"TAH","NC") : "";
-    const ccFR   = intro.ccDate && intro.ccHeure ? fmtTZ(intro.ccDate,intro.ccHeure,"TAH","FR") : "";
-    const ccHFin = intro.ccHeureFin || (intro.ccHeure ? autoEndTime1h(intro.ccHeure) : "");
-    const ccEndTAH = (intro.ccDate && ccHFin) ? fmtTZ(intro.ccDate,ccHFin,"TAH","TAH").split("·")[1]||"" : "";
-    const ccEndNC  = (intro.ccDate && ccHFin) ? fmtTZ(intro.ccDate,ccHFin,"TAH","NC").split("·")[1]||"" : "";
-    const ccEndFR  = (intro.ccDate && ccHFin) ? fmtTZ(intro.ccDate,ccHFin,"TAH","FR").split("·")[1]||"" : "";
-    const ccBlock = ccTAH ? `
-          <tr><td colspan="2" style="padding:10px 0 4px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--navy-mid)">Creation Call</td></tr>
-          <tr style="border-bottom:1px solid var(--cream-2)">
-            <td style="padding:7px 0;font-size:12px;font-weight:600;color:var(--navy);width:140px">Tahiti</td>
-            <td style="padding:7px 0;font-size:13px;font-weight:500;color:var(--navy-deep)">${ccTAH}${ccEndTAH?" à "+ccEndTAH:""}</td>
-          </tr>
-          <tr style="border-bottom:1px solid var(--cream-2)">
-            <td style="padding:7px 0;font-size:12px;font-weight:600;color:var(--navy)">Nouvelle-Calédonie</td>
-            <td style="padding:7px 0;font-size:13px;font-weight:500;color:var(--navy-deep)">${ccNC}${ccEndNC?" à "+ccEndNC:""}</td>
-          </tr>
-          <tr>
-            <td style="padding:7px 0;font-size:12px;font-weight:600;color:var(--navy)">France</td>
-            <td style="padding:7px 0;font-size:13px;font-weight:500;color:var(--navy-deep)">${ccFR}${ccEndFR?" à "+ccEndFR:""}</td>
-          </tr>` : "";
-    const c=document.createElement("div");
-    c.className="intro-card";
-    c.innerHTML=`
-      <div class="intro-card-top">
-        <span class="intro-badge">Proposition ${i+1}</span>
-        <h3 class="intro-card-name">${intro.animateur}</h3>
-        <p class="intro-card-theme">${intro.titre||''}</p>
-        <table style="width:100%;border-collapse:collapse;margin-top:4px">
-          <tr><td colspan="2" style="padding:4px 0 4px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--navy-mid)">Introduction au Forum</td></tr>
-          <tr style="border-bottom:1px solid var(--cream-2)">
-            <td style="padding:7px 0;font-size:12px;font-weight:600;color:var(--navy);width:140px">Tahiti</td>
-            <td style="padding:7px 0;font-size:13px;font-weight:500;color:var(--navy-deep)">${tah}${endTAH?" à "+endTAH:""}</td>
-          </tr>
-          <tr style="border-bottom:1px solid var(--cream-2)">
-            <td style="padding:7px 0;font-size:12px;font-weight:600;color:var(--navy)">Nouvelle-Calédonie</td>
-            <td style="padding:7px 0;font-size:13px;font-weight:500;color:var(--navy-deep)">${nc}${endNC?" à "+endNC:""}</td>
-          </tr>
-          <tr style="border-bottom:${ccTAH?'1px solid var(--cream-2)':'none'}">
-            <td style="padding:7px 0;font-size:12px;font-weight:600;color:var(--navy)">France</td>
-            <td style="padding:7px 0;font-size:13px;font-weight:500;color:var(--navy-deep)">${fr}${endFR?" à "+endFR:""}</td>
-          </tr>
-          ${ccBlock}
-        </table>
-      </div>
-      <div class="intro-card-bottom">
-        <button class="btn-dark" onclick="selectIntro('${intro.id}')">Je m'inscris →</button>
-        <button class="btn-outline-cyan" onclick="selectIntroInvite('${intro.id}')">✉ Envoyer une invitation à mon invité</button>
-      </div>`;
-    grid.appendChild(c);
+  intros.forEach((intro, i)=>{
+    grid.appendChild(buildPublicCard(intro, "Proposition "+(i+1), 'cilf'));
   });
+  if(intros.length === 0){
+    grid.innerHTML="<p style='text-align:center;padding:20px;color:#7a8a9a'>Aucune introduction disponible pour le moment.</p>";
+  }
+}
+
+// ── SELECTION PILF (public) ───────────────────────────────────────────────────
+async function selectPilfIntro(id){
+  const pilfIntros = window._cachedPilfIntros || await getPilfIntros();
+  window._cachedPilfIntros = pilfIntros;
+  const intro = pilfIntros.find(o=>String(o.id)===String(id));
+  if(!intro){ alert("Introduction introuvable, veuillez réessayer."); return; }
+  window._pilfSelIntro = intro;
+  window._isPilfSubmit = true;
+  document.getElementById("solo-recap").innerHTML=buildRecap(intro);
+  goPage("page-form-solo");
+}
+async function selectPilfIntroInvite(id){
+  const pilfIntros = window._cachedPilfIntros || await getPilfIntros();
+  window._cachedPilfIntros = pilfIntros;
+  const intro = pilfIntros.find(o=>String(o.id)===String(id));
+  if(!intro){ alert("Introduction introuvable, veuillez réessayer."); return; }
+  window._inviteLinkIntro = intro;
+  window._pilfSelIntro = intro;
+  window._isPilfSubmit = true;
+  document.getElementById("guest-recap").innerHTML=buildRecap(intro);
+  document.getElementById("guest-form-subtitle").textContent="Envoi d'une invitation personnalisée à mon invité(e) — "+intro.animateur;
+  goPage("page-form-guest");
 }
 
 // ── LEADERS LIST ─────────────────────────────────────────────────────────────
@@ -908,8 +946,25 @@ function getInviteLink(introId, gradName, gradEmail){
   return window.location.origin + window.location.pathname + '?invite=' + token;
 }
 
-// Called on page load — checks for ?invite= in URL
-async function checkInviteParam(){
+// Called on page load — checks for ?pilf= in URL (lien direct pour graduate PILF)
+async function checkPilfParam(){
+  const params = new URLSearchParams(window.location.search);
+  const pilfId = params.get('pilf');
+  if(!pilfId) return false;
+  // Load PILF intros and find the right one
+  try {
+    const pilfIntros = await getPilfIntros();
+    window._cachedPilfIntros = pilfIntros;
+    const intro = pilfIntros.find(o => String(o.id) === String(pilfId));
+    if(!intro) { renderPublic(); return true; }
+    window._pilfSelIntro = intro;
+    window._isPilfSubmit = true;
+    document.getElementById("guest-recap").innerHTML = buildRecap(intro);
+    document.getElementById("guest-form-subtitle").textContent = "Inscription PILF/HILF — " + intro.animateur;
+    goPage("page-form-guest");
+  } catch(e){ renderPublic(); }
+  return true;
+}
   const params = new URLSearchParams(window.location.search);
   const token = params.get('invite');
   if(!token) return false;
@@ -1024,8 +1079,13 @@ async function submitSolo(){
   if(!fn||!ln||!em){err.textContent="Veuillez remplir tous les champs.";err.style.display="block";return;}
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){err.textContent="Email invalide.";err.style.display="block";return;}
   err.style.display="none";
-  const intros = await getIntros();
-  const intro = getSelIntro(intros);
+  let intro;
+  if(window._isPilfSubmit && window._pilfSelIntro){
+    intro = window._pilfSelIntro;
+  } else {
+    const intros = await getIntros();
+    intro = getSelIntro(intros);
+  }
   if(!intro){ err.textContent="Erreur : introduction introuvable."; err.style.display="block"; return; }
   const tah=fmtTZ(intro.date,intro.heure,"TAH","TAH"),nc=fmtTZ(intro.date,intro.heure,"TAH","NC"),fr=fmtTZ(intro.date,intro.heure,"TAH","FR");
   const hFin=intro.heureFin||autoEndTime(intro.heure);
@@ -1076,8 +1136,15 @@ async function submitWithGuest(){
   if(!gfn||!gln||!gem||!ufn||!uln||!uem){err.textContent="Veuillez remplir tous les champs.";err.style.display="block";return;}
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(gem)||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(uem)){err.textContent="Vérifiez les adresses email.";err.style.display="block";return;}
   err.style.display="none";
-  const intros = await getIntros();
-  const intro = getSelIntro(intros);
+  let intro;
+  if(window._isPilfSubmit && window._pilfSelIntro){
+    intro = window._pilfSelIntro;
+  } else if(window._inviteLinkIntro){
+    intro = window._inviteLinkIntro;
+  } else {
+    const intros = await getIntros();
+    intro = getSelIntro(intros);
+  }
   if(!intro){ err.textContent="Erreur : introduction introuvable."; err.style.display="block"; return; }
   const tah=fmtTZ(intro.date,intro.heure,"TAH","TAH"),nc=fmtTZ(intro.date,intro.heure,"TAH","NC"),fr=fmtTZ(intro.date,intro.heure,"TAH","FR");
   const hFin=intro.heureFin||autoEndTime(intro.heure);
@@ -1276,9 +1343,13 @@ function makePilfForm(intro, i) {
       </div>
     </div>
     <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--cream-2)">
-      <button onclick="openPilfGuestForm(${i})" style="width:100%;background:var(--cyan);color:var(--navy-deep);border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;letter-spacing:.03em;transition:all .2s">
-        ✉ Inscrire un invité à cette introduction
-      </button>
+      <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--navy-mid);margin-bottom:8px">Lien d'inscription pour le graduate</div>
+      <p style="font-size:12px;color:#6a7a8a;margin-bottom:10px;line-height:1.5">Copiez ce lien et envoyez-le directement au graduate. Il s'inscrira lui-même et renseignera les informations de son invité.</p>
+      <div id="pilf-link-wrap-${i}" style="display:flex;gap:8px;align-items:center">
+        <input type="text" id="pilf-link-${i}" class="ai" readonly style="background:#f0f4f8;color:#5a6a7a;cursor:text;font-size:12px;flex:1" placeholder="Enregistrez d'abord pour générer le lien…">
+        <button onclick="copyPilfLink(${i})" id="pilf-copy-btn-${i}" style="background:var(--cyan);color:var(--navy-deep);border:none;border-radius:8px;padding:9px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;flex-shrink:0;transition:all .2s">📋 Copier</button>
+      </div>
+      <p id="pilf-copy-msg-${i}" style="display:none;font-size:11px;color:#0a8a0a;margin-top:6px">✓ Lien copié !</p>
     </div>`;
   setTimeout(() => fillLeaderSelect('pilf', i, intro.animateur), 0);
   return d;
@@ -1289,7 +1360,35 @@ async function renderPilf(){
   pilfDraft = intros.map(o=>({...o}));
   const wrap = document.getElementById('pilf-forms');
   wrap.innerHTML = '';
-  pilfDraft.forEach((intro, j) => wrap.appendChild(makePilfForm(intro, j)));
+  pilfDraft.forEach((intro, j) => {
+    wrap.appendChild(makePilfForm(intro, j));
+    // Populate invite link if intro has an ID
+    if(intro.id){
+      setTimeout(() => populatePilfLink(j, intro.id), 50);
+    }
+  });
+}
+
+function populatePilfLink(i, introId){
+  const linkEl = document.getElementById('pilf-link-'+i);
+  if(!linkEl) return;
+  const link = window.location.origin + window.location.pathname + '?pilf=' + encodeURIComponent(String(introId));
+  linkEl.value = link;
+}
+
+function copyPilfLink(i){
+  const linkEl = document.getElementById('pilf-link-'+i);
+  const msgEl  = document.getElementById('pilf-copy-msg-'+i);
+  if(!linkEl || !linkEl.value || linkEl.value.indexOf('?pilf=') === -1) {
+    alert("Veuillez d'abord enregistrer les modifications avant de copier le lien.");
+    return;
+  }
+  navigator.clipboard.writeText(linkEl.value).then(()=>{
+    if(msgEl){ msgEl.style.display='block'; setTimeout(()=>{ msgEl.style.display='none'; }, 3000); }
+  }).catch(()=>{
+    linkEl.select(); document.execCommand('copy');
+    if(msgEl){ msgEl.style.display='block'; setTimeout(()=>{ msgEl.style.display='none'; }, 3000); }
+  });
 }
 
 function pilfUpdate(i, k, v){
@@ -1347,23 +1446,6 @@ async function savePilf(){
   } catch(e){ b.textContent='⚠ Erreur'; b.disabled=false; }
 }
 
-function openPilfGuestForm(i){
-  const intros = pilfDraft || getPilfIntros();
-  const intro = intros[i];
-  selIdx = null; // not a CILF intro
-  // Store selected PILF intro temporarily
-  window._pilfSelIntro = intro;
-  // Fill the guest form recap
-  const tah = fmtTZ(intro.date, intro.heure, 'TAH', 'TAH');
-  const nc  = fmtTZ(intro.date, intro.heure, 'TAH', 'NC');
-  const fr  = fmtTZ(intro.date, intro.heure, 'TAH', 'FR');
-  const recap = '<strong>'+intro.animateur+' — '+intro.titre+'</strong>Tahiti : '+tah+'<br>Nouvelle-Calédonie : '+nc+' · France : '+fr;
-  document.getElementById('guest-recap').innerHTML = recap;
-  document.getElementById('guest-form-subtitle').textContent = "Inscription PILF/HILF — " + intro.animateur;
-  // Flag as PILF submission
-  window._isPilfSubmit = true;
-  goPage('page-form-guest');
-}
 
 async function addUser(){
   const name  = document.getElementById('cfg-new-name').value.trim();
@@ -1390,6 +1472,8 @@ async function addUser(){
     enterAdmin(session.role, session.name);
     return;
   }
+  const isPilf = await checkPilfParam();
+  if(isPilf) return;
   const isInvite = await checkInviteParam();
   if(!isInvite) renderPublic();
 })();
