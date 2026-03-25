@@ -1277,7 +1277,25 @@ const intro = intros[selIdx];
       });
     }
   }catch(e){console.error("Brevo proxy:",e);}
-  btn.disabled=false;btn.textContent="Confirmer ma participation";
+  // Webhook Make (email graduate)
+  try{
+    await fetch("https://hook.us2.make.com/2njt9kkq4ovz75l0yg3otstsda4ug6ry", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        type:"solo",
+        grad_name:fn+" "+ln,
+        grad_email:em,
+        telephone:document.getElementById("s-phone").value.trim(),
+        animateur:intro.animateur,
+        titre:intro.titre,
+        date_tah:tah, date_nc:nc, date_fr:fr,
+        zoom_link:intro.zoom,
+        zoom_id:intro.zoomId||""
+      })
+    });
+  }catch(e){console.error("Make webhook solo:",e);}
+btn.disabled=false;btn.textContent="Confirmer ma participation";
   logToSheets("graduate",{prenom:fn,nom:ln,email:em,telephone:document.getElementById("s-phone").value.trim(),pays:"",animateur:intro.animateur,titre:intro.titre,date_tah:fmtTZ(intro.date,intro.heure,"TAH","TAH"),introduction_id:intro.id});
   showConfirm("Inscription confirmée !",`Bienvenue ${fn} ! Un email de confirmation vous a été envoyé.`,null,null);
 }
