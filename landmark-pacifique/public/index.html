@@ -614,6 +614,7 @@ async function doLogin(){
   }
 }
 function enterAdmin(role, name){
+  _leadersList = null; // reset cache au login
   // Affiche/masque l'onglet Paramètres selon le rôle
   const settingsTab = document.getElementById('tab-btn-settings');
   if(settingsTab) settingsTab.style.display = (role === 'admin') ? '' : 'none';
@@ -630,7 +631,7 @@ function enterAdmin(role, name){
   goPage('page-admin');
   renderAdmin();
 }
-function logout(){ clearSession(); goPage('page-home'); }
+function logout(){ clearSession(); _leadersList = null; goPage('page-home'); }
 
 async function getIntros() {
   try { return await publicFetch('/api/intros?slug=cilf'); }
@@ -736,11 +737,14 @@ async function renderPublic(){
 // ── LEADERS LIST ─────────────────────────────────────────────────────────────
 let _leadersList = null;
 async function getLeadersList(){
-  if(_leadersList) return _leadersList;
+  // Ne pas mettre en cache si pas de token ou liste vide
+  if(_leadersList && _leadersList.length > 0) return _leadersList;
+  if(!_adminToken) return [];
   try {
-    _leadersList = await apiFetch('/api/users-list');
-  } catch(e){ _leadersList = []; }
-  return _leadersList;
+    const result = await apiFetch('/api/users-list');
+    if(Array.isArray(result) && result.length > 0) _leadersList = result;
+    return result;
+  } catch(e){ return []; }
 }
 async function fillLeaderSelect(type, i, currentName){
   const users = await getLeadersList();
