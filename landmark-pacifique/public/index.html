@@ -624,8 +624,8 @@ async function renderPublic(){
         </table>
       </div>
       <div class="intro-card-bottom">
-        <button class="btn-dark" onclick="selectIntro(${i})">Je m'inscris →</button>
-        <button class="btn-outline-cyan" onclick="selectIntroInvite(${i})">✉ Envoyer une invitation à mon invité</button>
+        <button class="btn-dark" onclick="selectIntro('${intro.id}')">Je m'inscris →</button>
+        <button class="btn-outline-cyan" onclick="selectIntroInvite('${intro.id}')">✉ Envoyer une invitation à mon invité</button>
       </div>`;
     grid.appendChild(c);
   });
@@ -633,6 +633,12 @@ async function renderPublic(){
 
 // ── SELECTION & NAVIGATION FLOW ───────────────────────────────────────────────
 let selIdx = null;
+let selIntroId = null;
+function getSelIntro(intros){
+  if(selIntroId !== null) return intros.find(o=>String(o.id)===String(selIntroId)) || null;
+  if(selIdx !== null) return intros[selIdx] || null;
+  return null;
+}
 function autoEndTime(h){
   if(!h) return '';
   const [hh,mm] = h.split(':').map(Number);
@@ -676,16 +682,17 @@ function buildRecap(intro){
   html += `</table>`;
   return html;
 }
-async function selectIntro(i){
-  selIdx=i;
+async function selectIntro(id){
+  selIntroId = String(id);
   const intros = await getIntros();
   window._cachedIntros = intros;
-  const intro = intros[i];
+  const intro = getSelIntro(intros);
+  if(!intro){ alert("Introduction introuvable, veuillez réessayer."); return; }
   document.getElementById("solo-recap").innerHTML=buildRecap(intro);
   goPage("page-form-solo");
 }
 function goForm(type){
-  const intro = (window._isPilfSubmit && window._pilfSelIntro) ? window._pilfSelIntro : (window._cachedIntros ? window._cachedIntros[selIdx] : null);
+  const intro = (window._isPilfSubmit && window._pilfSelIntro) ? window._pilfSelIntro : (window._cachedIntros ? getSelIntro(window._cachedIntros) : null);
   if(!intro){ alert("Chargement en cours, veuillez réessayer."); return; }
   window._isPilfSubmit = false;
   if(type==="solo"){
@@ -697,11 +704,12 @@ function goForm(type){
     goPage("page-form-guest");
   }
 }
-async function selectIntroInvite(i){
-  selIdx=i;
+async function selectIntroInvite(id){
+  selIntroId = String(id);
   const intros = await getIntros();
   window._cachedIntros = intros;
-  const intro = intros[i];
+  const intro = getSelIntro(intros);
+  if(!intro){ alert("Introduction introuvable, veuillez réessayer."); return; }
   document.getElementById("guest-recap").innerHTML=buildRecap(intro);
   document.getElementById("guest-form-subtitle").textContent="Envoi d'une invitation personnalisée à mon invité(e)";
   goPage("page-form-guest");
@@ -734,7 +742,8 @@ async function submitSolo(){
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){err.textContent="Email invalide.";err.style.display="block";return;}
   err.style.display="none";
   const intros = await getIntros();
-const intro = intros[selIdx];
+  const intro = getSelIntro(intros);
+  if(!intro){ err.textContent="Erreur : introduction introuvable."; err.style.display="block"; return; }
   const tah=fmtTZ(intro.date,intro.heure,"TAH","TAH"),nc=fmtTZ(intro.date,intro.heure,"TAH","NC"),fr=fmtTZ(intro.date,intro.heure,"TAH","FR");
   const cfg = await getCfg();
   const btn=document.getElementById("solo-submit");btn.disabled=true;btn.textContent="Envoi…";
@@ -793,7 +802,8 @@ async function submitWithGuest(){
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(gem)||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(uem)){err.textContent="Vérifiez les adresses email.";err.style.display="block";return;}
   err.style.display="none";
   const intros = await getIntros();
-  const intro=intros[selIdx];
+  const intro = getSelIntro(intros);
+  if(!intro){ err.textContent="Erreur : introduction introuvable."; err.style.display="block"; return; }
   const tah=fmtTZ(intro.date,intro.heure,"TAH","TAH"),nc=fmtTZ(intro.date,intro.heure,"TAH","NC"),fr=fmtTZ(intro.date,intro.heure,"TAH","FR");
   const sessionUTC=toUTC(intro.date,intro.heure);
   const t3h=sessionUTC-3*3600,t30=sessionUTC-1800;
