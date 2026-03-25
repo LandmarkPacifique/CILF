@@ -562,8 +562,14 @@ let _adminToken = localStorage.getItem('lm_jwt') || null;
 
 async function apiFetch(path, opts = {}) {
   const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
-  if (_adminToken) headers['x-admin-token'] = _adminToken;
-  const res = await fetch(API_BASE + path, { ...opts, headers });
+  if (_adminToken) {
+    headers['x-admin-token'] = _adminToken;
+    headers['Authorization'] = 'Bearer ' + _adminToken;
+  }
+  // Ajoute aussi le token en query param comme fallback
+  const sep = path.includes('?') ? '&' : '?';
+  const url = API_BASE + path + (_adminToken ? sep + '_token=' + encodeURIComponent(_adminToken) : '');
+  const res = await fetch(url, { ...opts, headers });
   if (!res.ok) throw new Error(`API ${path} → ${res.status}`);
   return res.json();
 }
@@ -739,12 +745,15 @@ let _leadersList = null;
 async function getLeadersList(){
   // Ne pas mettre en cache si pas de token ou liste vide
   if(_leadersList && _leadersList.length > 0) return _leadersList;
-  if(!_adminToken) return [];
+  if(!_adminToken) { console.warn('[leaders] pas de token admin'); return []; }
   try {
     const result = await apiFetch('/api/users-list');
-    if(Array.isArray(result) && result.length > 0) _leadersList = result;
-    return result;
-  } catch(e){ return []; }
+    console.log('[leaders] résultat API:', JSON.stringify(result));
+    // Le serveur peut retourner { users: [...] } ou directement [...]
+    const list = Array.isArray(result) ? result : (result.users || result.data || []);
+    if(list.length > 0) _leadersList = list;
+    return list;
+  } catch(e){ console.error('[leaders] erreur:', e.message); return []; }
 }
 async function fillLeaderSelect(type, i, currentName){
   const users = await getLeadersList();
