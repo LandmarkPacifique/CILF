@@ -13,7 +13,8 @@ module.exports = async function handler(req, res) {
       const slug = req.query.slug || 'cilf';
       const rows = await sql`
         SELECT id, animateur, titre, date, heure, heure_fin,
-               zoom, zoom_id, animateur_email
+               zoom, zoom_id, animateur_email,
+               cc_date, cc_heure, cc_heure_fin
         FROM introductions WHERE slug = ${slug} ORDER BY id ASC
       `;
       return res.status(200).json(rows.map(r => ({
@@ -26,6 +27,9 @@ module.exports = async function handler(req, res) {
         zoom: r.zoom,
         zoomId: r.zoom_id,
         animateurEmail: r.animateur_email,
+        ccDate: r.cc_date,
+        ccHeure: r.cc_heure,
+        ccHeureFin: r.cc_heure_fin,
       })));
     }
 
@@ -39,20 +43,26 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: 'intros doit être un tableau' });
 
       await sql`DELETE FROM introductions WHERE slug = ${slug}`;
+
       for (const intro of intros) {
         await sql`
           INSERT INTO introductions
-            (slug, animateur, titre, date, heure, heure_fin, zoom, zoom_id, animateur_email)
+            (slug, animateur, titre, date, heure, heure_fin,
+             zoom, zoom_id, animateur_email,
+             cc_date, cc_heure, cc_heure_fin)
           VALUES
             (${slug}, ${intro.animateur||''}, ${intro.titre||''}, ${intro.date||''},
              ${intro.heure||''}, ${intro.heureFin||''}, ${intro.zoom||''},
-             ${intro.zoomId||''}, ${intro.animateurEmail||''})
+             ${intro.zoomId||''}, ${intro.animateurEmail||''},
+             ${intro.ccDate||null}, ${intro.ccHeure||null}, ${intro.ccHeureFin||null})
         `;
       }
+
       return res.status(200).json({ status: 'ok', count: intros.length });
     }
 
     return res.status(405).json({ error: 'Méthode non autorisée' });
+
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: err.message });
