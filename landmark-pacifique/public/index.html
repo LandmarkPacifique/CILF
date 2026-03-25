@@ -1,3 +1,117 @@
+J'ai ce site la ou je voudrais configurer l'envoi de mail au graduate quand ils s'inscrivent j'ai déja mon make de connecté et je voudrais avoir la procédure pour ajouter le mail pour les graduates sachant que j'ai déja pour le invité
+18:18
+A consulté 3 fichiers
+
+Parfait, j'ai bien analysé ton code. Voici la situation :
+
+Ce que tu as déjà :
+
+    Un webhook Make unique : https://hook.us2.make.com/2njt9kkq4ovz75l0yg3otstsda4ug6ry
+    Ce webhook reçoit les deux types d'inscriptions (solo graduate + avec invité)
+    Le payload solo contient type:"solo" — le payload invité n'a pas de champ type
+
+Procédure pour configurer le mail graduate dans Make
+Le webhook reçoit déjà les données — il faut juste router dans Make
+
+Dans ton scénario Make existant, ajoute un Router après le webhook trigger, avec deux branches :
+
+Branche 1 — Graduate solo (filtre : type = "solo") Les données disponibles :
+
+grad_name     → nom complet du graduate
+grad_email    → email du graduate
+animateur     → nom de l'animateur
+titre         → thème de l'intro
+date_tah      → heure Tahiti
+date_nc       → heure Nouvelle-Calédonie
+date_fr       → heure France
+zoom_link     → lien Zoom
+zoom_id       → ID Zoom
+telephone     → téléphone
+
+Branche 2 — Avec invité (filtre : type est vide / n'existe pas) Les données disponibles en plus :
+
+guest_name    → nom de l'invité
+guest_email   → email de l'invité
+
+Problème à corriger dans le code
+
+Le payload submitWithGuest (ligne 1350) n'envoie pas de type, ce qui rend le routage difficile. Il faut ajouter type:"guest" dans ce payload.
+
+Modification à faire dans ton HTML — ligne ~1350, ajouter type:"guest" :
+js
+
+body: JSON.stringify({
+  type: "guest",           // ← ajouter cette ligne
+  grad_name: gfn+" "+gln,
+  grad_email: gem,
+  ...
+```
+
+---
+
+### Dans Make — structure recommandée
+```
+[Webhook]
+    ↓
+[Router]
+   ├─ Filtre: type = "solo"
+   │       ↓
+   │   [Email] → graduate (confirmation inscription solo)
+   │
+   └─ Filtre: type = "guest"
+           ↓
+       [Email] → graduate (tu as amené un invité)
+       [Email] → invité (confirmation + rappels)
+
+Veux-tu que je génère directement le fichier HTML corrigé avec le type:"guest" ajouté, ou tu préfères d'abord me montrer la structure actuelle de ton scénario Make pour qu'on adapte le routage ensemble ?
+
+oui je veux d'abord le html corrigé
+18:19
+Exécuté 2 commandes, consulté un fichier, fichier modifié
+
+Voilà le fichier corrigé. Deux changements dans le payload Make de submitWithGuest :
+
+    type:"guest" ajouté — permet au Router Make de distinguer les deux flux
+    zoom_id ajouté — il manquait dans ce payload alors qu'il était déjà présent dans le payload solo
+
+Maintenant dans Make, ton Router peut filtrer simplement :
+
+    type = "solo" → email de confirmation graduate (inscription solo)
+    type = "guest" → email graduate + emails invité
+
+Quand tu veux on attaque la config du scénario Make !
+Index
+Code · HTML 
+
+est ce que ca va aussi mettre les horaires car dans le mail des gradué il doivent recevoir avec les horaires uniquement d'abord
+18:21
+
+Oui, les horaires sont déjà inclus dans les deux payloads Make :
+
+Pour solo (ligne 1286) :
+
+date_tah, date_nc, date_fr
+
+Pour guest (ce qu'on vient de corriger) :
+
+date_tah, date_nc, date_fr
+
+Ces variables contiennent déjà les horaires formatés avec les 3 fuseaux (Tahiti, Nouvelle-Calédonie, France), par exemple : "Vendredi 4 avril · 19h00".
+
+Donc dans ton scénario Make, pour le mail du graduate, tu n'as qu'à utiliser ces 3 variables dans le corps de l'email :
+Variable Make	Contenu
+{{date_tah}}	Tahiti
+{{date_nc}}	Nouvelle-Calédonie
+{{date_fr}}	France
+
+Tu veux qu'on passe maintenant à la configuration du scénario Make — le Router + le module Email pour le graduate ?
+Souhaitez-vous être averti lorsque Claude répond ?
+
+
+Claude est une IA et peut faire des erreurs. Veuillez vérifier les réponses.
+Index · HTML
+La coloration syntaxique a été désactivée en raison de la taille du code.
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -1348,6 +1462,7 @@ async function submitWithGuest(){
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({
+        type:"guest",
         grad_name:gfn+" "+gln,
         grad_email:gem,
         guest_name:ufn+" "+uln,
@@ -1355,7 +1470,8 @@ async function submitWithGuest(){
         animateur:intro.animateur,
         titre:intro.titre,
         date_tah:tah, date_nc:nc, date_fr:fr,
-        zoom_link:intro.zoom
+        zoom_link:intro.zoom,
+        zoom_id:intro.zoomId||""
       })
     });
   }catch(e){console.error("Make webhook:",e);}
@@ -1598,3 +1714,4 @@ async function logToSheets(type, data) {
 </script>
 </body>
 </html>
+
