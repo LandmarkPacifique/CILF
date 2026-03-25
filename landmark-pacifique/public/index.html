@@ -483,6 +483,8 @@ function makeAdminForm(intro, i) {
   const tah = fmtTZ(intro.date, intro.heure, 'TAH', 'TAH');
   const nc  = fmtTZ(intro.date, intro.heure, 'TAH', 'NC');
   const fr  = fmtTZ(intro.date, intro.heure, 'TAH', 'FR');
+  const hFinAuto   = intro.heureFin   || (intro.heure   ? autoEndTime(intro.heure)     : '');
+  const ccHFinAuto = intro.ccHeureFin || (intro.ccHeure ? autoEndTime1h(intro.ccHeure) : '');
   const d = document.createElement('div');
   d.className = 'admin-card';
   d.id = 'intro-form-' + i;
@@ -493,16 +495,18 @@ function makeAdminForm(intro, i) {
       <button class="remove-intro-btn" onclick="window._removeIntro(this)" title="Supprimer">✕ Supprimer</button>
     </div>
     <label class="fl" style="margin-top:0">Leadeur</label>
-    <input class="ai" type="text" value="${intro.animateur}" oninput="draftUpdate(${i},'animateur',this.value)">
+    <select class="ai" id="leader-cilf-${i}" onchange="onLeaderChange('cilf',${i},this)">
+      <option value="">— Choisir un leadeur —</option>
+    </select>
     <label class="fl">Titre / thème</label>
-    <input class="ai" type="text" value="${intro.titre}" oninput="draftUpdate(${i},'titre',this.value)">
+    <input class="ai" type="text" value="${intro.titre||''}" oninput="draftUpdate(${i},'titre',this.value)">
     <div class="ag2">
       <div><label class="fl" style="margin-top:0">Date (TAH)</label>
-        <input class="ai" type="date" value="${intro.date}" oninput="draftUpdate(${i},'date',this.value)"></div>
+        <input class="ai" type="date" value="${intro.date||''}" oninput="draftUpdate(${i},'date',this.value)"></div>
       <div><label class="fl" style="margin-top:0">Heure début (TAH)</label>
-        <input class="ai" type="time" value="${intro.heure}" oninput="draftUpdate(${i},'heure',this.value)"></div>
-      <div><label class="fl" style="margin-top:0">Heure fin (TAH) <span style="font-size:10px;color:#aab8c4">(calculée auto +2h si vide)</span></label>
-        <input class="ai" type="time" value="${intro.heureFin||''}" oninput="draftUpdate(${i},'heureFin',this.value)" id="heureFin-cilf-${i}"></div>
+        <input class="ai" type="time" value="${intro.heure||''}" oninput="draftUpdate(${i},'heure',this.value)" id="heure-cilf-${i}"></div>
+      <div><label class="fl" style="margin-top:0">Heure fin (TAH) <span style="font-size:10px;color:#aab8c4">(auto +2h30)</span></label>
+        <input class="ai" type="time" value="${hFinAuto}" readonly style="background:#f0f4f8;color:#7a8a9a;cursor:not-allowed" id="heureFin-cilf-${i}"></div>
       <div></div>
     </div>
     <div style="background:var(--cyan-pale);border:1px solid rgba(56,216,240,.2);border-radius:10px;padding:14px 16px;margin-top:14px">
@@ -511,14 +515,14 @@ function makeAdminForm(intro, i) {
         <div><label class="fl" style="margin-top:0">Date Creation Call (TAH)</label>
           <input class="ai" type="date" value="${intro.ccDate||''}" oninput="draftUpdate(${i},'ccDate',this.value)"></div>
         <div><label class="fl" style="margin-top:0">Heure début (TAH)</label>
-          <input class="ai" type="time" value="${intro.ccHeure||''}" oninput="draftUpdate(${i},'ccHeure',this.value)"></div>
-        <div><label class="fl" style="margin-top:0">Heure fin (TAH) <span style="font-size:10px;color:#aab8c4">(auto +2h)</span></label>
-          <input class="ai" type="time" value="${intro.ccHeureFin||''}" oninput="draftUpdate(${i},'ccHeureFin',this.value)" id="ccHeureFin-cilf-${i}"></div>
+          <input class="ai" type="time" value="${intro.ccHeure||''}" oninput="draftUpdate(${i},'ccHeure',this.value)" id="ccHeure-cilf-${i}"></div>
+        <div><label class="fl" style="margin-top:0">Heure fin (TAH) <span style="font-size:10px;color:#aab8c4">(auto +1h)</span></label>
+          <input class="ai" type="time" value="${ccHFinAuto}" readonly style="background:#f0f4f8;color:#7a8a9a;cursor:not-allowed" id="ccHeureFin-cilf-${i}"></div>
         <div></div>
       </div>
     </div>
-    <label class="fl">Email Leadeur <span style="font-size:10px;color:#aab8c4">(notifications)</span></label>
-    <input class="ai" type="email" value="${intro.animateurEmail||''}" placeholder="animateur@email.com" oninput="draftUpdate(${i},'animateurEmail',this.value)">
+    <label class="fl">Email Leadeur <span style="font-size:10px;color:#aab8c4">(rempli automatiquement)</span></label>
+    <input class="ai" type="email" value="${intro.animateurEmail||''}" readonly style="background:#f0f4f8;color:#7a8a9a;cursor:not-allowed" id="email-cilf-${i}">
     <div class="ptz">
       <div class="ptz-title">Aperçu horaires calculés</div>
       <div class="ptz-grid">
@@ -527,6 +531,8 @@ function makeAdminForm(intro, i) {
         <div><div class="ptz-l">France</div><div class="ptz-v" id="ptz-fr-${i}">${fr}</div></div>
       </div>
     </div>`;
+  // Populate dropdown after insert
+  setTimeout(() => fillLeaderSelect('cilf', i, intro.animateur), 0);
   return d;
 }
 
@@ -719,6 +725,50 @@ async function renderPublic(){
       </div>`;
     grid.appendChild(c);
   });
+}
+
+// ── LEADERS LIST ─────────────────────────────────────────────────────────────
+let _leadersList = null;
+async function getLeadersList(){
+  if(_leadersList) return _leadersList;
+  try {
+    _leadersList = await apiFetch('/api/users-list');
+  } catch(e){ _leadersList = []; }
+  return _leadersList;
+}
+async function fillLeaderSelect(type, i, currentName){
+  const users = await getLeadersList();
+  const sel = document.getElementById(`leader-${type}-${i}`);
+  if(!sel) return;
+  users.forEach(u => {
+    const opt = document.createElement('option');
+    opt.value = u.name;
+    opt.dataset.email = u.email;
+    opt.textContent = u.name;
+    if(u.name === currentName) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  // Si un leader est déjà sélectionné, rempli l'email
+  if(currentName){
+    const match = users.find(u => u.name === currentName);
+    if(match){
+      const emailEl = document.getElementById(`email-${type}-${i}`);
+      if(emailEl) emailEl.value = match.email;
+    }
+  }
+}
+function onLeaderChange(type, i, sel){
+  const name  = sel.value;
+  const email = sel.options[sel.selectedIndex]?.dataset?.email || '';
+  const emailEl = document.getElementById(`email-${type}-${i}`);
+  if(emailEl) emailEl.value = email;
+  if(type === 'cilf'){
+    draftUpdate(i, 'animateur', name);
+    draftUpdate(i, 'animateurEmail', email);
+  } else {
+    pilfUpdate(i, 'animateur', name);
+    pilfUpdate(i, 'animateurEmail', email);
+  }
 }
 
 // ── SELECTION & NAVIGATION FLOW ───────────────────────────────────────────────
@@ -1084,14 +1134,16 @@ async function renderAdmin(){
 function draftUpdate(i,k,v){
   if(!draft){ console.warn("draft non initialisé"); return; }
   draft[i][k]=v;
-  // Auto-calcul heure de fin (+2h) si heure début changée et fin vide
-  if(k==="heure" && !draft[i].heureFin){
-    const el=document.getElementById(`heureFin-cilf-${i}`);
-    if(el && !el.value){ const a=autoEndTime(v); el.value=a; draft[i].heureFin=a; }
+  // Auto-calcul heure de fin (readonly) quand heure début change
+  if(k==="heure"){
+    const a = autoEndTime(v);
+    const el = document.getElementById(`heureFin-cilf-${i}`);
+    if(el){ el.value=a; } draft[i].heureFin=a;
   }
-  if(k==="ccHeure" && !draft[i].ccHeureFin){
-    const el=document.getElementById(`ccHeureFin-cilf-${i}`);
-    if(el && !el.value){ const a=autoEndTime1h(v); el.value=a; draft[i].ccHeureFin=a; }
+  if(k==="ccHeure"){
+    const a = autoEndTime1h(v);
+    const el = document.getElementById(`ccHeureFin-cilf-${i}`);
+    if(el){ el.value=a; } draft[i].ccHeureFin=a;
   }
   if(k==="date"||k==="heure"||k==="heureFin"){
     const d=draft[i];
@@ -1156,6 +1208,8 @@ function makePilfForm(intro, i) {
   const tah = fmtTZ(intro.date, intro.heure, 'TAH', 'TAH');
   const nc  = fmtTZ(intro.date, intro.heure, 'TAH', 'NC');
   const fr  = fmtTZ(intro.date, intro.heure, 'TAH', 'FR');
+  const hFinAuto   = intro.heureFin   || (intro.heure   ? autoEndTime(intro.heure)     : '');
+  const ccHFinAuto = intro.ccHeureFin || (intro.ccHeure ? autoEndTime1h(intro.ccHeure) : '');
   const d = document.createElement('div');
   d.className = 'admin-card';
   d.style.marginBottom = '16px';
@@ -1166,16 +1220,18 @@ function makePilfForm(intro, i) {
       <button class="remove-intro-btn" onclick="window._removePilf(this)" title="Supprimer">✕ Supprimer</button>
     </div>
     <label class="fl" style="margin-top:0">Leadeur</label>
-    <input class="ai" type="text" value="${intro.animateur}" oninput="pilfUpdate(${i},'animateur',this.value)">
+    <select class="ai" id="leader-pilf-${i}" onchange="onLeaderChange('pilf',${i},this)">
+      <option value="">— Choisir un leadeur —</option>
+    </select>
     <label class="fl">Titre / thème</label>
-    <input class="ai" type="text" value="${intro.titre}" oninput="pilfUpdate(${i},'titre',this.value)">
+    <input class="ai" type="text" value="${intro.titre||''}" oninput="pilfUpdate(${i},'titre',this.value)">
     <div class="ag2">
       <div><label class="fl" style="margin-top:0">Date (TAH)</label>
-        <input class="ai" type="date" value="${intro.date}" oninput="pilfUpdate(${i},'date',this.value)"></div>
+        <input class="ai" type="date" value="${intro.date||''}" oninput="pilfUpdate(${i},'date',this.value)"></div>
       <div><label class="fl" style="margin-top:0">Heure début (TAH)</label>
-        <input class="ai" type="time" value="${intro.heure}" oninput="pilfUpdate(${i},'heure',this.value)"></div>
-      <div><label class="fl" style="margin-top:0">Heure fin (TAH) <span style="font-size:10px;color:#aab8c4">(auto +2h)</span></label>
-        <input class="ai" type="time" value="${intro.heureFin||''}" oninput="pilfUpdate(${i},'heureFin',this.value)"></div>
+        <input class="ai" type="time" value="${intro.heure||''}" oninput="pilfUpdate(${i},'heure',this.value)" id="heure-pilf-${i}"></div>
+      <div><label class="fl" style="margin-top:0">Heure fin (TAH) <span style="font-size:10px;color:#aab8c4">(auto +2h30)</span></label>
+        <input class="ai" type="time" value="${hFinAuto}" readonly style="background:#f0f4f8;color:#7a8a9a;cursor:not-allowed" id="heureFin-pilf-${i}"></div>
       <div></div>
     </div>
     <div style="background:var(--cyan-pale);border:1px solid rgba(56,216,240,.2);border-radius:10px;padding:14px 16px;margin-top:14px">
@@ -1184,14 +1240,14 @@ function makePilfForm(intro, i) {
         <div><label class="fl" style="margin-top:0">Date Creation Call (TAH)</label>
           <input class="ai" type="date" value="${intro.ccDate||''}" oninput="pilfUpdate(${i},'ccDate',this.value)"></div>
         <div><label class="fl" style="margin-top:0">Heure début (TAH)</label>
-          <input class="ai" type="time" value="${intro.ccHeure||''}" oninput="pilfUpdate(${i},'ccHeure',this.value)"></div>
-        <div><label class="fl" style="margin-top:0">Heure fin (TAH) <span style="font-size:10px;color:#aab8c4">(auto +2h)</span></label>
-          <input class="ai" type="time" value="${intro.ccHeureFin||''}" oninput="pilfUpdate(${i},'ccHeureFin',this.value)"></div>
+          <input class="ai" type="time" value="${intro.ccHeure||''}" oninput="pilfUpdate(${i},'ccHeure',this.value)" id="ccHeure-pilf-${i}"></div>
+        <div><label class="fl" style="margin-top:0">Heure fin (TAH) <span style="font-size:10px;color:#aab8c4">(auto +1h)</span></label>
+          <input class="ai" type="time" value="${ccHFinAuto}" readonly style="background:#f0f4f8;color:#7a8a9a;cursor:not-allowed" id="ccHeureFin-pilf-${i}"></div>
         <div></div>
       </div>
     </div>
-    <label class="fl">Email Leadeur <span style="font-size:10px;color:#aab8c4">(notifications)</span></label>
-    <input class="ai" type="email" value="${intro.animateurEmail||''}" placeholder="animateur@email.com" oninput="pilfUpdate(${i},'animateurEmail',this.value)">
+    <label class="fl">Email Leadeur <span style="font-size:10px;color:#aab8c4">(rempli automatiquement)</span></label>
+    <input class="ai" type="email" value="${intro.animateurEmail||''}" readonly style="background:#f0f4f8;color:#7a8a9a;cursor:not-allowed" id="email-pilf-${i}">
     <div class="ptz">
       <div class="ptz-title">Aperçu horaires calculés</div>
       <div class="ptz-grid">
@@ -1205,6 +1261,7 @@ function makePilfForm(intro, i) {
         ✉ Inscrire un invité à cette introduction
       </button>
     </div>`;
+  setTimeout(() => fillLeaderSelect('pilf', i, intro.animateur), 0);
   return d;
 }
 
@@ -1219,11 +1276,15 @@ async function renderPilf(){
 function pilfUpdate(i, k, v){
   if(!pilfDraft) pilfDraft = getPilfIntros().map(o=>({...o}));
   pilfDraft[i][k] = v;
-  if(k==='heure' && !pilfDraft[i].heureFin){
-    const a=autoEndTime(v); pilfDraft[i].heureFin=a;
+  if(k==='heure'){
+    const a=autoEndTime(v);
+    const el=document.getElementById(`heureFin-pilf-${i}`);
+    if(el){ el.value=a; } pilfDraft[i].heureFin=a;
   }
-  if(k==='ccHeure' && !pilfDraft[i].ccHeureFin){
-    const a=autoEndTime1h(v); pilfDraft[i].ccHeureFin=a;
+  if(k==='ccHeure'){
+    const a=autoEndTime1h(v);
+    const el=document.getElementById(`ccHeureFin-pilf-${i}`);
+    if(el){ el.value=a; } pilfDraft[i].ccHeureFin=a;
   }
   if(k==='date'||k==='heure'||k==='heureFin'){
     const d = pilfDraft[i];
