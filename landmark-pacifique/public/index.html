@@ -631,15 +631,15 @@ async function renderPublic(){
           <tr><td colspan="2" style="padding:10px 0 4px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--navy-mid)">Creation Call</td></tr>
           <tr style="border-bottom:1px solid var(--cream-2)">
             <td style="padding:7px 0;font-size:12px;font-weight:600;color:var(--navy);width:140px">Tahiti</td>
-            <td style="padding:7px 0;font-size:13px;font-weight:500;color:var(--navy-deep)">${ccTAH}${ccEndTAH?" — "+ccEndTAH:""}</td>
+            <td style="padding:7px 0;font-size:13px;font-weight:500;color:var(--navy-deep)">${ccTAH}${ccEndTAH?" à "+ccEndTAH:""}</td>
           </tr>
           <tr style="border-bottom:1px solid var(--cream-2)">
             <td style="padding:7px 0;font-size:12px;font-weight:600;color:var(--navy)">Nouvelle-Calédonie</td>
-            <td style="padding:7px 0;font-size:13px;font-weight:500;color:var(--navy-deep)">${ccNC}${ccEndNC?" — "+ccEndNC:""}</td>
+            <td style="padding:7px 0;font-size:13px;font-weight:500;color:var(--navy-deep)">${ccNC}${ccEndNC?" à "+ccEndNC:""}</td>
           </tr>
           <tr>
             <td style="padding:7px 0;font-size:12px;font-weight:600;color:var(--navy)">France</td>
-            <td style="padding:7px 0;font-size:13px;font-weight:500;color:var(--navy-deep)">${ccFR}${ccEndFR?" — "+ccEndFR:""}</td>
+            <td style="padding:7px 0;font-size:13px;font-weight:500;color:var(--navy-deep)">${ccFR}${ccEndFR?" à "+ccEndFR:""}</td>
           </tr>` : "";
     const c=document.createElement("div");
     c.className="intro-card";
@@ -647,20 +647,20 @@ async function renderPublic(){
       <div class="intro-card-top">
         <span class="intro-badge">Proposition ${i+1}</span>
         <h3 class="intro-card-name">${intro.animateur}</h3>
-        <p class="intro-card-theme">${intro.titre}</p>
+        <p class="intro-card-theme">${intro.titre||''}</p>
         <table style="width:100%;border-collapse:collapse;margin-top:4px">
           <tr><td colspan="2" style="padding:4px 0 4px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--navy-mid)">Introduction au Forum</td></tr>
           <tr style="border-bottom:1px solid var(--cream-2)">
             <td style="padding:7px 0;font-size:12px;font-weight:600;color:var(--navy);width:140px">Tahiti</td>
-            <td style="padding:7px 0;font-size:13px;font-weight:500;color:var(--navy-deep)">${tah}${endTAH?" — "+endTAH:""}</td>
+            <td style="padding:7px 0;font-size:13px;font-weight:500;color:var(--navy-deep)">${tah}${endTAH?" à "+endTAH:""}</td>
           </tr>
           <tr style="border-bottom:1px solid var(--cream-2)">
             <td style="padding:7px 0;font-size:12px;font-weight:600;color:var(--navy)">Nouvelle-Calédonie</td>
-            <td style="padding:7px 0;font-size:13px;font-weight:500;color:var(--navy-deep)">${nc}${endNC?" — "+endNC:""}</td>
+            <td style="padding:7px 0;font-size:13px;font-weight:500;color:var(--navy-deep)">${nc}${endNC?" à "+endNC:""}</td>
           </tr>
           <tr style="border-bottom:${ccTAH?'1px solid var(--cream-2)':'none'}">
             <td style="padding:7px 0;font-size:12px;font-weight:600;color:var(--navy)">France</td>
-            <td style="padding:7px 0;font-size:13px;font-weight:500;color:var(--navy-deep)">${fr}${endFR?" — "+endFR:""}</td>
+            <td style="padding:7px 0;font-size:13px;font-weight:500;color:var(--navy-deep)">${fr}${endFR?" à "+endFR:""}</td>
           </tr>
           ${ccBlock}
         </table>
@@ -701,12 +701,12 @@ function buildRecapGuest(intro){
   const ncFin  = hFin ? fmtTZ(intro.date, hFin, 'TAH', 'NC').split('·')[1]||'' : '';
   const fr     = fmtTZ(intro.date, intro.heure,    'TAH', 'FR');
   const frFin  = hFin ? fmtTZ(intro.date, hFin, 'TAH', 'FR').split('·')[1]||'' : '';
-  return `<strong>${intro.animateur} — ${intro.titre}</strong>`
+  return `<strong>${intro.animateur}${intro.titre ? ' — ' + intro.titre : ''}</strong>`
     + `<table style="margin-top:8px;width:100%;border-collapse:collapse">`
     + `<tr><td colspan="2" style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--navy-mid);padding:4px 0">Introduction au Forum</td></tr>`
-    + `<tr><td style="font-size:12px;font-weight:600;color:var(--navy);padding:4px 0;width:140px">Tahiti</td><td style="font-size:13px;color:var(--navy-deep);padding:4px 0">${tah}${tahFin?' — à'+tahFin:''}</td></tr>`
-    + `<tr><td style="font-size:12px;font-weight:600;color:var(--navy);padding:4px 0">Nouvelle-Calédonie</td><td style="font-size:13px;color:var(--navy-deep);padding:4px 0">${nc}${ncFin?' — à'+ncFin:''}</td></tr>`
-    + `<tr><td style="font-size:12px;font-weight:600;color:var(--navy);padding:4px 0">France</td><td style="font-size:13px;color:var(--navy-deep);padding:4px 0">${fr}${frFin?' — à'+frFin:''}</td></tr>`
+    + `<tr><td style="font-size:12px;font-weight:600;color:var(--navy);padding:4px 0;width:140px">Tahiti</td><td style="font-size:13px;color:var(--navy-deep);padding:4px 0">${tah}${tahFin?' à'+tahFin:''}</td></tr>`
+    + `<tr><td style="font-size:12px;font-weight:600;color:var(--navy);padding:4px 0">Nouvelle-Calédonie</td><td style="font-size:13px;color:var(--navy-deep);padding:4px 0">${nc}${ncFin?' à'+ncFin:''}</td></tr>`
+    + `<tr><td style="font-size:12px;font-weight:600;color:var(--navy);padding:4px 0">France</td><td style="font-size:13px;color:var(--navy-deep);padding:4px 0">${fr}${frFin?' à'+frFin:''}</td></tr>`
     + `</table>`;
 }
 function buildRecap(intro){
@@ -725,17 +725,17 @@ function buildRecap(intro){
   const ccNCF  = (intro.ccDate && ccHFin) ? fmtTZ(intro.ccDate,ccHFin,'TAH','NC').split('·')[1]||'' : '';
   const ccFR   = intro.ccDate && intro.ccHeure ? fmtTZ(intro.ccDate,intro.ccHeure,'TAH','FR') : '';
   const ccFRF  = (intro.ccDate && ccHFin) ? fmtTZ(intro.ccDate,ccHFin,'TAH','FR').split('·')[1]||'' : '';
-  let html = `<strong>${intro.animateur} — ${intro.titre}</strong>`
+  let html = `<strong>${intro.animateur}${intro.titre ? ' — ' + intro.titre : ''}</strong>`
     + `<table style="margin-top:8px;width:100%;border-collapse:collapse">`
     + `<tr><td colspan="2" style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--navy-mid);padding:4px 0">Introduction au Forum</td></tr>`
-    + `<tr><td style="font-size:12px;font-weight:600;color:var(--navy);padding:4px 0;width:140px">Tahiti</td><td style="font-size:13px;color:var(--navy-deep);padding:4px 0">${tah}${tahFin?' — à'+tahFin:''}</td></tr>`
-    + `<tr><td style="font-size:12px;font-weight:600;color:var(--navy);padding:4px 0">Nouvelle-Calédonie</td><td style="font-size:13px;color:var(--navy-deep);padding:4px 0">${nc}${ncFin?' — à'+ncFin:''}</td></tr>`
-    + `<tr><td style="font-size:12px;font-weight:600;color:var(--navy);padding:4px 0">France</td><td style="font-size:13px;color:var(--navy-deep);padding:4px 0">${fr}${frFin?' — à'+frFin:''}</td></tr>`;
+    + `<tr><td style="font-size:12px;font-weight:600;color:var(--navy);padding:4px 0;width:140px">Tahiti</td><td style="font-size:13px;color:var(--navy-deep);padding:4px 0">${tah}${tahFin?' à'+tahFin:''}</td></tr>`
+    + `<tr><td style="font-size:12px;font-weight:600;color:var(--navy);padding:4px 0">Nouvelle-Calédonie</td><td style="font-size:13px;color:var(--navy-deep);padding:4px 0">${nc}${ncFin?' à'+ncFin:''}</td></tr>`
+    + `<tr><td style="font-size:12px;font-weight:600;color:var(--navy);padding:4px 0">France</td><td style="font-size:13px;color:var(--navy-deep);padding:4px 0">${fr}${frFin?' à'+frFin:''}</td></tr>`;
   if(ccTAH){
     html += `<tr><td colspan="2" style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--navy-mid);padding:8px 0 4px">Creation Call</td></tr>`
-      + `<tr><td style="font-size:12px;font-weight:600;color:var(--navy);padding:4px 0;width:140px">Tahiti</td><td style="font-size:13px;color:var(--navy-deep);padding:4px 0">${ccTAH}${ccTAHF?' — à'+ccTAHF:''}</td></tr>`
-      + `<tr><td style="font-size:12px;font-weight:600;color:var(--navy);padding:4px 0">Nouvelle-Calédonie</td><td style="font-size:13px;color:var(--navy-deep);padding:4px 0">${ccNC}${ccNCF?' — à'+ccNCF:''}</td></tr>`
-      + `<tr><td style="font-size:12px;font-weight:600;color:var(--navy);padding:4px 0">France</td><td style="font-size:13px;color:var(--navy-deep);padding:4px 0">${ccFR}${ccFRF?' — à'+ccFRF:''}</td></tr>`;
+      + `<tr><td style="font-size:12px;font-weight:600;color:var(--navy);padding:4px 0;width:140px">Tahiti</td><td style="font-size:13px;color:var(--navy-deep);padding:4px 0">${ccTAH}${ccTAHF?' à'+ccTAHF:''}</td></tr>`
+      + `<tr><td style="font-size:12px;font-weight:600;color:var(--navy);padding:4px 0">Nouvelle-Calédonie</td><td style="font-size:13px;color:var(--navy-deep);padding:4px 0">${ccNC}${ccNCF?' à'+ccNCF:''}</td></tr>`
+      + `<tr><td style="font-size:12px;font-weight:600;color:var(--navy);padding:4px 0">France</td><td style="font-size:13px;color:var(--navy-deep);padding:4px 0">${ccFR}${ccFRF?' à'+ccFRF:''}</td></tr>`;
   }
   html += `</table>`;
   return html;
