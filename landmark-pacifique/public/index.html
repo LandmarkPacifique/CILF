@@ -934,11 +934,14 @@ async function selectIntroInvite(id){
 // ── INVITE LINK SYSTEM ────────────────────────────────────────────────────────
 function makeInviteToken(introId, gradName, gradEmail){
   const data = JSON.stringify({iid: String(introId), gn: gradName, ge: gradEmail, ts: Date.now()});
-  return btoa(unescape(encodeURIComponent(data)));
+  return btoa(unescape(encodeURIComponent(data)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 function parseInviteToken(token){
   try {
-    return JSON.parse(decodeURIComponent(escape(atob(token))));
+    const b64 = token.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = b64 + '=='.slice(0, (4 - b64.length % 4) % 4);
+    return JSON.parse(decodeURIComponent(escape(atob(padded))));
   } catch(e){ return null; }
 }
 function getInviteLink(introId, gradName, gradEmail){
@@ -980,11 +983,12 @@ async function checkInviteParam(){
   }
   // Store for submit
   window._inviteData = data;
-  // Load intros and find the right one
+  // Load intros and find the right one (CILF + PILF)
   try {
-    const intros = await getIntros();
+    const [intros, pilfIntros] = await Promise.all([getIntros(), getPilfIntros()]);
     window._cachedIntros = intros;
-    const intro = intros.find(o => String(o.id) === String(data.iid));
+    window._cachedPilfIntros = pilfIntros;
+    const intro = [...intros, ...pilfIntros].find(o => String(o.id) === String(data.iid));
     if(!intro) throw new Error('intro not found');
     document.getElementById('invite-loading').style.display='none';
     document.getElementById('invite-content').style.display='block';
