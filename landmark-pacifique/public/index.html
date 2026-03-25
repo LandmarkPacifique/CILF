@@ -561,9 +561,15 @@ const API_BASE = 'https://project-pajuk.vercel.app';
 let _adminToken = localStorage.getItem('lm_jwt') || null;
 
 async function apiFetch(path, opts = {}) {
-  const headers = { 'Content-Type': 'application/json' };
+  const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
   if (_adminToken) headers['x-admin-token'] = _adminToken;
-  const res = await fetch(API_BASE + path, { headers, ...opts });
+  const res = await fetch(API_BASE + path, { ...opts, headers });
+  if (!res.ok) throw new Error(`API ${path} → ${res.status}`);
+  return res.json();
+}
+
+async function publicFetch(path) {
+  const res = await fetch(API_BASE + path);
   if (!res.ok) throw new Error(`API ${path} → ${res.status}`);
   return res.json();
 }
@@ -627,15 +633,15 @@ function enterAdmin(role, name){
 function logout(){ clearSession(); goPage('page-home'); }
 
 async function getIntros() {
-  try { return await apiFetch('/api/intros?slug=cilf'); }
+  try { return await publicFetch('/api/intros?slug=cilf'); }
   catch(e) { try{return JSON.parse(localStorage.getItem('lm_intros'))||DEF;}catch{return DEF;} }
 }
 async function getPilfIntros() {
-  try { return await apiFetch('/api/intros?slug=pilf'); }
+  try { return await publicFetch('/api/intros?slug=pilf'); }
   catch(e) { try{return JSON.parse(localStorage.getItem('lm_pilf'))||DEF_PILF;}catch{return DEF_PILF;} }
 }
 async function getCfg() {
-  try { return await apiFetch('/api/config'); }
+  try { return await publicFetch('/api/config'); }
   catch(e) { try{return JSON.parse(localStorage.getItem('lm_config'))||{};}catch{return {};} }
 }
 
@@ -1200,7 +1206,7 @@ var DEF_PILF = [
   {id:1, animateur:"", titre:"", date:"", heure:"", heureFin:"", animateurEmail:"", ccDate:"", ccHeure:"", ccHeureFin:""},
 ];
 async function getPilfIntros() {
-  try { return await apiFetch('/api/intros?slug=pilf'); }
+  try { return await publicFetch('/api/intros?slug=pilf'); }
   catch(e) { try{return JSON.parse(localStorage.getItem('lm_pilf'))||DEF_PILF;}catch{return DEF_PILF;} }
 }
 
