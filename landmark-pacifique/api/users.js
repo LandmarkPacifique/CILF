@@ -9,9 +9,11 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'Méthode non autorisée' });
   }
 
-  // Vérifie le JWT et le rôle admin
+  // Accepte le token depuis Authorization: Bearer OU x-admin-token
   const auth = req.headers['authorization'] || '';
-  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  const rawToken = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  const token = rawToken || req.headers['x-admin-token'] || null;
+
   if (!token) return res.status(401).json({ error: 'Non authentifié' });
 
   let payload;
