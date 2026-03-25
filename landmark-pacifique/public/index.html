@@ -562,7 +562,7 @@ let _adminToken = localStorage.getItem('lm_jwt') || null;
 
 async function apiFetch(path, opts = {}) {
   const headers = { 'Content-Type': 'application/json' };
-  if (_adminToken) headers['Authorization'] = 'Bearer ' + _adminToken;
+  if (_adminToken) headers['x-admin-token'] = _adminToken;
   const res = await fetch(API_BASE + path, { headers, ...opts });
   if (!res.ok) throw new Error(`API ${path} → ${res.status}`);
   return res.json();
