@@ -693,6 +693,22 @@ function autoEndTime1h(h){
   const total = hh*60+mm+60;
   return String(Math.floor(total/60)%24).padStart(2,'0')+':'+String(total%60).padStart(2,'0');
 }
+function buildRecapGuest(intro){
+  const hFin   = intro.heureFin || autoEndTime(intro.heure);
+  const tah    = fmtTZ(intro.date, intro.heure,    'TAH', 'TAH');
+  const tahFin = hFin ? fmtTZ(intro.date, hFin, 'TAH', 'TAH').split('·')[1]||'' : '';
+  const nc     = fmtTZ(intro.date, intro.heure,    'TAH', 'NC');
+  const ncFin  = hFin ? fmtTZ(intro.date, hFin, 'TAH', 'NC').split('·')[1]||'' : '';
+  const fr     = fmtTZ(intro.date, intro.heure,    'TAH', 'FR');
+  const frFin  = hFin ? fmtTZ(intro.date, hFin, 'TAH', 'FR').split('·')[1]||'' : '';
+  return `<strong>${intro.animateur} — ${intro.titre}</strong>`
+    + `<table style="margin-top:8px;width:100%;border-collapse:collapse">`
+    + `<tr><td colspan="2" style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--navy-mid);padding:4px 0">Introduction au Forum</td></tr>`
+    + `<tr><td style="font-size:12px;font-weight:600;color:var(--navy);padding:4px 0;width:140px">Tahiti</td><td style="font-size:13px;color:var(--navy-deep);padding:4px 0">${tah}${tahFin?' — à'+tahFin:''}</td></tr>`
+    + `<tr><td style="font-size:12px;font-weight:600;color:var(--navy);padding:4px 0">Nouvelle-Calédonie</td><td style="font-size:13px;color:var(--navy-deep);padding:4px 0">${nc}${ncFin?' — à'+ncFin:''}</td></tr>`
+    + `<tr><td style="font-size:12px;font-weight:600;color:var(--navy);padding:4px 0">France</td><td style="font-size:13px;color:var(--navy-deep);padding:4px 0">${fr}${frFin?' — à'+frFin:''}</td></tr>`
+    + `</table>`;
+}
 function buildRecap(intro){
   const hFin   = intro.heureFin || autoEndTime(intro.heure);
   const tah    = fmtTZ(intro.date, intro.heure,    'TAH', 'TAH');
@@ -797,7 +813,7 @@ async function checkInviteParam(){
     if(!intro) throw new Error('intro not found');
     document.getElementById('invite-loading').style.display='none';
     document.getElementById('invite-content').style.display='block';
-    document.getElementById('invite-recap').innerHTML = buildRecap(intro);
+    document.getElementById('invite-recap').innerHTML = buildRecapGuest(intro);
     document.getElementById('invite-grad-notice').innerHTML =
       '🤝 Vous avez été invité(e) par <strong>' + data.gn + '</strong>';
     window._inviteIntro = intro;
