@@ -373,10 +373,12 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
       <img class="logo-img-small" src="" alt="Landmark Pacifique" style="height:56px;width:auto;object-fit:contain;display:block;margin:0 auto 20px">
       <h2>Espace admin</h2>
       <p>Landmark Pacifique</p>
-      <label class="fl" style="text-align:left;display:block;margin-top:0">Mot de passe</label>
+      <label class="fl" style="text-align:left;display:block;margin-top:0">Email</label>
+      <input type="email" id="pw-email" class="ai" placeholder="votre@email.com" onkeydown="if(event.key==='Enter')doLogin()">
+      <label class="fl" style="text-align:left;display:block;margin-top:12px">Mot de passe</label>
       <input type="password" id="pw-input" class="ai" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
-      <p class="pw-error" id="pw-error">Mot de passe incorrect</p>
-      <button class="login-btn" onclick="doLogin()">Accéder au panneau</button>
+      <p class="pw-error" id="pw-error" style="display:none">Identifiants incorrects</p>
+      <button class="login-btn" id="login-btn" onclick="doLogin()">Accéder au panneau</button>
       <br><br><button class="copy-btn" onclick="goPage('page-home')">← Retour au site</button>
     </div>
   </div>
@@ -384,7 +386,8 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
 <div id="page-admin" class="page">
   <div class="admin-topbar">
     <span class="admin-title">⚙ Administration — Landmark Pacifique</span>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;gap:8px;align-items:center">
+      <span id="admin-user-name" style="font-size:13px;color:var(--text-muted-navy)"></span>
       <button class="nav-btn primary" onclick="goPage('page-intros')">Voir le site</button>
       <button class="nav-btn" onclick="logout()">Déconnexion</button>
     </div>
@@ -393,7 +396,7 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
     <div class="cfg-tabs">
       <button class="cfg-tab active" onclick="switchTab('introductions',this)">CILF</button>
       <button class="cfg-tab" onclick="switchTab('pilf',this)">PILF / HILF</button>
-      <button class="cfg-tab" onclick="switchTab('settings',this)">Paramètres</button>
+      <button id="tab-btn-settings" class="cfg-tab" onclick="switchTab('settings',this)">Paramètres</button>
     </div>
 
     <div id="tab-introductions" class="cfg-panel active">
@@ -416,13 +419,20 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
 
     <div id="tab-settings" class="cfg-panel">
       <h2 class="admin-h2">Paramètres</h2>
-      <p class="admin-desc">Modifiez le mot de passe d'accès au panneau admin.</p>
+      <p class="admin-desc">Gérez les accès au panneau admin. Seul l'administrateur voit cette section.</p>
       <div class="admin-card">
-        <label class="fl" style="margin-top:0">Nouveau mot de passe admin</label>
-        <div style="display:flex;gap:8px">
-          <input type="text" class="ai" id="cfg-newpw" placeholder="Nouveau mot de passe">
-          <button class="copy-btn" onclick="changePw()" style="flex-shrink:0;padding:9px 18px;white-space:nowrap">Changer</button>
+        <label class="fl" style="margin-top:0">Ajouter un utilisateur</label>
+        <div style="display:flex;flex-direction:column;gap:8px;max-width:400px">
+          <input type="text"  class="ai" id="cfg-new-name"  placeholder="Prénom Nom">
+          <input type="email" class="ai" id="cfg-new-email" placeholder="email@example.com">
+          <input type="password" class="ai" id="cfg-new-pw" placeholder="Mot de passe">
+          <select class="ai" id="cfg-new-role" style="padding:9px 12px;border-radius:8px;border:1px solid #ddd;font-family:inherit">
+            <option value="leader">Leader</option>
+            <option value="admin">Admin</option>
+          </select>
+          <button class="copy-btn" onclick="addUser()" style="padding:9px 18px;align-self:flex-start">Ajouter</button>
         </div>
+        <p id="cfg-user-msg" style="margin-top:8px;font-size:13px;display:none"></p>
       </div>
     </div>
   </div>
@@ -542,18 +552,73 @@ function toUTC(d,h){
   return Math.floor(Date.UTC(y,m-1,dd,hh-TZ.TAH,mn)/1000);
 }
 const API_BASE = 'https://project-pajuk.vercel.app';
-let _adminToken = null;
+let _adminToken = localStorage.getItem('lm_jwt') || null;
 
 async function apiFetch(path, opts = {}) {
   const headers = { 'Content-Type': 'application/json' };
-  if (_adminToken) headers['x-admin-token'] = _adminToken;
+  if (_adminToken) headers['Authorization'] = 'Bearer ' + _adminToken;
   const res = await fetch(API_BASE + path, { headers, ...opts });
   if (!res.ok) throw new Error(`API ${path} → ${res.status}`);
   return res.json();
 }
 
-function getPw(){ return localStorage.getItem('lm_pw') || 'LandmarkPacifique2026'; }
-function setAdminToken(pw){ _adminToken = pw; }
+// ── JWT AUTH ──────────────────────────────────────────────────────────────────
+function jwtDecode(token){
+  try{ return JSON.parse(atob(token.split('.')[1])); }catch{ return null; }
+}
+function getSession(){
+  const token = localStorage.getItem('lm_jwt');
+  if(!token) return null;
+  const payload = jwtDecode(token);
+  if(!payload || payload.exp * 1000 < Date.now()){ localStorage.removeItem('lm_jwt'); return null; }
+  return payload; // { id, role, name, email }
+}
+function setSession(token){ localStorage.setItem('lm_jwt', token); _adminToken = token; }
+function clearSession(){ localStorage.removeItem('lm_jwt'); _adminToken = null; }
+
+async function doLogin(){
+  const email = document.getElementById('pw-email').value.trim();
+  const password = document.getElementById('pw-input').value;
+  const err = document.getElementById('pw-error');
+  if(!email || !password){ err.style.display='block'; err.textContent='Veuillez remplir tous les champs.'; return; }
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.textContent = 'Connexion…';
+  try {
+    const res = await fetch(API_BASE + '/api/login', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+    if(!res.ok){ err.style.display='block'; err.textContent = data.error || 'Identifiants incorrects'; btn.disabled=false; btn.textContent='Accéder au panneau'; return; }
+    setSession(data.token);
+    document.getElementById('pw-email').value='';
+    document.getElementById('pw-input').value='';
+    err.style.display='none';
+    enterAdmin(data.role, data.name);
+  } catch(e){
+    err.style.display='block'; err.textContent='Erreur de connexion, réessayez.';
+    btn.disabled=false; btn.textContent='Accéder au panneau';
+  }
+}
+function enterAdmin(role, name){
+  // Affiche/masque l'onglet Paramètres selon le rôle
+  const settingsTab = document.getElementById('tab-btn-settings');
+  if(settingsTab) settingsTab.style.display = (role === 'admin') ? '' : 'none';
+  // Masque le panneau settings si leader et qu'il était actif
+  if(role !== 'admin'){
+    const panel = document.getElementById('tab-settings');
+    if(panel && panel.classList.contains('active')){
+      switchTab('introductions', document.querySelector('.cfg-tab'));
+    }
+  }
+  // Affiche le nom dans la topbar
+  const nameEl = document.getElementById('admin-user-name');
+  if(nameEl) nameEl.textContent = name || '';
+  goPage('page-admin');
+  renderAdmin();
+}
+function logout(){ clearSession(); goPage('page-home'); }
 
 async function getIntros() {
   try { return await apiFetch('/api/intros?slug=cilf'); }
@@ -592,14 +657,6 @@ function doLogin(){
   if(v===getPw()){document.getElementById("pw-input").value="";e.style.display="none";setAdminToken(v); goPage("page-admin"); renderAdmin();}
   else{e.style.display="block";document.getElementById("pw-input").value="";}
 }
-function changePw(){
-  const np=document.getElementById("cfg-newpw").value.trim();
-  if(!np){alert("Veuillez entrer un mot de passe.");return;}
-  localStorage.setItem("lm_pw",np);
-  document.getElementById("cfg-newpw").value="";
-  alert("Mot de passe mis à jour !");
-}
-
 // ── RENDER PUBLIC CARDS ───────────────────────────────────────────────────────
 async function renderPublic(){
   const grid=document.getElementById("intros-grid");
@@ -1234,7 +1291,31 @@ function openPilfGuestForm(i){
   goPage('page-form-guest');
 }
 
+async function addUser(){
+  const name  = document.getElementById('cfg-new-name').value.trim();
+  const email = document.getElementById('cfg-new-email').value.trim();
+  const pw    = document.getElementById('cfg-new-pw').value;
+  const role  = document.getElementById('cfg-new-role').value;
+  const msg   = document.getElementById('cfg-user-msg');
+  if(!name||!email||!pw){ msg.style.display='block'; msg.style.color='#c00'; msg.textContent='Veuillez remplir tous les champs.'; return; }
+  try {
+    await apiFetch('/api/users', { method:'POST', body: JSON.stringify({name, email, password: pw, role}) });
+    msg.style.display='block'; msg.style.color='green'; msg.textContent='Utilisateur ajouté avec succès !';
+    document.getElementById('cfg-new-name').value='';
+    document.getElementById('cfg-new-email').value='';
+    document.getElementById('cfg-new-pw').value='';
+  } catch(e){
+    msg.style.display='block'; msg.style.color='#c00'; msg.textContent='Erreur : ' + e.message;
+  }
+}
+
 (async function init(){
+  // Restaure la session JWT si elle est encore valide
+  const session = getSession();
+  if(session){
+    enterAdmin(session.role, session.name);
+    return;
+  }
   const isInvite = await checkInviteParam();
   if(!isInvite) renderPublic();
 })();
