@@ -7,6 +7,10 @@ function fmtDate(d) {
   return dt.toISOString().slice(0, 10);
 }
 
+function orNull(v) {
+  return (v && v.toString().trim() !== '') ? v : null;
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -48,9 +52,16 @@ module.exports = async function handler(req, res) {
             (slug, animateur, titre, date, heure, heure_fin,
              animateur_email, cc_date, cc_heure, cc_heure_fin)
           VALUES
-            (${slug}, ${intro.animateur||''}, ${intro.titre||''}, ${intro.date||null},
-             ${intro.heure||''}, ${intro.heureFin||''}, ${intro.animateurEmail||''},
-             ${intro.ccDate||null}, ${intro.ccHeure||null}, ${intro.ccHeureFin||null})
+            (${slug},
+             ${intro.animateur || ''},
+             ${intro.titre || ''},
+             ${orNull(intro.date)},
+             ${orNull(intro.heure)},
+             ${orNull(intro.heureFin)},
+             ${intro.animateurEmail || ''},
+             ${orNull(intro.ccDate)},
+             ${orNull(intro.ccHeure)},
+             ${orNull(intro.ccHeureFin)})
         `;
       }
       return res.status(200).json({ status: 'ok', count: intros.length });
