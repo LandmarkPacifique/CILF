@@ -464,7 +464,7 @@ function makeAdminForm(intro, i) {
         <div><label class="fl" style="margin-top:0">Heure début (TAH)</label>
           <input class="ai" type="time" value="${intro.ccHeure||''}" oninput="draftUpdate(${i},'ccHeure',this.value)"></div>
         <div><label class="fl" style="margin-top:0">Heure fin (TAH) <span style="font-size:10px;color:#aab8c4">(auto +2h)</span></label>
-          <input class="ai" type="time" value="${intro.ccHeureFin||''}" oninput="draftUpdate(${i},'ccHeureFin',this.value)"></div>
+          <input class="ai" type="time" value="${intro.ccHeureFin||''}" oninput="draftUpdate(${i},'ccHeureFin',this.value)" id="ccHeureFin-cilf-${i}"></div>
         <div></div>
       </div>
     </div>
@@ -532,14 +532,6 @@ async function getCfg() {
 const DEF = [
   {id:1, animateur:"", titre:"", date:"", heure:"", heureFin:"", zoom:"", zoomId:"", animateurEmail:"", ccDate:"", ccHeure:"", ccHeureFin:""},
 ];
-async function getIntros() {
-  try { return await apiFetch('/api/intros?slug=cilf'); }
-  catch(e) { try{return JSON.parse(localStorage.getItem('lm_intros'))||DEF;}catch{return DEF;} }
-}
-async function getCfg() {
-  try { return await apiFetch('/api/config'); }
-  catch(e) { try{return JSON.parse(localStorage.getItem('lm_config'))||{};}catch{return {};} }
-}
 // ── NAVIGATION ────────────────────────────────────────────────────────────────
 function goPage(id){
   document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
@@ -575,6 +567,7 @@ async function renderPublic(){
   if(!grid)return;
   grid.innerHTML="<p style='text-align:center;padding:20px'>Chargement…</p>";
   const intros = await getIntros();
+  window._cachedIntros = intros;
   grid.innerHTML="";
   intros.forEach((intro,i)=>{
     const tah   = fmtTZ(intro.date,intro.heure,"TAH","TAH");
@@ -588,7 +581,7 @@ async function renderPublic(){
     const ccTAH  = intro.ccDate && intro.ccHeure ? fmtTZ(intro.ccDate,intro.ccHeure,"TAH","TAH") : "";
     const ccNC   = intro.ccDate && intro.ccHeure ? fmtTZ(intro.ccDate,intro.ccHeure,"TAH","NC") : "";
     const ccFR   = intro.ccDate && intro.ccHeure ? fmtTZ(intro.ccDate,intro.ccHeure,"TAH","FR") : "";
-    const ccHFin = intro.ccHeureFin || (intro.ccHeure ? autoEndTime(intro.ccHeure) : "");
+    const ccHFin = intro.ccHeureFin || (intro.ccHeure ? autoEndTime1h(intro.ccHeure) : "");
     const ccEndTAH = (intro.ccDate && ccHFin) ? fmtTZ(intro.ccDate,ccHFin,"TAH","TAH").split("·")[1]||"" : "";
     const ccEndNC  = (intro.ccDate && ccHFin) ? fmtTZ(intro.ccDate,ccHFin,"TAH","NC").split("·")[1]||"" : "";
     const ccEndFR  = (intro.ccDate && ccHFin) ? fmtTZ(intro.ccDate,ccHFin,"TAH","FR").split("·")[1]||"" : "";
@@ -643,7 +636,13 @@ let selIdx = null;
 function autoEndTime(h){
   if(!h) return '';
   const [hh,mm] = h.split(':').map(Number);
-  const total = hh*60+mm+120;
+  const total = hh*60+mm+150;
+  return String(Math.floor(total/60)%24).padStart(2,'0')+':'+String(total%60).padStart(2,'0');
+}
+function autoEndTime1h(h){
+  if(!h) return '';
+  const [hh,mm] = h.split(':').map(Number);
+  const total = hh*60+mm+60;
   return String(Math.floor(total/60)%24).padStart(2,'0')+':'+String(total%60).padStart(2,'0');
 }
 function buildRecap(intro){
@@ -655,7 +654,7 @@ function buildRecap(intro){
   const fr     = fmtTZ(intro.date, intro.heure,    'TAH', 'FR');
   const frFin  = hFin ? fmtTZ(intro.date, hFin, 'TAH', 'FR').split('·')[1]||'' : '';
   // Creation Call
-  const ccHFin = intro.ccHeureFin || (intro.ccHeure ? autoEndTime(intro.ccHeure) : '');
+  const ccHFin = intro.ccHeureFin || (intro.ccHeure ? autoEndTime1h(intro.ccHeure) : '');
   const ccTAH  = intro.ccDate && intro.ccHeure ? fmtTZ(intro.ccDate,intro.ccHeure,'TAH','TAH') : '';
   const ccTAHF = (intro.ccDate && ccHFin) ? fmtTZ(intro.ccDate,ccHFin,'TAH','TAH').split('·')[1]||'' : '';
   const ccNC   = intro.ccDate && intro.ccHeure ? fmtTZ(intro.ccDate,intro.ccHeure,'TAH','NC') : '';
@@ -680,12 +679,14 @@ function buildRecap(intro){
 async function selectIntro(i){
   selIdx=i;
   const intros = await getIntros();
+  window._cachedIntros = intros;
   const intro = intros[i];
   document.getElementById("solo-recap").innerHTML=buildRecap(intro);
   goPage("page-form-solo");
 }
 function goForm(type){
-  const intro = (window._isPilfSubmit && window._pilfSelIntro) ? window._pilfSelIntro : getIntros()[selIdx];
+  const intro = (window._isPilfSubmit && window._pilfSelIntro) ? window._pilfSelIntro : (window._cachedIntros ? window._cachedIntros[selIdx] : null);
+  if(!intro){ alert("Chargement en cours, veuillez réessayer."); return; }
   window._isPilfSubmit = false;
   if(type==="solo"){
     document.getElementById("solo-recap").innerHTML=buildRecap(intro);
@@ -699,6 +700,7 @@ function goForm(type){
 async function selectIntroInvite(i){
   selIdx=i;
   const intros = await getIntros();
+  window._cachedIntros = intros;
   const intro = intros[i];
   document.getElementById("guest-recap").innerHTML=buildRecap(intro);
   document.getElementById("guest-form-subtitle").textContent="Envoi d'une invitation personnalisée à mon invité(e)";
@@ -790,7 +792,8 @@ async function submitWithGuest(){
   if(!gfn||!gln||!gem||!ufn||!uln||!uem){err.textContent="Veuillez remplir tous les champs.";err.style.display="block";return;}
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(gem)||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(uem)){err.textContent="Vérifiez les adresses email.";err.style.display="block";return;}
   err.style.display="none";
-  const intro=getIntros()[selIdx];
+  const intros = await getIntros();
+  const intro=intros[selIdx];
   const tah=fmtTZ(intro.date,intro.heure,"TAH","TAH"),nc=fmtTZ(intro.date,intro.heure,"TAH","NC"),fr=fmtTZ(intro.date,intro.heure,"TAH","FR");
   const sessionUTC=toUTC(intro.date,intro.heure);
   const t3h=sessionUTC-3*3600,t30=sessionUTC-1800;
@@ -873,12 +876,16 @@ async function renderAdmin(){
 
 }
 function draftUpdate(i,k,v){
-  if(!draft) draft=getIntros().map(o=>({...o}));
+  if(!draft){ console.warn("draft non initialisé"); return; }
   draft[i][k]=v;
   // Auto-calcul heure de fin (+2h) si heure début changée et fin vide
   if(k==="heure" && !draft[i].heureFin){
     const el=document.getElementById(`heureFin-cilf-${i}`);
     if(el && !el.value){ const a=autoEndTime(v); el.value=a; draft[i].heureFin=a; }
+  }
+  if(k==="ccHeure" && !draft[i].ccHeureFin){
+    const el=document.getElementById(`ccHeureFin-cilf-${i}`);
+    if(el && !el.value){ const a=autoEndTime1h(v); el.value=a; draft[i].ccHeureFin=a; }
   }
   if(k==="date"||k==="heure"||k==="heureFin"){
     const d=draft[i];
@@ -888,14 +895,14 @@ function draftUpdate(i,k,v){
   }
 }
 function addIntro(){
-  if(!draft)draft=getIntros().map(i=>({...i}));
+  if(!draft){ alert("Veuillez patienter, chargement en cours."); return; }
   const newId=Date.now();
-  draft.push({id:newId,animateur:"",titre:"",date:"",heure:"",heureFin:"",zoom:"",zoomId:"",animateurEmail:""});
+  draft.push({id:newId,animateur:"",titre:"",date:"",heure:"",heureFin:"",zoom:"",zoomId:"",animateurEmail:"",ccDate:"",ccHeure:"",ccHeureFin:""});
   const wrap=document.getElementById("admin-forms");
   wrap.appendChild(makeAdminForm(draft[draft.length-1],draft.length-1));
 }
 function removeIntro(btnEl){
-  if(!draft) draft=getIntros().map(o=>({...o}));
+  if(!draft){ console.warn("draft non initialisé"); return; }
   var card = btnEl.closest('.admin-card');
   var wrap = document.getElementById('admin-forms');
   var i = Array.from(wrap.children).indexOf(card);
@@ -906,7 +913,7 @@ function removeIntro(btnEl){
   draft.forEach(function(intro, j){ wrap.appendChild(makeAdminForm(intro, j)); });
 }
 window._removeIntro = function(btnEl){
-  if(!draft) draft=getIntros().map(o=>({...o}));
+  if(!draft){ console.warn("draft non initialisé"); return; }
   var card = btnEl.closest('.admin-card');
   var wrap = document.getElementById('admin-forms');
   var cards = Array.from(wrap.children);
@@ -1010,7 +1017,7 @@ function pilfUpdate(i, k, v){
     const a=autoEndTime(v); pilfDraft[i].heureFin=a;
   }
   if(k==='ccHeure' && !pilfDraft[i].ccHeureFin){
-    const a=autoEndTime(v); pilfDraft[i].ccHeureFin=a;
+    const a=autoEndTime1h(v); pilfDraft[i].ccHeureFin=a;
   }
   if(k==='date'||k==='heure'||k==='heureFin'){
     const d = pilfDraft[i];
