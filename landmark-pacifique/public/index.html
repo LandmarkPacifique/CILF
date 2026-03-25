@@ -651,12 +651,6 @@ function switchTab(id,btn){
 }
 function logout(){ goPage("page-home"); }
 
-// ── AUTH ──────────────────────────────────────────────────────────────────────
-function doLogin(){
-  const v=document.getElementById("pw-input").value,e=document.getElementById("pw-error");
-  if(v===getPw()){document.getElementById("pw-input").value="";e.style.display="none";setAdminToken(v); goPage("page-admin"); renderAdmin();}
-  else{e.style.display="block";document.getElementById("pw-input").value="";}
-}
 // ── RENDER PUBLIC CARDS ───────────────────────────────────────────────────────
 async function renderPublic(){
   const grid=document.getElementById("intros-grid");
