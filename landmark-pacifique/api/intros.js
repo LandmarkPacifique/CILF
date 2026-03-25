@@ -1,13 +1,18 @@
 const { neon } = require('@neondatabase/serverless');
 
+function fmtDate(d) {
+  if (!d) return '';
+  if (typeof d === 'string') return d.slice(0, 10);
+  const dt = new Date(d);
+  return dt.toISOString().slice(0, 10);
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-admin-token');
   if (req.method === 'OPTIONS') return res.status(200).end();
-
   const sql = neon(process.env.DATABASE_URL);
-
   try {
     if (req.method === 'GET') {
       const slug = req.query.slug || 'cilf';
@@ -20,44 +25,37 @@ module.exports = async function handler(req, res) {
         id: r.id,
         animateur: r.animateur,
         titre: r.titre,
-        date: r.date,
+        date: fmtDate(r.date),
         heure: r.heure,
         heureFin: r.heure_fin,
         animateurEmail: r.animateur_email,
-        ccDate: r.cc_date,
+        ccDate: fmtDate(r.cc_date),
         ccHeure: r.cc_heure,
         ccHeureFin: r.cc_heure_fin,
       })));
     }
-
     if (req.method === 'POST') {
       const token = req.headers['x-admin-token'];
       if (!token || token !== process.env.ADMIN_TOKEN)
         return res.status(401).json({ error: 'Non autorisé' });
-
       const { slug = 'cilf', intros } = req.body;
       if (!Array.isArray(intros))
         return res.status(400).json({ error: 'intros doit être un tableau' });
-
       await sql`DELETE FROM introductions WHERE slug = ${slug}`;
-
       for (const intro of intros) {
         await sql`
           INSERT INTO introductions
             (slug, animateur, titre, date, heure, heure_fin,
              animateur_email, cc_date, cc_heure, cc_heure_fin)
           VALUES
-            (${slug}, ${intro.animateur||''}, ${intro.titre||''}, ${intro.date||''},
+            (${slug}, ${intro.animateur||''}, ${intro.titre||''}, ${intro.date||null},
              ${intro.heure||''}, ${intro.heureFin||''}, ${intro.animateurEmail||''},
              ${intro.ccDate||null}, ${intro.ccHeure||null}, ${intro.ccHeureFin||null})
         `;
       }
-
       return res.status(200).json({ status: 'ok', count: intros.length });
     }
-
     return res.status(405).json({ error: 'Méthode non autorisée' });
-
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: err.message });
