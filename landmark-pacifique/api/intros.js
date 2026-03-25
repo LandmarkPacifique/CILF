@@ -1,4 +1,5 @@
 const { neon } = require('@neondatabase/serverless');
+const jwt = require('jsonwebtoken');
 
 function fmtDate(d) {
   if (!d) return '';
@@ -39,9 +40,24 @@ module.exports = async function handler(req, res) {
       })));
     }
     if (req.method === 'POST') {
-      const token = req.headers['x-admin-token'];
-      if (!token || token !== process.env.ADMIN_TOKEN)
-        return res.status(401).json({ error: 'Non autorisé' });
+      // Accepte Authorization: Bearer <jwt> OU x-admin-token: <jwt>
+      const auth = req.headers['authorization'] || '';
+      const rawToken = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+      const token = rawToken || req.headers['x-admin-token'] || null;
+
+      if (!token) return res.status(401).json({ error: 'Non autorisé' });
+
+      let payload;
+      try {
+        payload = jwt.verify(token, process.env.JWT_SECRET);
+      } catch {
+        return res.status(401).json({ error: 'Token invalide ou expiré' });
+      }
+
+      if (!['admin', 'leader'].includes(payload.role)) {
+        return res.status(403).json({ error: 'Accès non autorisé' });
+      }
+
       const { slug = 'cilf', intros } = req.body;
       if (!Array.isArray(intros))
         return res.status(400).json({ error: 'intros doit être un tableau' });
