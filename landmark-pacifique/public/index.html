@@ -701,7 +701,7 @@ function buildRecapGuest(intro){
   const ncFin  = hFin ? fmtTZ(intro.date, hFin, 'TAH', 'NC').split('·')[1]||'' : '';
   const fr     = fmtTZ(intro.date, intro.heure,    'TAH', 'FR');
   const frFin  = hFin ? fmtTZ(intro.date, hFin, 'TAH', 'FR').split('·')[1]||'' : '';
-  return `<strong>${intro.animateur}${intro.titre ? ' — ' + intro.titre : ''}</strong>`
+  return `${intro.titre ? '<strong>' + intro.titre + '</strong>' : ''}`
     + `<table style="margin-top:8px;width:100%;border-collapse:collapse">`
     + `<tr><td colspan="2" style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--navy-mid);padding:4px 0">Introduction au Forum</td></tr>`
     + `<tr><td style="font-size:12px;font-weight:600;color:var(--navy);padding:4px 0;width:140px">Tahiti</td><td style="font-size:13px;color:var(--navy-deep);padding:4px 0">${tah}${tahFin?' à'+tahFin:''}</td></tr>`
