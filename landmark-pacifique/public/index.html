@@ -965,6 +965,9 @@ async function checkPilfParam(){
   } catch(e){ renderPublic(); }
   return true;
 }
+
+// Called on page load — checks for ?invite= in URL
+async function checkInviteParam(){
   const params = new URLSearchParams(window.location.search);
   const token = params.get('invite');
   if(!token) return false;
