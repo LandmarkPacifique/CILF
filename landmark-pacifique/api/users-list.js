@@ -22,25 +22,16 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    // Détecte les colonnes disponibles pour éviter les erreurs si une colonne manque
-    const cols = await sql`
-      SELECT column_name FROM information_schema.columns
-      WHERE table_name = 'users'
-    `;
-    const colNames = cols.map(c => c.column_name);
+    // Récupère tout, puis on filtre côté JS si besoin
+    const users = await sql`SELECT * FROM users ORDER BY name ASC`;
 
-    const select = [
-      'id', 'name', 'email',
-      colNames.includes('pid')        ? 'pid'        : 'NULL AS pid',
-      colNames.includes('telephone')  ? 'telephone'  : 'NULL AS telephone',
-      colNames.includes('status')     ? 'status'     : 'NULL AS status',
-      colNames.includes('role')       ? 'role'       : "'gradue' AS role",
-      colNames.includes('approved')   ? 'approved'   : 'NULL AS approved',
-      colNames.includes('validated')  ? 'validated'  : 'NULL AS validated',
-    ].join(', ');
+    // Retire le mot de passe et le token de reset avant d'envoyer
+    const safe = users.map(u => {
+      const { password, password_hash, reset_token, reset_token_expires_at, ...rest } = u;
+      return rest;
+    });
 
-    const users = await sql.unsafe(`SELECT ${select} FROM users ORDER BY name ASC`);
-    return res.status(200).json(users);
+    return res.status(200).json(safe);
   } catch (err) {
     console.error('Users list error:', err);
     return res.status(500).json({ error: 'Erreur serveur', detail: err.message });
