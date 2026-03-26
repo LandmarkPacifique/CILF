@@ -1,23 +1,42 @@
+// api/config.js
 const { neon } = require('@neondatabase/serverless');
+const jwt = require('jsonwebtoken');
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-admin-token');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-admin-token');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const sql = neon(process.env.DATABASE_URL);
 
   try {
     if (req.method === 'GET') {
+      // Lecture publique — pas besoin d'être connecté
       const rows = await sql`SELECT key, value FROM config`;
       return res.status(200).json(Object.fromEntries(rows.map(r => [r.key, r.value])));
     }
 
     if (req.method === 'POST') {
-      const token = req.headers['x-admin-token'];
-      if (!token || token !== process.env.ADMIN_TOKEN)
-        return res.status(401).json({ error: 'Non autorisé' });
+      // Écriture : vérifie le JWT
+      const authHeader = req.headers['authorization'] || '';
+      const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+
+      if (!token) {
+        return res.status(401).json({ error: 'Token manquant' });
+      }
+
+      let payload;
+      try {
+        payload = jwt.verify(token, process.env.JWT_SECRET);
+      } catch (e) {
+        return res.status(401).json({ error: 'Token invalide' });
+      }
+
+      // Seuls les admins et leaders peuvent modifier la config
+      if (payload.role !== 'admin' && payload.role !== 'leader') {
+        return res.status(403).json({ error: 'Accès refusé' });
+      }
 
       const cfg = req.body;
       for (const [key, value] of Object.entries(cfg)) {
@@ -30,6 +49,7 @@ module.exports = async function handler(req, res) {
     }
 
     return res.status(405).json({ error: 'Méthode non autorisée' });
+
   } catch (err) {
     console.error(err);
     return res.status(500).json({ error: err.message });
