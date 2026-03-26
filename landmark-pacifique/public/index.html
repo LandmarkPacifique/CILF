@@ -622,59 +622,6 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
       <button id="tab-btn-settings" class="cfg-tab" onclick="switchTab('settings',this)">Paramètres <span id="pending-badge" style="display:none;background:#dc3545;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;margin-left:4px;vertical-align:middle"></span></button>
     </div>
 
-    <!-- ── OUTILS LEADER (validation + inscription manuelle) ── -->
-    <div id="leader-tools" style="display:none">
-      <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
-        <button class="cfg-tab active" id="ltab-btn-validation" onclick="switchLeaderTab('validation',this)">Validation inscriptions</button>
-        <button class="cfg-tab" id="ltab-btn-manual" onclick="switchLeaderTab('manual',this)">Inscription manuelle</button>
-      </div>
-
-      <!-- Validation -->
-      <div id="ltab-validation" style="display:block">
-        <div class="admin-card">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
-            <div>
-              <p style="font-size:14px;font-weight:500;color:var(--navy-deep);margin:0">Comptes en attente de validation</p>
-              <p style="font-size:12px;color:#7a8a9a;margin:4px 0 0">Les nouveaux inscrits doivent être approuvés avant de pouvoir se connecter.</p>
-            </div>
-            <button class="copy-btn" onclick="loadPendingUsers()" style="padding:8px 16px">↻ Actualiser</button>
-          </div>
-          <div id="pending-users-list">
-            <p style="color:#7a8a9a;font-size:13px;text-align:center;padding:20px">Chargement…</p>
-          </div>
-        </div>
-        <div class="admin-card" style="margin-top:0">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
-            <div>
-              <p style="font-size:14px;font-weight:500;color:var(--navy-deep);margin:0">Tous les comptes gradués</p>
-              <p style="font-size:12px;color:#7a8a9a;margin:4px 0 0">Gérez les comptes existants.</p>
-            </div>
-            <button class="copy-btn" onclick="loadAllGradues()" style="padding:8px 16px">↻ Actualiser</button>
-          </div>
-          <div id="all-gradues-list">
-            <p style="color:#7a8a9a;font-size:13px;text-align:center;padding:20px">Chargement…</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Inscription manuelle -->
-      <div id="ltab-manual" style="display:none">
-        <div class="admin-card">
-          <p style="font-size:14px;font-weight:500;color:var(--navy-deep);margin-bottom:4px">Inscrire manuellement un gradué</p>
-          <p style="font-size:12px;color:#7a8a9a;margin-bottom:18px">Créez un compte gradué directement. Le compte sera immédiatement actif.</p>
-          <div style="display:flex;flex-direction:column;gap:10px;max-width:420px">
-            <div><label class="fl" style="margin-top:0">Prénom et Nom</label><input type="text" class="ai" id="lmanual-name" placeholder="Prénom Nom"></div>
-            <div><label class="fl" style="margin-top:0">Email</label><input type="email" class="ai" id="lmanual-email" placeholder="email@example.com"></div>
-            <div><label class="fl" style="margin-top:0">PID (7 chiffres, optionnel)</label><input type="text" class="ai" id="lmanual-pid" placeholder="1234567" maxlength="7"></div>
-            <div><label class="fl" style="margin-top:0">Téléphone (optionnel)</label><input type="tel" class="ai" id="lmanual-tel" placeholder="+689 00 00 00 00"></div>
-            <div><label class="fl" style="margin-top:0">Mot de passe provisoire</label><input type="password" class="ai" id="lmanual-pw" placeholder="Minimum 6 caractères"></div>
-          </div>
-          <p id="lmanual-msg" style="margin-top:10px;font-size:13px;display:none"></p>
-          <button class="save-btn" style="margin-top:14px;max-width:300px" onclick="leaderManualRegister()">Créer le compte</button>
-        </div>
-      </div>
-    </div>
-
     <div id="tab-introductions" class="cfg-panel active">
       <h2 class="admin-h2">CILF — Introductions</h2>
       <p class="admin-desc">Modifiez, ajoutez ou supprimez des introductions. Horaires NC et FR calculés automatiquement. Vous pouvez ajouter autant d'introductions que nécessaire.</p>
@@ -1313,9 +1260,10 @@ function switchTab(id,btn){
     // Description
     const desc = document.getElementById('settings-desc');
     if(desc) desc.textContent = isAdmin ? 'Gérez les accès au panneau admin. Seul l\'administrateur voit cette section.' : 'Validation des inscriptions et inscription manuelle des gradués.';
-    // Si leader : forcer l'onglet validation actif
+    // Si leader : forcer l'onglet validation actif avec le bon bouton
     if(!isAdmin){
-      switchSettingsTab('validation', document.getElementById('stab-btn-validation'));
+      const validationBtn = document.getElementById('stab-btn-validation');
+      switchSettingsTab('validation', validationBtn);
     }
   }
 }
@@ -2111,11 +2059,16 @@ async function savePilf(){
 
 // ── SETTINGS SUB-TABS ─────────────────────────────────────────────────────────
 function switchSettingsTab(id, btn){
-  document.querySelectorAll('#tab-settings .cfg-tab').forEach(b=>b.classList.remove('active'));
+  // Retirer active de tous les sous-onglets
+  document.querySelectorAll('#settings-tabs-bar .cfg-tab').forEach(b=>b.classList.remove('active'));
+  // Cacher tous les panels
   document.querySelectorAll('.stab-panel').forEach(p=>{ p.style.display='none'; p.classList.remove('active-stab'); });
+  // Activer le bouton cliqué
   if(btn) btn.classList.add('active');
+  // Afficher le bon panel
   const panel = document.getElementById('stab-'+id);
   if(panel){ panel.style.display='block'; panel.classList.add('active-stab'); }
+  // Charger les données
   if(id==='validation'){ loadPendingUsers(); loadAllGradues(); }
   if(id==='users'){ loadLeadersList(); }
 }
