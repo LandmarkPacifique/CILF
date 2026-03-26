@@ -1126,6 +1126,7 @@ function goPage(id){
   }
   // Ouvre la page Mon compte
   if(id==='page-compte') openMonCompte();
+  if(id==='page-intros') renderPublic();
 }
 function switchTab(id,btn){
   document.querySelectorAll(".cfg-tab").forEach(b=>b.classList.remove("active"));
