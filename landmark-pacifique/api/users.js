@@ -15,11 +15,10 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'Méthode non autorisée' });
   }
 
-  // Accepte le token depuis Authorization: Bearer OU x-admin-token
+  // Auth
   const auth = req.headers['authorization'] || '';
   const rawToken = auth.startsWith('Bearer ') ? auth.slice(7) : null;
   const token = rawToken || req.headers['x-admin-token'] || null;
-
   if (!token) return res.status(401).json({ error: 'Non authentifié' });
 
   let payload;
@@ -33,15 +32,13 @@ module.exports = async function handler(req, res) {
     return res.status(403).json({ error: 'Accès réservé aux administrateurs et leaders' });
   }
 
-  const { action, userId, name, email, password, role } = req.body || {};
+  const { action, userId, name, email, password, role, pid, telephone } = req.body || {};
 
-  // ── ACTION : APPROUVER UN COMPTE ─────────────────────────────────────────
+  // ── APPROUVER ────────────────────────────────────────────────────────────────
   if (action === 'approve') {
     if (!userId) return res.status(400).json({ error: 'userId requis' });
     try {
-      await sql`
-        UPDATE users SET approved = true WHERE id = ${userId}
-      `;
+      await sql`UPDATE users SET approved = true WHERE id = ${userId}`;
       return res.status(200).json({ success: true });
     } catch (err) {
       console.error('Approve error:', err);
@@ -49,7 +46,7 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  // ── ACTION : REFUSER / SUPPRIMER UN COMPTE ───────────────────────────────
+  // ── REFUSER / SUPPRIMER ──────────────────────────────────────────────────────
   if (action === 'reject') {
     if (!userId) return res.status(400).json({ error: 'userId requis' });
     try {
@@ -61,14 +58,45 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  // ── ACTION : CRÉER UN UTILISATEUR ADMIN/LEADER ───────────────────────────
+  // ── MODIFIER UN GRADUÉ ───────────────────────────────────────────────────────
+  if (action === 'edit') {
+    if (!userId) return res.status(400).json({ error: 'userId requis' });
+    try {
+      if (password) {
+        const passwordHash = await bcrypt.hash(password, 10);
+        await sql`
+          UPDATE users SET
+            name      = COALESCE(${name || null}, name),
+            email     = COALESCE(${email || null}, email),
+            pid       = ${pid || null},
+            telephone = ${telephone || null},
+            password_hash = ${passwordHash}
+          WHERE id = ${userId}
+        `;
+      } else {
+        await sql`
+          UPDATE users SET
+            name      = COALESCE(${name || null}, name),
+            email     = COALESCE(${email || null}, email),
+            pid       = ${pid || null},
+            telephone = ${telephone || null}
+          WHERE id = ${userId}
+        `;
+      }
+      return res.status(200).json({ success: true });
+    } catch (err) {
+      console.error('Edit error:', err);
+      return res.status(500).json({ error: 'Erreur serveur', detail: err.message });
+    }
+  }
+
+  // ── CRÉER UN ADMIN / LEADER ──────────────────────────────────────────────────
   if (!name || !email || !password || !role) {
     return res.status(400).json({ error: 'Tous les champs sont requis' });
   }
   if (!['admin', 'leader'].includes(role)) {
     return res.status(400).json({ error: 'Rôle invalide' });
   }
-  // Seul un admin peut créer un autre admin
   if (role === 'admin' && payload.role !== 'admin') {
     return res.status(403).json({ error: 'Seul un admin peut créer un autre admin' });
   }
@@ -77,13 +105,7 @@ module.exports = async function handler(req, res) {
     const passwordHash = await bcrypt.hash(password, 10);
     await sql`
       INSERT INTO users (email, password_hash, role, name, approved)
-      VALUES (
-        ${email},
-        ${passwordHash},
-        ${role},
-        ${name},
-        true
-      )
+      VALUES (${email}, ${passwordHash}, ${role}, ${name}, true)
     `;
     return res.status(201).json({ success: true });
   } catch (err) {
