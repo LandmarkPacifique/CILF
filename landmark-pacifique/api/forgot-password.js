@@ -4,7 +4,7 @@ const crypto = require('crypto');
 
 const sql = neon(process.env.DATABASE_URL);
 const MAKE_WEBHOOK_RESET = process.env.MAKE_WEBHOOK_RESET || 'https://hook.us2.make.com/hwd31jmdqvpo3eoq5u04rjigdm2s9nxu';
-const APP_URL = process.env.APP_URL || 'https://landmark-pacifique.vercel.app';
+const APP_URL = process.env.APP_URL || 'https://project-pajuk.vercel.app';
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
