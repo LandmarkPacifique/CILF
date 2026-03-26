@@ -46,7 +46,7 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  // ── REFUSER / SUPPRIMER ──────────────────────────────────────────────────────
+  // ── REFUSER (gradués en attente) ─────────────────────────────────────────────
   if (action === 'reject') {
     if (!userId) return res.status(400).json({ error: 'userId requis' });
     try {
@@ -58,7 +58,22 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  // ── MODIFIER UN GRADUÉ ───────────────────────────────────────────────────────
+  // ── SUPPRIMER UN LEADER / ADMIN ──────────────────────────────────────────────
+  if (action === 'delete') {
+    if (!userId) return res.status(400).json({ error: 'userId requis' });
+    if (payload.role !== 'admin') {
+      return res.status(403).json({ error: 'Seul un admin peut supprimer un utilisateur' });
+    }
+    try {
+      await sql`DELETE FROM users WHERE id = ${userId}`;
+      return res.status(200).json({ success: true });
+    } catch (err) {
+      console.error('Delete error:', err);
+      return res.status(500).json({ error: 'Erreur serveur', detail: err.message });
+    }
+  }
+
+  // ── MODIFIER UN UTILISATEUR ──────────────────────────────────────────────────
   if (action === 'edit') {
     if (!userId) return res.status(400).json({ error: 'userId requis' });
     try {
