@@ -2207,7 +2207,7 @@ async function saveEditLeader(userId){
   const body = { name, email, role };
   if(pw) body.password = pw;
   try {
-    await apiFetch('/api/users/'+userId, { method:'PATCH', body: JSON.stringify(body) });
+    await apiFetch('/api/users', { method:'POST', body: JSON.stringify({ action:'edit', userId, ...body }) });
     msg.textContent='✓ Modifié !'; msg.style.color='#1a9e6e';
     setTimeout(() => { loadLeadersList(); }, 1200);
   } catch(e) {
@@ -2322,15 +2322,10 @@ async function loadAllGradues(){
 // ── APPROVE USER ──────────────────────────────────────────────────────────────
 async function approveUser(userId, userEmail){
   try {
-    await apiFetch('/api/users/approve', { method:'POST', body: JSON.stringify({ userId, email: userEmail, status:'approved' }) });
+    await apiFetch('/api/users', { method:'POST', body: JSON.stringify({ action:'approve', userId }) });
     loadPendingUsers(); loadAllGradues(); loadPendingBadge();
   } catch(e){
-    try {
-      await apiFetch('/api/users/'+userId, { method:'PATCH', body: JSON.stringify({ status:'approved', validated:true, approved:true }) });
-      loadPendingUsers(); loadAllGradues(); loadPendingBadge();
-    } catch(e2){
-      alert('Erreur lors de l\'approbation. Vérifiez que l\'API supporte cette action.');
-    }
+    alert('Erreur lors de l\'approbation : ' + e.message);
   }
 }
 
@@ -2338,15 +2333,10 @@ async function approveUser(userId, userEmail){
 async function rejectUser(userId, userEmail){
   if(!confirm('Refuser et supprimer ce compte ?')) return;
   try {
-    await apiFetch('/api/users/approve', { method:'POST', body: JSON.stringify({ userId, email: userEmail, status:'rejected' }) });
+    await apiFetch('/api/users', { method:'POST', body: JSON.stringify({ action:'reject', userId }) });
     loadPendingUsers(); loadAllGradues(); loadPendingBadge();
   } catch(e){
-    try {
-      await apiFetch('/api/users/'+userId, { method:'DELETE' });
-      loadPendingUsers(); loadAllGradues(); loadPendingBadge();
-    } catch(e2){
-      alert('Erreur lors du refus. Vérifiez que l\'API supporte cette action.');
-    }
+    alert('Erreur lors du refus : ' + e.message);
   }
 }
 
@@ -2354,7 +2344,7 @@ async function rejectUser(userId, userEmail){
 async function deleteUserConfirm(userId, userName){
   if(!confirm('Supprimer le compte de ' + userName + ' ?')) return;
   try {
-    await apiFetch('/api/users/'+userId, { method:'DELETE' });
+    await apiFetch('/api/users', { method:'POST', body: JSON.stringify({ action:'reject', userId }) });
     loadAllGradues(); loadPendingUsers(); loadPendingBadge();
   } catch(e){
     alert('Erreur lors de la suppression : ' + e.message);
@@ -2381,7 +2371,7 @@ async function saveEditGradue(userId){
   const body = { name, email, pid: pid||null, telephone: tel||null };
   if(pw) body.password = pw;
   try {
-    await apiFetch('/api/users/'+userId, { method:'PATCH', body: JSON.stringify(body) });
+    await apiFetch('/api/users', { method:'POST', body: JSON.stringify({ action:'edit', userId, ...body }) });
     msg.textContent='✓ Modifié !'; msg.style.color='#1a9e6e';
     setTimeout(() => { loadAllGradues(); }, 1200);
   } catch(e){
