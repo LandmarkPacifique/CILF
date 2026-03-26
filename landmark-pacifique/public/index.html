@@ -217,6 +217,51 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
 /* ═══ NAV COMPTE ══════════════════════════════════════════════════════════════ */
 #btn-mon-compte { display:none }
 
+
+/* ── MAINTENANCE PAGE ── */
+.maintenance-screen {
+  min-height:100vh; background:var(--navy-deep);
+  display:flex; align-items:center; justify-content:center;
+  padding:24px; position:relative; overflow:hidden;
+}
+.maintenance-screen::before {
+  content:''; position:absolute; inset:0;
+  background:radial-gradient(ellipse 70% 60% at 50% 100%, rgba(0,96,160,.5) 0%, transparent 70%);
+  pointer-events:none;
+}
+.maintenance-screen::after {
+  content:''; position:absolute; inset:0;
+  background:radial-gradient(ellipse 40% 40% at 50% 0%, rgba(56,216,240,.08) 0%, transparent 60%);
+  pointer-events:none;
+}
+.maintenance-card {
+  position:relative; z-index:1;
+  background:rgba(255,255,255,.04); border:1px solid rgba(56,216,240,.15);
+  border-radius:24px; padding:56px 48px; width:100%; max-width:540px;
+  text-align:center; box-shadow:0 24px 80px rgba(0,10,30,.5);
+}
+.maintenance-badge {
+  display:inline-flex; align-items:center; gap:8px;
+  background:rgba(56,216,240,.1); border:1px solid rgba(56,216,240,.3);
+  border-radius:50px; padding:6px 18px; font-size:11px; font-weight:600;
+  letter-spacing:.12em; text-transform:uppercase; color:var(--cyan); margin-bottom:28px;
+}
+.maintenance-badge .dot {
+  width:8px; height:8px; background:var(--cyan); border-radius:50%;
+  animation:pulse-dot 1.8s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.75)}
+}
+.maintenance-title {
+  font-family:'Cormorant Garamond',serif; font-size:clamp(32px,5vw,48px);
+  font-weight:300; color:var(--white); line-height:1.15; margin-bottom:16px;
+}
+.maintenance-title em { color:var(--cyan); font-style:italic; }
+.maintenance-body {
+  font-size:15px; color:var(--text-muted-navy); line-height:1.8;
+  max-width:380px; margin:0 auto 32px;
+}
 </style>
 </head>
 <body>
@@ -578,6 +623,23 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
     <div id="tab-settings" class="cfg-panel">
       <h2 class="admin-h2">Paramètres</h2>
       <p class="admin-desc">Gérez les accès au panneau admin. Seul l'administrateur voit cette section.</p>
+
+      <!-- ── INTERRUPTEUR MAINTENANCE ── -->
+      <div class="admin-card" style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px">
+        <div>
+          <p style="font-size:15px;font-weight:600;color:var(--navy-deep);margin:0 0 4px">Mode maintenance</p>
+          <p style="font-size:12px;color:#7a8a9a;margin:0;line-height:1.6">Quand activé, les visiteurs voient une page de maintenance.<br>Les admins et leaders continuent d'accéder au site normalement.</p>
+          <p id="maintenance-status-msg" style="font-size:12px;margin:6px 0 0;display:none"></p>
+        </div>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;flex-shrink:0">
+          <span id="maintenance-label" style="font-size:13px;font-weight:500;color:#7a8a9a">Désactivé</span>
+          <div style="position:relative;width:52px;height:28px" onclick="toggleMaintenance()">
+            <input type="checkbox" id="maintenance-toggle" style="opacity:0;position:absolute;width:0;height:0">
+            <div id="maintenance-track" style="position:absolute;inset:0;background:#dde3ea;border-radius:14px;transition:background .25s;cursor:pointer"></div>
+            <div id="maintenance-thumb" style="position:absolute;top:3px;left:3px;width:22px;height:22px;background:#fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.25);transition:transform .25s;cursor:pointer"></div>
+          </div>
+        </label>
+      </div>
 
       <!-- Sous-onglets Paramètres -->
       <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
@@ -1140,6 +1202,7 @@ function switchTab(id,btn){
   btn.classList.add("active");
   document.getElementById("tab-"+id).classList.add("active");
   if(id==='pilf') renderPilf();
+  if(id==='settings') loadMaintenanceState();
 }
 // logout défini plus haut
 
@@ -2188,6 +2251,67 @@ async function doResetPassword(){
   }
 }
 
+
+// ── MAINTENANCE ───────────────────────────────────────────────────────────────
+let _maintenanceActive = false;
+
+function setMaintenanceUI(active) {
+  _maintenanceActive = active;
+  const track = document.getElementById('maintenance-track');
+  const thumb = document.getElementById('maintenance-thumb');
+  const label = document.getElementById('maintenance-label');
+  if (!track) return;
+  if (active) {
+    track.style.background = '#e53e3e';
+    thumb.style.transform  = 'translateX(24px)';
+    label.textContent      = 'Activé';
+    label.style.color      = '#e53e3e';
+  } else {
+    track.style.background = '#dde3ea';
+    thumb.style.transform  = 'translateX(0)';
+    label.textContent      = 'Désactivé';
+    label.style.color      = '#7a8a9a';
+  }
+}
+
+async function toggleMaintenance() {
+  const newState = !_maintenanceActive;
+  const msg = document.getElementById('maintenance-status-msg');
+  msg.style.display = 'none';
+  try {
+    await apiFetch('/api/config', {
+      method: 'POST',
+      body: JSON.stringify({ maintenance: newState ? 'true' : 'false' })
+    });
+    setMaintenanceUI(newState);
+    msg.style.display = 'block';
+    msg.style.color   = newState ? '#e53e3e' : '#0a6b11';
+    msg.textContent   = newState
+      ? '⚠ Site en maintenance — les visiteurs voient la page de maintenance.'
+      : '✓ Site accessible normalement.';
+  } catch(e) {
+    msg.style.display = 'block';
+    msg.style.color   = '#c00';
+    msg.textContent   = 'Erreur : ' + e.message;
+  }
+}
+
+async function checkMaintenance() {
+  try {
+    const cfg = await publicFetch('/api/config');
+    return cfg.maintenance === 'true';
+  } catch(e) {
+    return false;
+  }
+}
+
+async function loadMaintenanceState() {
+  try {
+    const cfg = await publicFetch('/api/config');
+    setMaintenanceUI(cfg.maintenance === 'true');
+  } catch(e) {}
+}
+
 (async function init(){
   // Vérifie si un token de reset est présent dans l'URL
   const _resetParams = new URLSearchParams(window.location.search);
@@ -2206,6 +2330,12 @@ async function doResetPassword(){
   const session = getSession();
   if(session){
     if(session.role === 'gradue'){
+      // Gradué : vérifie si maintenance active avant d'afficher le site
+      const isMaintenance = await checkMaintenance();
+      if(isMaintenance){
+        goPage('page-maintenance');
+        return;
+      }
       const extra = getSessionExtra();
       enterGradue(session.name, session.email, extra.pid||null, extra.telephone||null);
       // Gradué → restaure la dernière page visitée ou page d'accueil par défaut
@@ -2217,12 +2347,17 @@ async function doResetPassword(){
         goPage('page-home');
       }
     } else {
-      // Leader ou Admin → page admin
+      // Leader ou Admin → page admin (jamais bloqué par la maintenance)
       enterAdmin(session.role, session.name);
     }
     return;
   }
-  // Aucune session : redirection vers la page de connexion
+  // Aucune session : vérifie si maintenance active
+  const isMaintenance = await checkMaintenance();
+  if(isMaintenance){
+    goPage('page-maintenance');
+    return;
+  }
   renderPublic();
   goPage('page-login');
 })();
