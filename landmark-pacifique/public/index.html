@@ -1453,7 +1453,8 @@ async function fillLeaderSelect(type, i, currentName){
   const users = await getLeadersList();
   const sel = document.getElementById(`leader-${type}-${i}`);
   if(!sel) return;
-  users.forEach(u => {
+  const leaders = users.filter(u => u.role === 'leader' || u.role === 'admin');
+  leaders.forEach(u => {
     const opt = document.createElement('option');
     opt.value = u.name;
     opt.dataset.email = u.email;
@@ -1463,7 +1464,7 @@ async function fillLeaderSelect(type, i, currentName){
   });
   // Si un leader est déjà sélectionné, rempli l'email
   if(currentName){
-    const match = users.find(u => u.name === currentName);
+    const match = leaders.find(u => u.name === currentName);
     if(match){
       const emailEl = document.getElementById(`email-${type}-${i}`);
       if(emailEl) emailEl.value = match.email;
