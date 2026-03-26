@@ -496,6 +496,7 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
       <button class="nav-btn" onclick="goPage('page-home')">Accueil</button>
       <button class="nav-btn" onclick="goPage('page-intros')">Introductions</button>
       <button id="btn-mon-compte" class="nav-btn primary" onclick="goPage('page-compte')">Mon compte</button>
+      <button id="btn-retour-admin" class="nav-btn" style="display:none" onclick="goPage('page-admin')">← Admin</button>
       <button class="nav-btn" onclick="logoutGradue()">Déconnexion</button>
     </nav>
   </header>
@@ -544,6 +545,7 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
     <span class="admin-title">⚙ Administration — Landmark Pacifique</span>
     <div style="display:flex;gap:8px;align-items:center">
       <span id="admin-user-name" style="font-size:13px;color:var(--text-muted-navy)"></span>
+      <button class="nav-btn" onclick="openMonCompte()">Mon compte</button>
       <button class="nav-btn primary" onclick="goPage('page-intros')">Voir le site</button>
       <button class="nav-btn" onclick="logout()">Déconnexion</button>
     </div>
@@ -979,6 +981,9 @@ async function openMonCompte(){
   document.getElementById('compte-name').textContent = session.name || '';
   document.getElementById('compte-email').textContent = session.email || '';
   document.getElementById('compte-badge').textContent = session.role === 'gradue' ? 'Gradué' : (session.role === 'leader' ? 'Leader' : 'Admin');
+  // Affiche le bouton "← Admin" si l'utilisateur est admin ou leader
+  const btnRetourAdmin = document.getElementById('btn-retour-admin');
+  if(btnRetourAdmin) btnRetourAdmin.style.display = (session.role === 'admin' || session.role === 'leader') ? '' : 'none';
   // Pré-remplit depuis l'API
   try {
     const res = await fetch(API_BASE + '/api/profile', {
