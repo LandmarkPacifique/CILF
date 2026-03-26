@@ -446,7 +446,7 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
         </p>
       </div>
 
-      <br><button class="copy-btn" onclick="goPage('page-home')">← Retour au site</button>
+      <br><button class="copy-btn" id="btn-retour-site" style="display:none" onclick="goPage('page-home')">← Retour au site</button>
     </div>
   </div>
 </div>
@@ -839,6 +839,9 @@ function enterGradue(name, email, pid, telephone){
     if(lo) lo.style.display='';
     if(ad) ad.style.display='none';
   });
+  // Affiche le bouton "Retour au site" sur la page login
+  const btnRetour = document.getElementById('btn-retour-site');
+  if(btnRetour) btnRetour.style.display='';
   goPage('page-home');
 }
 
@@ -853,7 +856,10 @@ function logoutGradue(){
     if(lo) lo.style.display='none';
     if(ad) ad.style.display='';
   });
-  goPage('page-home');
+  // Masque le bouton "Retour au site"
+  const btnRetour = document.getElementById('btn-retour-site');
+  if(btnRetour) btnRetour.style.display='none';
+  goPage('page-login');
 }
 
 // ── PAGE MON COMPTE ───────────────────────────────────────────────────────────
@@ -943,7 +949,7 @@ function enterAdmin(role, name){
   goPage('page-admin');
   renderAdmin();
 }
-function logout(){ clearSession(); _leadersList = null; goPage('page-home'); }
+function logout(){ clearSession(); _leadersList = null; goPage('page-login'); }
 function logoutAdmin(){ logout(); }
 
 async function getIntros() {
@@ -1000,7 +1006,7 @@ function switchTab(id,btn){
   document.getElementById("tab-"+id).classList.add("active");
   if(id==='pilf') renderPilf();
 }
-function logout(){ goPage("page-home"); }
+// logout défini plus haut
 
 // ── RENDER PUBLIC CARDS ───────────────────────────────────────────────────────
 function buildPublicCard(intro, badgeLabel, type) {
@@ -1819,12 +1825,17 @@ async function addUser(){
     if(session.role === 'gradue'){
       const extra = getSessionExtra();
       enterGradue(session.name, session.email, extra.pid||null, extra.telephone||null);
+      // Gradué → page d'accueil
+      goPage('page-home');
     } else {
+      // Leader ou Admin → page admin
       enterAdmin(session.role, session.name);
     }
     return;
   }
+  // Aucune session : redirection vers la page de connexion
   renderPublic();
+  goPage('page-login');
 })();
 
 async function logToSheets(type, data) {
