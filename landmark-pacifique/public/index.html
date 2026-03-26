@@ -286,7 +286,7 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
       <div class="how-grid">
         <div class="how-card"><div class="how-num">1</div><div class="how-title">Choisissez une introduction</div><div class="how-body">Des introductions aux horaires qui vous conviennent en Polynésie, Nouvelle-Calédonie ou France.</div></div>
         <div class="how-card"><div class="how-num">2</div><div class="how-title">Inscrivez votre invité</div><div class="how-body">Remplissez le formulaire. Les emails de confirmation partent automatiquement dès la validation.</div></div>
-        <div class="how-card"><div class="how-num">3</div><div class="how-title">Tout est automatique</div><div class="how-body">Rappels Zoom ~1h et 30 min avant envoyés automatiquement à votre invité. Zéro action manuelle.</div></div>
+        <div class="how-card"><div class="how-num">3</div><div class="how-title">Tout est automatique</div><div class="how-body">Rappels Zoom ~1h et 40 min avant envoyés automatiquement à votre invité. Zéro action manuelle.</div></div>
       </div>
       <div style="text-align:center;margin-top:32px">
         <button class="btn-primary" onclick="goPage('page-intros')">Voir les introductions disponibles</button>
@@ -428,7 +428,7 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
 
       <p class="form-notice">
         Confirmation automatique envoyée à vous et votre invité(e).<br>
-        Rappels Zoom ~1h et 30 min avant programmés automatiquement.
+        Rappels Zoom ~1h et 40 min avant programmés automatiquement.
       </p>
     </div>
   </div>
@@ -438,7 +438,7 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
     <div style="display:flex;align-items:center">
       <img class="logo-img-small" src="" alt="Landmark Pacifique" style="height:120px;width:auto;object-fit:contain;display:block;cursor:pointer" onclick="goPage('page-home')">
     </div>
-    <nav class="header-nav">
+    <nav class="header-nav" id="confirm-nav">
       <button class="nav-btn" onclick="goPage('page-home')">Accueil</button>
       <button class="nav-btn" onclick="goPage('page-intros')">Introductions</button>
     </nav>
@@ -448,7 +448,17 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
     <h2 class="confirm-title serif" id="confirm-title">Inscription confirmée !</h2>
     <p class="confirm-body" id="confirm-body"></p>
     <div class="email-timeline" id="confirm-timeline"></div>
-    <button class="btn-primary" onclick="goPage('page-home')" style="width:100%;max-width:280px">Retour à l'accueil</button>
+    <div id="confirm-horaires" style="display:none;background:var(--cyan-pale);border:1px solid rgba(56,216,240,.25);border-radius:12px;padding:16px 20px;margin:0 auto 24px;max-width:380px;text-align:left">
+      <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--navy-mid);margin-bottom:10px">Horaires de l'introduction</div>
+      <div id="confirm-horaires-content"></div>
+    </div>
+    <div id="confirm-video" style="display:none;margin:0 auto 24px;max-width:480px;width:100%">
+      <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--navy-mid);margin-bottom:10px;text-align:left">À regarder avant votre introduction</div>
+      <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px">
+        <iframe id="confirm-youtube" src="" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0" allowfullscreen loading="lazy"></iframe>
+      </div>
+    </div>
+    <button id="confirm-btn-home" class="btn-primary" onclick="goPage('page-home')" style="width:100%;max-width:280px">Retour à l'accueil</button>
   </div>
 </div>
 
@@ -1686,7 +1696,7 @@ async function submitInvite(){
   const ccNCFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","NC").split("·")[1]||"":"";
   const ccFRFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","FR").split("·")[1]||"":"";
   const sessionUTC=toUTC(intro.date,intro.heure);
-  const t3h=sessionUTC-3*3600, t30=sessionUTC-1800;
+  const [iy,im,idd]=intro.date.split("-").map(Number); const tMatin=Math.floor(Date.UTC(iy,im-1,idd,17,0)/1000); const t40=sessionUTC-40*60;
   try{
     await fetch("https://hook.us2.make.com/2njt9kkq4ovz75l0yg3otstsda4ug6ry", {
       method:"POST",
@@ -1705,15 +1715,15 @@ async function submitInvite(){
         heure_fin_tah:tahFin, heure_fin_nc:ncFin, heure_fin_fr:frFin,
         cc_tah:ccTAH, cc_nc:ccNC, cc_fr:ccFR,
         cc_fin_tah:ccTAHFin, cc_fin_nc:ccNCFin, cc_fin_fr:ccFRFin,
-        t3h:t3h, t30:t30
+        t3h:tMatin, t30:t40
       })
     });
   }catch(e){console.error("Make webhook invite:",e);}
   btn.disabled=false;
   showConfirm(
     "Réservation confirmée !",
-    `Bienvenue ${fn} ! Un email de confirmation vous a été envoyé. À bientôt !`,
-    t3h, t30
+    `\'Ia ora na ${fn} ! Un email de confirmation vous a été envoyé. À bientôt !`,
+    tMatin, t40
   );
 }
 
@@ -1787,7 +1797,7 @@ async function submitSolo(){
   }catch(e){console.error("Make webhook solo:",e);}
   btn.disabled=false;btn.textContent="Confirmer ma participation";
   logToSheets("graduate",{prenom:fn,nom:ln,email:em,telephone:document.getElementById("s-phone").value.trim(),pays:"",animateur:intro.animateur,titre:intro.titre,date_tah:fmtTZ(intro.date,intro.heure,"TAH","TAH"),introduction_id:intro.id});
-  showConfirm("Inscription confirmée !",`Bienvenue ${fn} ! Un email de confirmation vous a été envoyé.`,null,null);
+  showConfirm("Inscription confirmée !",`\'Ia ora na ${fn} ! Un email de confirmation vous a été envoyé.`,null,null);
 }
 
 // ── SUBMIT WITH GUEST ─────────────────────────────────────────────────────────
@@ -1825,7 +1835,7 @@ async function submitWithGuest(){
   const ccNCFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","NC").split("·")[1]||"":"";
   const ccFRFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","FR").split("·")[1]||"":"";
   const sessionUTC=toUTC(intro.date,intro.heure);
-  const t3h=sessionUTC-3*3600,t30=sessionUTC-1800;
+  const [iy,im,idd]=intro.date.split("-").map(Number); const tMatin=Math.floor(Date.UTC(iy,im-1,idd,17,0)/1000); const t40=sessionUTC-40*60;
   const btn=document.getElementById("guest-submit");btn.disabled=true;btn.textContent="Envoi en cours…";
   // Webhook Make (emails)
   try{
@@ -1847,7 +1857,7 @@ async function submitWithGuest(){
         cc_tah:ccTAH, cc_nc:ccNC, cc_fr:ccFR,
         cc_fin_tah:ccTAHFin, cc_fin_nc:ccNCFin, cc_fin_fr:ccFRFin,
         invite_link:getInviteLink(intro.id, gfn+" "+gln, gem),
-        t3h:t3h, t30:t30
+        t3h:tMatin, t30:t40
       })
     });
   }catch(e){console.error("Make webhook:",e);}
@@ -1855,21 +1865,49 @@ async function submitWithGuest(){
   logToSheets("graduate",{prenom:gfn,nom:gln,email:gem,telephone:document.getElementById("g-phone").value.trim(),pays:"",animateur:intro.animateur,titre:intro.titre,date_tah:fmtTZ(intro.date,intro.heure,"TAH","TAH"),invite:ufn+" "+uln,introduction_id:intro.id});
   logToSheets("guest",{prenom:ufn,nom:uln,email:uem,telephone:"",graduate:gfn+" "+gln,graduate_email:gem,animateur:intro.animateur,titre:intro.titre,date_tah:fmtTZ(intro.date,intro.heure,"TAH","TAH"),introduction_id:intro.id});
   ["g-first","g-last","g-email","g-phone","gu-first","gu-last","gu-email"].forEach(id=>document.getElementById(id).value="");
-  showConfirm("Inscription confirmée !",`${ufn} ${uln} est bien inscrit(e). Un email de confirmation lui a été envoyé.`,t3h,t30);
+  showConfirm("Inscription confirmée !",`\u2019Ia ora na ! ${ufn} ${uln} est bien inscrit(e). Un email de confirmation lui a \u00e9t\u00e9 envoy\u00e9.`,tMatin,t40,false,intro);
 }
 
 // ── CONFIRMATION ──────────────────────────────────────────────────────────────
-function showConfirm(title,body,t3h,t30){
+function showConfirm(title,body,tMatin,t40,isGuest,intro){
   document.getElementById("confirm-title").textContent=title;
   document.getElementById("confirm-body").textContent=body;
   const tl=document.getElementById("confirm-timeline");
-  if(t3h&&t30){
+  if(tMatin&&t40){
     const fmt=ts=>{const d=new Date(ts*1000);return`${DAYS[d.getDay()]} ${d.getDate()} ${MTHS[d.getMonth()]} · ${String(d.getHours()).padStart(2,"0")}h${String(d.getMinutes()).padStart(2,"0")}`;};
     tl.innerHTML=`<div class="email-tl-title">Emails programmés pour votre invité(e)</div>
       <div class="tl-row"><div class="tl-dot"></div><span><strong>Maintenant</strong> — confirmation d'inscription</span></div>
-      <div class="tl-row"><div class="tl-dot"></div><span><strong>~1h avant</strong> — lien Zoom + préparation<br><small style="color:var(--navy-mid)">${fmt(t3h)}</small></span></div>
-      <div class="tl-row"><div class="tl-dot"></div><span><strong>30 min avant</strong> — rappel final<br><small style="color:var(--navy-mid)">${fmt(t30)}</small></span></div>`;
+      <div class="tl-row"><div class="tl-dot"></div><span><strong>Matin à 7h00 TAH</strong> — rappel matinal<br><small style="color:var(--navy-mid)">${fmt(tMatin)}</small></span></div>
+      <div class="tl-row"><div class="tl-dot"></div><span><strong>40 min avant</strong> — rappel final<br><small style="color:var(--navy-mid)">${fmt(t40)}</small></span></div>`;
   } else { tl.innerHTML=""; }
+  const horDiv=document.getElementById("confirm-horaires");
+  const horContent=document.getElementById("confirm-horaires-content");
+  if(intro&&intro.date&&intro.heure){
+    const tah=fmtTZ(intro.date,intro.heure,"TAH","TAH");
+    const nc=fmtTZ(intro.date,intro.heure,"TAH","NC");
+    const fr=fmtTZ(intro.date,intro.heure,"TAH","FR");
+    const hFin=intro.heureFin||autoEndTime(intro.heure);
+    const tahFin=hFin?fmtTZ(intro.date,hFin,"TAH","TAH").split("·")[1]||"":"";
+    const ncFin=hFin?fmtTZ(intro.date,hFin,"TAH","NC").split("·")[1]||"":"";
+    const frFin=hFin?fmtTZ(intro.date,hFin,"TAH","FR").split("·")[1]||"":"";
+    horContent.innerHTML=`
+      <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid rgba(56,216,240,.15)"><span style="color:#7a8a9a;font-weight:600">TAH</span><span>${tah}${tahFin?" → "+tahFin:""}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid rgba(56,216,240,.15)"><span style="color:#7a8a9a;font-weight:600">NC&nbsp;&nbsp;</span><span>${nc}${ncFin?" → "+ncFin:""}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0"><span style="color:#7a8a9a;font-weight:600">FR&nbsp;&nbsp;</span><span>${fr}${frFin?" → "+frFin:""}</span></div>`;
+    horDiv.style.display="block";
+  } else { if(horDiv) horDiv.style.display="none"; }
+  const btnHome=document.getElementById("confirm-btn-home");
+  const videoDiv=document.getElementById("confirm-video");
+  const navEl=document.getElementById("confirm-nav");
+  if(isGuest){
+    if(btnHome) btnHome.style.display="none";
+    if(navEl) navEl.style.display="none";
+    if(videoDiv) videoDiv.style.display="block";
+  } else {
+    if(btnHome) btnHome.style.display="";
+    if(navEl) navEl.style.display="";
+    if(videoDiv) videoDiv.style.display="none";
+  }
   goPage("page-confirm");
 }
 
@@ -2961,7 +2999,7 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
       <div class="how-grid">
         <div class="how-card"><div class="how-num">1</div><div class="how-title">Choisissez une introduction</div><div class="how-body">Des introductions aux horaires qui vous conviennent en Polynésie, Nouvelle-Calédonie ou France.</div></div>
         <div class="how-card"><div class="how-num">2</div><div class="how-title">Inscrivez votre invité</div><div class="how-body">Remplissez le formulaire. Les emails de confirmation partent automatiquement dès la validation.</div></div>
-        <div class="how-card"><div class="how-num">3</div><div class="how-title">Tout est automatique</div><div class="how-body">Rappels Zoom ~1h et 30 min avant envoyés automatiquement à votre invité. Zéro action manuelle.</div></div>
+        <div class="how-card"><div class="how-num">3</div><div class="how-title">Tout est automatique</div><div class="how-body">Rappels Zoom ~1h et 40 min avant envoyés automatiquement à votre invité. Zéro action manuelle.</div></div>
       </div>
       <div style="text-align:center;margin-top:32px">
         <button class="btn-primary" onclick="goPage('page-intros')">Voir les introductions disponibles</button>
@@ -3103,7 +3141,7 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
 
       <p class="form-notice">
         Confirmation automatique envoyée à vous et votre invité(e).<br>
-        Rappels Zoom ~1h et 30 min avant programmés automatiquement.
+        Rappels Zoom ~1h et 40 min avant programmés automatiquement.
       </p>
     </div>
   </div>
@@ -3113,7 +3151,7 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
     <div style="display:flex;align-items:center">
       <img class="logo-img-small" src="" alt="Landmark Pacifique" style="height:120px;width:auto;object-fit:contain;display:block;cursor:pointer" onclick="goPage('page-home')">
     </div>
-    <nav class="header-nav">
+    <nav class="header-nav" id="confirm-nav">
       <button class="nav-btn" onclick="goPage('page-home')">Accueil</button>
       <button class="nav-btn" onclick="goPage('page-intros')">Introductions</button>
     </nav>
@@ -3123,7 +3161,17 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
     <h2 class="confirm-title serif" id="confirm-title">Inscription confirmée !</h2>
     <p class="confirm-body" id="confirm-body"></p>
     <div class="email-timeline" id="confirm-timeline"></div>
-    <button class="btn-primary" onclick="goPage('page-home')" style="width:100%;max-width:280px">Retour à l'accueil</button>
+    <div id="confirm-horaires" style="display:none;background:var(--cyan-pale);border:1px solid rgba(56,216,240,.25);border-radius:12px;padding:16px 20px;margin:0 auto 24px;max-width:380px;text-align:left">
+      <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--navy-mid);margin-bottom:10px">Horaires de l'introduction</div>
+      <div id="confirm-horaires-content"></div>
+    </div>
+    <div id="confirm-video" style="display:none;margin:0 auto 24px;max-width:480px;width:100%">
+      <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--navy-mid);margin-bottom:10px;text-align:left">À regarder avant votre introduction</div>
+      <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px">
+        <iframe id="confirm-youtube" src="" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0" allowfullscreen loading="lazy"></iframe>
+      </div>
+    </div>
+    <button id="confirm-btn-home" class="btn-primary" onclick="goPage('page-home')" style="width:100%;max-width:280px">Retour à l'accueil</button>
   </div>
 </div>
 
@@ -4361,7 +4409,7 @@ async function submitInvite(){
   const ccNCFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","NC").split("·")[1]||"":"";
   const ccFRFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","FR").split("·")[1]||"":"";
   const sessionUTC=toUTC(intro.date,intro.heure);
-  const t3h=sessionUTC-3*3600, t30=sessionUTC-1800;
+  const [iy,im,idd]=intro.date.split("-").map(Number); const tMatin=Math.floor(Date.UTC(iy,im-1,idd,17,0)/1000); const t40=sessionUTC-40*60;
   try{
     await fetch("https://hook.us2.make.com/2njt9kkq4ovz75l0yg3otstsda4ug6ry", {
       method:"POST",
@@ -4380,15 +4428,15 @@ async function submitInvite(){
         heure_fin_tah:tahFin, heure_fin_nc:ncFin, heure_fin_fr:frFin,
         cc_tah:ccTAH, cc_nc:ccNC, cc_fr:ccFR,
         cc_fin_tah:ccTAHFin, cc_fin_nc:ccNCFin, cc_fin_fr:ccFRFin,
-        t3h:t3h, t30:t30
+        t3h:tMatin, t30:t40
       })
     });
   }catch(e){console.error("Make webhook invite:",e);}
   btn.disabled=false;
   showConfirm(
     "Réservation confirmée !",
-    `Bienvenue ${fn} ! Un email de confirmation vous a été envoyé. À bientôt !`,
-    t3h, t30
+    `\'Ia ora na ${fn} ! Un email de confirmation vous a été envoyé. À bientôt !`,
+    tMatin, t40
   );
 }
 
@@ -4462,7 +4510,7 @@ async function submitSolo(){
   }catch(e){console.error("Make webhook solo:",e);}
   btn.disabled=false;btn.textContent="Confirmer ma participation";
   logToSheets("graduate",{prenom:fn,nom:ln,email:em,telephone:document.getElementById("s-phone").value.trim(),pays:"",animateur:intro.animateur,titre:intro.titre,date_tah:fmtTZ(intro.date,intro.heure,"TAH","TAH"),introduction_id:intro.id});
-  showConfirm("Inscription confirmée !",`Bienvenue ${fn} ! Un email de confirmation vous a été envoyé.`,null,null);
+  showConfirm("Inscription confirmée !",`\'Ia ora na ${fn} ! Un email de confirmation vous a été envoyé.`,null,null);
 }
 
 // ── SUBMIT WITH GUEST ─────────────────────────────────────────────────────────
@@ -4500,7 +4548,7 @@ async function submitWithGuest(){
   const ccNCFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","NC").split("·")[1]||"":"";
   const ccFRFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","FR").split("·")[1]||"":"";
   const sessionUTC=toUTC(intro.date,intro.heure);
-  const t3h=sessionUTC-3*3600,t30=sessionUTC-1800;
+  const [iy,im,idd]=intro.date.split("-").map(Number); const tMatin=Math.floor(Date.UTC(iy,im-1,idd,17,0)/1000); const t40=sessionUTC-40*60;
   const btn=document.getElementById("guest-submit");btn.disabled=true;btn.textContent="Envoi en cours…";
   // Webhook Make (emails)
   try{
@@ -4522,7 +4570,7 @@ async function submitWithGuest(){
         cc_tah:ccTAH, cc_nc:ccNC, cc_fr:ccFR,
         cc_fin_tah:ccTAHFin, cc_fin_nc:ccNCFin, cc_fin_fr:ccFRFin,
         invite_link:getInviteLink(intro.id, gfn+" "+gln, gem),
-        t3h:t3h, t30:t30
+        t3h:tMatin, t30:t40
       })
     });
   }catch(e){console.error("Make webhook:",e);}
@@ -4530,21 +4578,49 @@ async function submitWithGuest(){
   logToSheets("graduate",{prenom:gfn,nom:gln,email:gem,telephone:document.getElementById("g-phone").value.trim(),pays:"",animateur:intro.animateur,titre:intro.titre,date_tah:fmtTZ(intro.date,intro.heure,"TAH","TAH"),invite:ufn+" "+uln,introduction_id:intro.id});
   logToSheets("guest",{prenom:ufn,nom:uln,email:uem,telephone:"",graduate:gfn+" "+gln,graduate_email:gem,animateur:intro.animateur,titre:intro.titre,date_tah:fmtTZ(intro.date,intro.heure,"TAH","TAH"),introduction_id:intro.id});
   ["g-first","g-last","g-email","g-phone","gu-first","gu-last","gu-email"].forEach(id=>document.getElementById(id).value="");
-  showConfirm("Inscription confirmée !",`${ufn} ${uln} est bien inscrit(e). Un email de confirmation lui a été envoyé.`,t3h,t30);
+  showConfirm("Inscription confirmée !",`\u2019Ia ora na ! ${ufn} ${uln} est bien inscrit(e). Un email de confirmation lui a \u00e9t\u00e9 envoy\u00e9.`,tMatin,t40,false,intro);
 }
 
 // ── CONFIRMATION ──────────────────────────────────────────────────────────────
-function showConfirm(title,body,t3h,t30){
+function showConfirm(title,body,tMatin,t40,isGuest,intro){
   document.getElementById("confirm-title").textContent=title;
   document.getElementById("confirm-body").textContent=body;
   const tl=document.getElementById("confirm-timeline");
-  if(t3h&&t30){
+  if(tMatin&&t40){
     const fmt=ts=>{const d=new Date(ts*1000);return`${DAYS[d.getDay()]} ${d.getDate()} ${MTHS[d.getMonth()]} · ${String(d.getHours()).padStart(2,"0")}h${String(d.getMinutes()).padStart(2,"0")}`;};
     tl.innerHTML=`<div class="email-tl-title">Emails programmés pour votre invité(e)</div>
       <div class="tl-row"><div class="tl-dot"></div><span><strong>Maintenant</strong> — confirmation d'inscription</span></div>
-      <div class="tl-row"><div class="tl-dot"></div><span><strong>~1h avant</strong> — lien Zoom + préparation<br><small style="color:var(--navy-mid)">${fmt(t3h)}</small></span></div>
-      <div class="tl-row"><div class="tl-dot"></div><span><strong>30 min avant</strong> — rappel final<br><small style="color:var(--navy-mid)">${fmt(t30)}</small></span></div>`;
+      <div class="tl-row"><div class="tl-dot"></div><span><strong>Matin à 7h00 TAH</strong> — rappel matinal<br><small style="color:var(--navy-mid)">${fmt(tMatin)}</small></span></div>
+      <div class="tl-row"><div class="tl-dot"></div><span><strong>40 min avant</strong> — rappel final<br><small style="color:var(--navy-mid)">${fmt(t40)}</small></span></div>`;
   } else { tl.innerHTML=""; }
+  const horDiv=document.getElementById("confirm-horaires");
+  const horContent=document.getElementById("confirm-horaires-content");
+  if(intro&&intro.date&&intro.heure){
+    const tah=fmtTZ(intro.date,intro.heure,"TAH","TAH");
+    const nc=fmtTZ(intro.date,intro.heure,"TAH","NC");
+    const fr=fmtTZ(intro.date,intro.heure,"TAH","FR");
+    const hFin=intro.heureFin||autoEndTime(intro.heure);
+    const tahFin=hFin?fmtTZ(intro.date,hFin,"TAH","TAH").split("·")[1]||"":"";
+    const ncFin=hFin?fmtTZ(intro.date,hFin,"TAH","NC").split("·")[1]||"":"";
+    const frFin=hFin?fmtTZ(intro.date,hFin,"TAH","FR").split("·")[1]||"":"";
+    horContent.innerHTML=`
+      <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid rgba(56,216,240,.15)"><span style="color:#7a8a9a;font-weight:600">TAH</span><span>${tah}${tahFin?" → "+tahFin:""}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid rgba(56,216,240,.15)"><span style="color:#7a8a9a;font-weight:600">NC&nbsp;&nbsp;</span><span>${nc}${ncFin?" → "+ncFin:""}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0"><span style="color:#7a8a9a;font-weight:600">FR&nbsp;&nbsp;</span><span>${fr}${frFin?" → "+frFin:""}</span></div>`;
+    horDiv.style.display="block";
+  } else { if(horDiv) horDiv.style.display="none"; }
+  const btnHome=document.getElementById("confirm-btn-home");
+  const videoDiv=document.getElementById("confirm-video");
+  const navEl=document.getElementById("confirm-nav");
+  if(isGuest){
+    if(btnHome) btnHome.style.display="none";
+    if(navEl) navEl.style.display="none";
+    if(videoDiv) videoDiv.style.display="block";
+  } else {
+    if(btnHome) btnHome.style.display="";
+    if(navEl) navEl.style.display="";
+    if(videoDiv) videoDiv.style.display="none";
+  }
   goPage("page-confirm");
 }
 
