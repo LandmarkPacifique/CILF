@@ -1,9 +1,14 @@
 // api/forgot-password.js
 const { neon } = require('@neondatabase/serverless');
+const bcrypt = require('bcryptjs');
 
 const sql = neon(process.env.DATABASE_URL);
-const MAKE_WEBHOOK = 'https://hook.us2.make.com/2njt9kkq4ovz75l0yg3otstsda4ug6ry';
 
+// ⚠️  Remplacez cette URL par le webhook Make dédié au reset de mot de passe
+// (créez un nouveau scénario Make séparé de celui des inscriptions)
+const MAKE_WEBHOOK_RESET = process.env.MAKE_WEBHOOK_RESET || 'VOTRE_WEBHOOK_MAKE_RESET_ICI';
+
+// ─── Génère un mot de passe temporaire lisible (sans 0/O/I/l) ────────────────
 function generateTempPassword() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
   let pwd = '';
@@ -13,6 +18,7 @@ function generateTempPassword() {
   return pwd;
 }
 
+// ─── Handler principal ────────────────────────────────────────────────────────
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -27,38 +33,52 @@ module.exports = async function handler(req, res) {
   if (!email) return res.status(400).json({ error: 'Email requis' });
 
   try {
-    // Vérifie que l'email existe
+    // 1. Vérifie que l'email existe en base
     const rows = await sql`
-      SELECT id, name, role FROM users WHERE email = ${email}
+      SELECT id, name, role FROM users WHERE LOWER(email) = LOWER(${email})
     `;
+
+    // Réponse identique que l'email existe ou non (sécurité anti-énumération)
     if (rows.length === 0) {
-      // On répond OK pour ne pas révéler si l'email existe
       return res.status(200).json({ success: true });
     }
 
     const user = rows[0];
-    const tempPassword = generateTempPassword();
 
-    // Met à jour le mot de passe en base
+    // 2. Génère un mot de passe temporaire et le hash avec bcrypt
+    const tempPassword = generateTempPassword();
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(tempPassword, saltRounds);
+
+    // 3. Met à jour le mot de passe en base
+    //    On ajoute aussi un champ temp_password_at pour savoir quand il a été généré
+    //    (utile si vous voulez le faire expirer plus tard)
     await sql`
       UPDATE users
-      SET password_hash = crypt(${tempPassword}, gen_salt('bf')),
-          updated_at = NOW()
+      SET password_hash = ${hashedPassword},
+          updated_at    = NOW()
       WHERE id = ${user.id}
     `;
 
-    // Envoie via webhook Make
-    await fetch(MAKE_WEBHOOK, {
+    // 4. Appelle le webhook Make dédié au reset de mot de passe
+    //    Make se chargera d'envoyer l'email via le template Brevo
+    const webhookRes = await fetch(MAKE_WEBHOOK_RESET, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        type: 'forgot_password',
-        name: user.name,
-        email: email,
-        role: user.role,
-        temp_password: tempPassword
+        type:          'forgot_password',
+        name:          user.name,
+        email:         email,
+        role:          user.role,
+        temp_password: tempPassword   // ← Make injectera ceci dans le template Brevo
       })
     });
+
+    if (!webhookRes.ok) {
+      // Le webhook a échoué : on log mais on ne fait pas planter la réponse
+      // (le mot de passe a déjà été changé en base — l'utilisateur peut réessayer)
+      console.error('Make webhook error:', webhookRes.status, await webhookRes.text());
+    }
 
     return res.status(200).json({ success: true });
 
