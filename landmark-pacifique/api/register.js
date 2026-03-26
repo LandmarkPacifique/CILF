@@ -1,6 +1,7 @@
 // api/register.js
 const { neon } = require('@neondatabase/serverless');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 
 const sql = neon(process.env.DATABASE_URL);
 
@@ -45,19 +46,28 @@ module.exports = async function handler(req, res) {
   }
 
   try {
+    // Hash du mot de passe côté Node.js (bcryptjs, pas besoin de pgcrypto)
+    const passwordHash = await bcrypt.hash(password, 10);
+
     await sql`
-      INSERT INTO users (email, password_hash, role, name, pid, telephone)
+      INSERT INTO users (email, password_hash, role, name, pid, telephone, approved)
       VALUES (
         ${email},
-        crypt(${password}, gen_salt('bf')),
+        ${passwordHash},
         ${userRole},
         ${name},
         ${pid || null},
-        ${telephone || null}
+        ${telephone || null},
+        false
       )
     `;
 
-    // Génère un JWT directement pour connecter l'utilisateur
+    // Pour les gradués, on ne retourne pas de token : le compte doit être validé d'abord
+    if (userRole === 'gradue') {
+      return res.status(201).json({ message: 'Compte créé, en attente de validation par un administrateur.' });
+    }
+
+    // Pour admin/leader créés par un admin : connexion directe
     const result = await sql`
       SELECT id, role, name FROM users WHERE email = ${email}
     `;
@@ -65,7 +75,6 @@ module.exports = async function handler(req, res) {
     const token = jwt.sign(
       { id: user.id, role: user.role, name: user.name, email },
       process.env.JWT_SECRET
-      // Pas d'expiration
     );
 
     return res.status(201).json({ token, role: user.role, name: user.name });
