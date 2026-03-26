@@ -648,7 +648,7 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
       <div class="admin-card" style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px">
         <div>
           <p style="font-size:15px;font-weight:600;color:var(--navy-deep);margin:0 0 4px">Mode maintenance</p>
-          <p style="font-size:12px;color:#7a8a9a;margin:0;line-height:1.6">Quand activé, les visiteurs voient une page de maintenance.<br>Les admins et leaders continuent d'accéder au site normalement.</p>
+          <p style="font-size:12px;color:#7a8a9a;margin:0;line-height:1.6">Quand activé, les visiteurs voient une page de maintenance.<br>Seuls les admins continuent d'accéder au site normalement.</p>
           <p id="maintenance-status-msg" style="font-size:12px;margin:6px 0 0;display:none"></p>
         </div>
         <label style="display:flex;align-items:center;gap:10px;cursor:pointer;flex-shrink:0">
@@ -670,7 +670,7 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
 
       <!-- Panneau : Utilisateurs admin -->
       <div id="stab-users" class="stab-panel active-stab">
-        <div class="admin-card">
+        <div class="admin-card" id="add-user-block">
           <label class="fl" style="margin-top:0">Ajouter un utilisateur</label>
           <div style="display:flex;flex-direction:column;gap:8px;max-width:400px">
             <input type="text"  class="ai" id="cfg-new-name"  placeholder="Prénom Nom">
@@ -1141,9 +1141,12 @@ async function savePassword(){
 }
 function enterAdmin(role, name){
   _leadersList = null; // reset cache au login
-  // Affiche/masque l'onglet Paramètres selon le rôle
+  // Onglet Paramètres visible pour tout le monde (admin et leader)
   const settingsTab = document.getElementById('tab-btn-settings');
-  if(settingsTab) settingsTab.style.display = (role === 'admin') ? '' : 'none';
+  if(settingsTab) settingsTab.style.display = '';
+  // Bloc "Ajouter un utilisateur" : uniquement pour les admins
+  const addUserBlock = document.getElementById('add-user-block');
+  if(addUserBlock) addUserBlock.style.display = (role === 'admin') ? '' : 'none';
   // Masque le panneau settings si leader et qu'il était actif
   if(role !== 'admin'){
     const panel = document.getElementById('tab-settings');
@@ -2238,6 +2241,11 @@ async function manualRegister(){
 
 
 async function addUser(){
+  const session = getSession();
+  if(!session || session.role !== 'admin'){
+    alert('Action réservée aux administrateurs.');
+    return;
+  }
   const name  = document.getElementById('cfg-new-name').value.trim();
   const email = document.getElementById('cfg-new-email').value.trim();
   const pw    = document.getElementById('cfg-new-pw').value;
