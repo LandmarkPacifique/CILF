@@ -695,10 +695,10 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
 
     <div id="tab-settings" class="cfg-panel">
       <h2 class="admin-h2">Paramètres</h2>
-      <p class="admin-desc">Gérez les accès au panneau admin. Seul l'administrateur voit cette section.</p>
+      <p class="admin-desc" id="settings-desc">Gérez les accès au panneau admin. Seul l'administrateur voit cette section.</p>
 
-      <!-- ── INTERRUPTEUR MAINTENANCE ── -->
-      <div class="admin-card" style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px">
+      <!-- ── INTERRUPTEUR MAINTENANCE (admin uniquement) ── -->
+      <div id="maintenance-block" class="admin-card" style="margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px">
         <div>
           <p style="font-size:15px;font-weight:600;color:var(--navy-deep);margin:0 0 4px">Mode maintenance</p>
           <p style="font-size:12px;color:#7a8a9a;margin:0;line-height:1.6">Quand activé, les visiteurs voient une page de maintenance.<br>Seuls les admins continuent d'accéder au site normalement.</p>
@@ -715,7 +715,7 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
       </div>
 
       <!-- Sous-onglets Paramètres -->
-      <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+      <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap" id="settings-tabs-bar">
         <button class="cfg-tab active" id="stab-btn-users" onclick="switchSettingsTab('users',this)">Utilisateurs admin</button>
         <button class="cfg-tab" id="stab-btn-validation" onclick="switchSettingsTab('validation',this)">Validation inscriptions</button>
         <button class="cfg-tab" id="stab-btn-manual" onclick="switchSettingsTab('manual',this)">Inscription manuelle</button>
@@ -1209,21 +1209,13 @@ async function savePassword(){
 function enterAdmin(role, name){
   _leadersList = null;
 
-  // ── Onglet Paramètres : admin seulement ──
+  // Onglet Paramètres visible pour admin ET leader
   const settingsTab = document.getElementById('tab-btn-settings');
-  if(settingsTab) settingsTab.style.display = (role === 'admin') ? '' : 'none';
+  if(settingsTab) settingsTab.style.display = '';
 
-  // ── Si leader : on lui donne accès direct à validation + inscription manuelle ──
+  // Bloc leader-tools séparé : plus utilisé, toujours caché
   const leaderTools = document.getElementById('leader-tools');
-  if(leaderTools) leaderTools.style.display = (role === 'leader') ? '' : 'none';
-
-  // ── Si le panel settings était actif et qu'on est leader, revenir aux intros ──
-  if(role !== 'admin'){
-    const panel = document.getElementById('tab-settings');
-    if(panel && panel.classList.contains('active')){
-      switchTab('introductions', document.querySelector('.cfg-tab'));
-    }
-  }
+  if(leaderTools) leaderTools.style.display = 'none';
 
   // Affiche le nom dans la topbar
   const nameEl = document.getElementById('admin-user-name');
@@ -1231,7 +1223,6 @@ function enterAdmin(role, name){
   goPage('page-admin');
   renderAdmin();
   if(role === 'admin') loadPendingBadge();
-  if(role === 'leader'){ loadPendingUsers(); loadAllGradues(); }
 }
 
 async function loadPendingBadge(){
@@ -1308,7 +1299,25 @@ function switchTab(id,btn){
   btn.classList.add("active");
   document.getElementById("tab-"+id).classList.add("active");
   if(id==='pilf') renderPilf();
-  if(id==='settings') { loadMaintenanceState(); loadLeadersList(); }
+  if(id==='settings') {
+    loadMaintenanceState();
+    loadLeadersList();
+    const session = getSession();
+    const isAdmin = session && session.role === 'admin';
+    // Maintenance : admin seulement
+    const mBlock = document.getElementById('maintenance-block');
+    if(mBlock) mBlock.style.display = isAdmin ? '' : 'none';
+    // Sous-onglet "Utilisateurs admin" : admin seulement
+    const stabUsers = document.getElementById('stab-btn-users');
+    if(stabUsers) stabUsers.style.display = isAdmin ? '' : 'none';
+    // Description
+    const desc = document.getElementById('settings-desc');
+    if(desc) desc.textContent = isAdmin ? 'Gérez les accès au panneau admin. Seul l\'administrateur voit cette section.' : 'Validation des inscriptions et inscription manuelle des gradués.';
+    // Si leader : forcer l'onglet validation actif
+    if(!isAdmin){
+      switchSettingsTab('validation', document.getElementById('stab-btn-validation'));
+    }
+  }
 }
 // logout défini plus haut
 
