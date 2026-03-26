@@ -514,6 +514,26 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
   </div>
 </div>
 
+<!-- PAGE MAINTENANCE -->
+<div id="page-maintenance" class="page">
+  <div class="maintenance-screen">
+    <div class="maintenance-card">
+      <div class="maintenance-badge">
+        <span class="dot"></span>
+        En cours
+      </div>
+      <h1 class="maintenance-title">Site en<br><em>maintenance</em></h1>
+      <p class="maintenance-body">
+        Notre site est temporairement indisponible pour des travaux de maintenance.<br>
+        Nous serons de retour très prochainement.
+      </p>
+      <p style="font-size:13px;color:#4a5a6a;margin-top:24px">
+        <a href="#" onclick="goPage('page-login');return false;" style="color:#4a5a6a;text-decoration:none;opacity:0.5;font-size:11px">Administration</a>
+      </p>
+    </div>
+  </div>
+</div>
+
 <!-- PAGE RESET PASSWORD -->
 <div class="page" id="page-reset-password">
   <div class="login-screen">
@@ -917,8 +937,17 @@ async function doLogin(){
     document.getElementById('pw-input').value='';
     err.style.display='none';
     if(data.role === 'gradue'){
+      // Gradué : bloqué si maintenance
+      const isMaint = await checkMaintenance();
+      if(isMaint){ goPage('page-maintenance'); return; }
       enterGradue(data.name, email, data.pid, data.telephone);
+    } else if(data.role === 'admin'){
+      // Admin : toujours autorisé
+      enterAdmin(data.role, data.name);
     } else {
+      // Leader : bloqué si maintenance
+      const isMaint = await checkMaintenance();
+      if(isMaint){ err.style.display='block'; err.textContent='Site en maintenance. Seuls les admins peuvent se connecter.'; btn.disabled=false; btn.textContent='Se connecter'; return; }
       enterAdmin(data.role, data.name);
     }
   } catch(e){
@@ -2297,7 +2326,12 @@ async function toggleMaintenance() {
 }
 
 async function checkMaintenance() {
-  return false; // maintenance désactivée
+  try {
+    const cfg = await publicFetch('/api/config');
+    return cfg.maintenance === 'true';
+  } catch(e) {
+    return false;
+  }
 }
 
 async function loadMaintenanceState() {
@@ -2341,8 +2375,16 @@ async function loadMaintenanceState() {
       } else {
         goPage('page-home');
       }
+    } else if(session.role === 'admin') {
+      // Admin → jamais bloqué par la maintenance
+      enterAdmin(session.role, session.name);
     } else {
-      // Leader ou Admin → page admin (jamais bloqué par la maintenance)
+      // Leader → bloqué si maintenance active
+      const isMaintenance = await checkMaintenance();
+      if(isMaintenance){
+        goPage('page-maintenance');
+        return;
+      }
       enterAdmin(session.role, session.name);
     }
     return;
