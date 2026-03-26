@@ -182,6 +182,23 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
 .pw-error { color:#c0392b; font-size:12px; margin-top:8px; display:none }
 @media(max-width:560px) { header{padding:0 16px} .hero{padding:40px 16px 56px} .form-card{padding:20px} .choice-wrap,.form-wrap,.confirm-wrap{padding:28px 16px} }
 
+
+/* ═══ COMPTE / AUTH TABS ══════════════════════════════════════════════════════ */
+.auth-tabs { display:flex; gap:0; margin-bottom:22px; border-bottom:2px solid var(--cream-2); }
+.auth-tab { flex:1; background:none; border:none; padding:12px; font-size:13px; font-weight:500; cursor:pointer; font-family:'DM Sans',sans-serif; color:#7a8a9a; border-bottom:2px solid transparent; margin-bottom:-2px; transition:all .2s }
+.auth-tab.active { color:var(--navy-deep); border-bottom-color:var(--cyan); }
+.auth-panel { display:none } .auth-panel.active { display:block }
+.profile-wrap { max-width:480px; margin:0 auto; padding:36px 24px }
+.profile-card { background:var(--white); border:1px solid var(--cream-3); border-radius:var(--radius); padding:26px; box-shadow:var(--shadow); }
+.profile-title { font-family:'Cormorant Garamond',serif; font-size:24px; color:var(--navy-deep); margin-bottom:4px }
+.profile-sub { font-size:13px; color:#6a7a8a; margin-bottom:22px }
+.profile-badge { display:inline-block; font-size:10px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; background:var(--cyan-pale); color:var(--navy-mid); border-radius:20px; padding:3px 10px; margin-bottom:16px }
+.section-sep { border:none; border-top:1px solid var(--cream-2); margin:20px 0 }
+.success-msg { color:#0a6b11; font-size:13px; background:#e8f8e8; border-radius:8px; padding:10px 14px; margin-top:10px; display:none }
+
+/* ═══ NAV COMPTE ══════════════════════════════════════════════════════════════ */
+#btn-mon-compte { display:none }
+
 </style>
 </head>
 <body>
@@ -194,7 +211,9 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
     <nav class="header-nav">
       <button class="nav-btn" onclick="goPage('page-home')">Accueil</button>
       <button class="nav-btn" onclick="goPage('page-intros')">Introductions</button>
-      <button class="nav-btn primary" onclick="goPage('page-login')">Admin</button>
+      <button id="btn-mon-compte-home" class="nav-btn" style="display:none" onclick="goPage('page-compte')">Mon compte</button>
+      <button id="btn-logout-home" class="nav-btn" style="display:none" onclick="logoutGradue()">Déconnexion</button>
+      <button id="btn-admin-home" class="nav-btn primary" onclick="goPage('page-login')">Connexion</button>
     </nav>
   </header>
   <section class="how-section">
@@ -232,7 +251,9 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
     <nav class="header-nav">
       <button class="nav-btn" onclick="goPage('page-home')">Accueil</button>
       <button class="nav-btn" onclick="goPage('page-intros')">Introductions</button>
-      <button class="nav-btn primary" onclick="goPage('page-login')">Admin</button>
+      <button id="btn-mon-compte-intros" class="nav-btn" style="display:none" onclick="goPage('page-compte')">Mon compte</button>
+      <button id="btn-logout-intros" class="nav-btn" style="display:none" onclick="logoutGradue()">Déconnexion</button>
+      <button id="btn-admin-intros" class="nav-btn primary" onclick="goPage('page-login')">Connexion</button>
     </nav>
   </header>
   <section class="section">
@@ -370,20 +391,117 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
 
 <div id="page-login" class="page">
   <div class="login-screen">
-    <div class="login-box">
-      <img class="logo-img-small" src="" alt="Landmark Pacifique" style="height:56px;width:auto;object-fit:contain;display:block;margin:0 auto 20px">
-      <h2>Espace admin</h2>
-      <p>Landmark Pacifique</p>
-      <label class="fl" style="text-align:left;display:block;margin-top:0">Email</label>
-      <input type="email" id="pw-email" class="ai" placeholder="votre@email.com" onkeydown="if(event.key==='Enter')doLogin()">
-      <label class="fl" style="text-align:left;display:block;margin-top:12px">Mot de passe</label>
-      <input type="password" id="pw-input" class="ai" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
-      <p class="pw-error" id="pw-error" style="display:none">Identifiants incorrects</p>
-      <button class="login-btn" id="login-btn" onclick="doLogin()">Accéder au panneau</button>
-      <br><br><button class="copy-btn" onclick="goPage('page-home')">← Retour au site</button>
+    <div class="login-box" style="max-width:400px">
+      <img class="logo-img-small" src="" alt="Landmark Pacifique" style="height:56px;width:auto;object-fit:contain;display:block;margin:0 auto 16px">
+      <h2 style="margin-bottom:4px">Espace membres</h2>
+      <p style="margin-bottom:18px">Landmark Pacifique</p>
+
+      <!-- Onglets -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="switchAuthTab('login',this)">Connexion</button>
+        <button class="auth-tab" onclick="switchAuthTab('register',this)">Créer un compte</button>
+      </div>
+
+      <!-- Panneau Connexion -->
+      <div id="auth-panel-login" class="auth-panel active">
+        <label class="fl" style="text-align:left;display:block;margin-top:0">Email</label>
+        <input type="email" id="pw-email" class="ai" placeholder="votre@email.com" onkeydown="if(event.key==='Enter')doLogin()">
+        <label class="fl" style="text-align:left;display:block;margin-top:12px">Mot de passe</label>
+        <input type="password" id="pw-input" class="ai" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+        <p class="pw-error" id="pw-error" style="display:none">Identifiants incorrects</p>
+        <button class="login-btn" id="login-btn" onclick="doLogin()">Se connecter</button>
+        <p style="margin-top:12px;font-size:12px;color:#9aabb8">
+          <a href="#" onclick="showForgotPassword();return false;" style="color:var(--navy-mid);text-decoration:underline">Mot de passe oublié ?</a>
+        </p>
+      </div>
+
+      <!-- Panneau Inscription -->
+      <div id="auth-panel-register" class="auth-panel">
+        <label class="fl" style="text-align:left;display:block;margin-top:0">Prénom et Nom</label>
+        <input type="text" id="reg-name" class="ai" placeholder="Prénom Nom">
+        <label class="fl" style="text-align:left;display:block;margin-top:12px">Email</label>
+        <input type="email" id="reg-email" class="ai" placeholder="votre@email.com">
+        <label class="fl" style="text-align:left;display:block;margin-top:12px">PID (7 chiffres)</label>
+        <input type="text" id="reg-pid" class="ai" placeholder="1234567" maxlength="7">
+        <label class="fl" style="text-align:left;display:block;margin-top:12px">Téléphone</label>
+        <input type="tel" id="reg-tel" class="ai" placeholder="+689 00 00 00 00">
+        <label class="fl" style="text-align:left;display:block;margin-top:12px">Mot de passe</label>
+        <input type="password" id="reg-password" class="ai" placeholder="Minimum 6 caractères">
+        <label class="fl" style="text-align:left;display:block;margin-top:12px">Confirmer le mot de passe</label>
+        <input type="password" id="reg-password2" class="ai" placeholder="Répétez le mot de passe">
+        <p class="pw-error" id="reg-error" style="display:none"></p>
+        <button class="login-btn" id="reg-btn" onclick="doRegister()">Créer mon compte</button>
+      </div>
+
+      <!-- Mot de passe oublié -->
+      <div id="auth-panel-forgot" class="auth-panel" style="display:none">
+        <p style="font-size:13px;color:#5a6a7a;margin-bottom:16px;line-height:1.6">Entrez votre email, nous vous enverrons un mot de passe provisoire.</p>
+        <label class="fl" style="text-align:left;display:block;margin-top:0">Email</label>
+        <input type="email" id="forgot-email" class="ai" placeholder="votre@email.com">
+        <p class="pw-error" id="forgot-error" style="display:none"></p>
+        <p class="success-msg" id="forgot-success">Email envoyé ! Vérifiez votre boîte mail.</p>
+        <button class="login-btn" id="forgot-btn" onclick="doForgotPassword()">Envoyer le mot de passe provisoire</button>
+        <p style="margin-top:12px;font-size:12px">
+          <a href="#" onclick="switchAuthTab('login',document.querySelector('.auth-tab'));return false;" style="color:var(--navy-mid);text-decoration:underline">← Retour à la connexion</a>
+        </p>
+      </div>
+
+      <br><button class="copy-btn" onclick="goPage('page-home')">← Retour au site</button>
     </div>
   </div>
 </div>
+<div id="page-compte" class="page">
+  <header>
+    <div style="display:flex;align-items:center">
+      <img class="logo-img-small" src="" alt="Landmark Pacifique" style="height:120px;width:auto;object-fit:contain;display:block;cursor:pointer" onclick="goPage('page-home')">
+    </div>
+    <nav class="header-nav">
+      <button class="nav-btn" onclick="goPage('page-home')">Accueil</button>
+      <button class="nav-btn" onclick="goPage('page-intros')">Introductions</button>
+      <button id="btn-mon-compte" class="nav-btn primary" onclick="goPage('page-compte')">Mon compte</button>
+      <button class="nav-btn" onclick="logoutGradue()">Déconnexion</button>
+    </nav>
+  </header>
+  <div class="profile-wrap">
+    <div class="profile-card">
+      <span class="profile-badge" id="compte-badge">Gradué</span>
+      <h2 class="profile-title" id="compte-name">Mon compte</h2>
+      <p class="profile-sub" id="compte-email"></p>
+
+      <hr class="section-sep">
+
+      <!-- Infos personnelles -->
+      <p style="font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);margin-bottom:14px">Informations personnelles</p>
+      <label class="fl">Prénom et Nom</label>
+      <input type="text" id="compte-name-input" class="form-input ai" placeholder="Prénom Nom">
+      <label class="fl" style="margin-top:12px">Téléphone</label>
+      <input type="tel" id="compte-tel-input" class="form-input ai" placeholder="+689 00 00 00 00">
+      <label class="fl" style="margin-top:12px">PID (7 chiffres)</label>
+      <input type="text" id="compte-pid-input" class="form-input ai" placeholder="1234567" maxlength="7">
+      <p class="form-error" id="compte-info-error" style="display:none"></p>
+      <p class="success-msg" id="compte-info-success">Informations mises à jour !</p>
+      <button class="submit-btn" style="margin-top:14px" onclick="saveProfile()">Enregistrer les modifications</button>
+
+      <hr class="section-sep">
+
+      <!-- Changement mot de passe -->
+      <p style="font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);margin-bottom:14px">Changer le mot de passe</p>
+      <label class="fl">Mot de passe actuel</label>
+      <input type="password" id="compte-pwd-old" class="form-input ai" placeholder="••••••••">
+      <label class="fl" style="margin-top:12px">Nouveau mot de passe</label>
+      <input type="password" id="compte-pwd-new" class="form-input ai" placeholder="Minimum 6 caractères">
+      <label class="fl" style="margin-top:12px">Confirmer le nouveau mot de passe</label>
+      <input type="password" id="compte-pwd-new2" class="form-input ai" placeholder="Répétez">
+      <p class="form-error" id="compte-pwd-error" style="display:none"></p>
+      <p class="success-msg" id="compte-pwd-success">Mot de passe modifié !</p>
+      <button class="submit-btn" style="margin-top:14px" onclick="savePassword()">Changer le mot de passe</button>
+
+      <hr class="section-sep">
+      <button class="copy-btn" onclick="logoutGradue()" style="width:100%;text-align:center;color:#e24b4a">Se déconnecter</button>
+    </div>
+  </div>
+</div>
+
 <div id="page-admin" class="page">
   <div class="admin-topbar">
     <span class="admin-title">⚙ Administration — Landmark Pacifique</span>
@@ -589,11 +707,22 @@ function getSession(){
   const token = localStorage.getItem('lm_jwt');
   if(!token) return null;
   const payload = jwtDecode(token);
-  if(!payload || payload.exp * 1000 < Date.now()){ localStorage.removeItem('lm_jwt'); return null; }
+  if(!payload) { localStorage.removeItem('lm_jwt'); return null; }
   return payload; // { id, role, name, email }
 }
-function setSession(token){ localStorage.setItem('lm_jwt', token); _adminToken = token; }
-function clearSession(){ localStorage.removeItem('lm_jwt'); _adminToken = null; }
+function setSession(token, extra){
+  localStorage.setItem('lm_jwt', token);
+  _adminToken = token;
+  if(extra) localStorage.setItem('lm_user_extra', JSON.stringify(extra));
+}
+function getSessionExtra(){
+  try{ return JSON.parse(localStorage.getItem('lm_user_extra'))||{}; }catch{ return {}; }
+}
+function clearSession(){
+  localStorage.removeItem('lm_jwt');
+  localStorage.removeItem('lm_user_extra');
+  _adminToken = null;
+}
 
 async function doLogin(){
   const email = document.getElementById('pw-email').value.trim();
@@ -609,16 +738,192 @@ async function doLogin(){
       body: JSON.stringify({ email, password })
     });
     const data = await res.json();
-    if(!res.ok){ err.style.display='block'; err.textContent = data.error || 'Identifiants incorrects'; btn.disabled=false; btn.textContent='Accéder au panneau'; return; }
-    setSession(data.token);
+    if(!res.ok){ err.style.display='block'; err.textContent = data.error || 'Identifiants incorrects'; btn.disabled=false; btn.textContent='Se connecter'; return; }
+    setSession(data.token, { pid: data.pid, telephone: data.telephone });
     document.getElementById('pw-email').value='';
     document.getElementById('pw-input').value='';
     err.style.display='none';
-    enterAdmin(data.role, data.name);
+    if(data.role === 'gradue'){
+      enterGradue(data.name, email, data.pid, data.telephone);
+    } else {
+      enterAdmin(data.role, data.name);
+    }
   } catch(e){
     err.style.display='block'; err.textContent='Erreur de connexion, réessayez.';
-    btn.disabled=false; btn.textContent='Accéder au panneau';
+    btn.disabled=false; btn.textContent='Se connecter';
   }
+}
+
+// ── REGISTER ──────────────────────────────────────────────────────────────────
+async function doRegister(){
+  const name = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const pid = document.getElementById('reg-pid').value.trim();
+  const tel = document.getElementById('reg-tel').value.trim();
+  const pwd = document.getElementById('reg-password').value;
+  const pwd2 = document.getElementById('reg-password2').value;
+  const err = document.getElementById('reg-error');
+  err.style.display='none';
+  if(!name||!email||!pwd){ err.textContent='Nom, email et mot de passe requis.'; err.style.display='block'; return; }
+  if(pwd !== pwd2){ err.textContent='Les mots de passe ne correspondent pas.'; err.style.display='block'; return; }
+  if(pwd.length < 6){ err.textContent='Le mot de passe doit contenir au moins 6 caractères.'; err.style.display='block'; return; }
+  if(pid && !/^\d{7}$/.test(pid)){ err.textContent='Le PID doit contenir exactement 7 chiffres.'; err.style.display='block'; return; }
+  const btn = document.getElementById('reg-btn');
+  btn.disabled=true; btn.textContent='Création…';
+  try {
+    const res = await fetch(API_BASE + '/api/register', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ name, email, password:pwd, pid:pid||null, telephone:tel||null, role:'gradue' })
+    });
+    const data = await res.json();
+    if(!res.ok){ err.textContent = data.error || 'Erreur lors de la création.'; err.style.display='block'; btn.disabled=false; btn.textContent='Créer mon compte'; return; }
+    setSession(data.token, { pid, telephone: tel });
+    btn.disabled=false; btn.textContent='Créer mon compte';
+    enterGradue(name, email, pid, tel);
+  } catch(e){
+    err.textContent='Erreur de connexion, réessayez.'; err.style.display='block';
+    btn.disabled=false; btn.textContent='Créer mon compte';
+  }
+}
+
+// ── FORGOT PASSWORD ───────────────────────────────────────────────────────────
+function showForgotPassword(){
+  document.querySelectorAll('.auth-panel').forEach(p=>p.style.display='none');
+  document.getElementById('auth-panel-forgot').style.display='block';
+  document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
+}
+async function doForgotPassword(){
+  const email = document.getElementById('forgot-email').value.trim();
+  const err = document.getElementById('forgot-error');
+  const suc = document.getElementById('forgot-success');
+  err.style.display='none'; suc.style.display='none';
+  if(!email){ err.textContent='Email requis.'; err.style.display='block'; return; }
+  const btn = document.getElementById('forgot-btn');
+  btn.disabled=true; btn.textContent='Envoi…';
+  try {
+    await fetch(API_BASE + '/api/forgot-password', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email })
+    });
+    suc.style.display='block';
+    btn.disabled=false; btn.textContent='Envoyer le mot de passe provisoire';
+  } catch(e){
+    err.textContent='Erreur, réessayez.'; err.style.display='block';
+    btn.disabled=false; btn.textContent='Envoyer le mot de passe provisoire';
+  }
+}
+
+// ── AUTH TAB SWITCH ───────────────────────────────────────────────────────────
+function switchAuthTab(id, btn){
+  document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.auth-panel').forEach(p=>{ p.style.display='none'; p.classList.remove('active'); });
+  if(btn) btn.classList.add('active');
+  const panel = document.getElementById('auth-panel-'+id);
+  if(panel){ panel.style.display='block'; panel.classList.add('active'); }
+}
+
+// ── ENTER GRADUÉ ──────────────────────────────────────────────────────────────
+function enterGradue(name, email, pid, telephone){
+  window._gradueName = name;
+  window._graduEmail = email;
+  window._graduePid = pid;
+  window._gradueTelephone = telephone;
+  // Affiche boutons Mon compte / Déconnexion dans tous les headers
+  ['home','intros'].forEach(id=>{
+    const mc = document.getElementById('btn-mon-compte-'+id);
+    const lo = document.getElementById('btn-logout-'+id);
+    const ad = document.getElementById('btn-admin-'+id);
+    if(mc) mc.style.display='';
+    if(lo) lo.style.display='';
+    if(ad) ad.style.display='none';
+  });
+  goPage('page-home');
+}
+
+function logoutGradue(){
+  clearSession();
+  window._gradueName=null; window._graduEmail=null; window._graduePid=null; window._gradueTelephone=null;
+  ['home','intros'].forEach(id=>{
+    const mc = document.getElementById('btn-mon-compte-'+id);
+    const lo = document.getElementById('btn-logout-'+id);
+    const ad = document.getElementById('btn-admin-'+id);
+    if(mc) mc.style.display='none';
+    if(lo) lo.style.display='none';
+    if(ad) ad.style.display='';
+  });
+  goPage('page-home');
+}
+
+// ── PAGE MON COMPTE ───────────────────────────────────────────────────────────
+async function openMonCompte(){
+  goPage('page-compte');
+  const session = getSession();
+  const extra = getSessionExtra();
+  if(!session) return;
+  document.getElementById('compte-name').textContent = session.name || '';
+  document.getElementById('compte-email').textContent = session.email || '';
+  document.getElementById('compte-badge').textContent = session.role === 'gradue' ? 'Gradué' : (session.role === 'leader' ? 'Leader' : 'Admin');
+  // Pré-remplit depuis l'API
+  try {
+    const res = await fetch(API_BASE + '/api/profile', {
+      headers:{ 'Authorization':'Bearer '+localStorage.getItem('lm_jwt') }
+    });
+    if(res.ok){
+      const data = await res.json();
+      document.getElementById('compte-name-input').value = data.name || '';
+      document.getElementById('compte-tel-input').value = data.telephone || '';
+      document.getElementById('compte-pid-input').value = data.pid || '';
+    }
+  } catch(e){ console.error('profile fetch:', e); }
+}
+async function saveProfile(){
+  const name = document.getElementById('compte-name-input').value.trim();
+  const telephone = document.getElementById('compte-tel-input').value.trim();
+  const pid = document.getElementById('compte-pid-input').value.trim();
+  const err = document.getElementById('compte-info-error');
+  const suc = document.getElementById('compte-info-success');
+  err.style.display='none'; suc.style.display='none';
+  if(pid && !/^\d{7}$/.test(pid)){ err.textContent='Le PID doit contenir exactement 7 chiffres.'; err.style.display='block'; return; }
+  try {
+    const res = await fetch(API_BASE + '/api/profile', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+localStorage.getItem('lm_jwt')},
+      body: JSON.stringify({ name, telephone, pid })
+    });
+    const data = await res.json();
+    if(!res.ok){ err.textContent = data.error||'Erreur.'; err.style.display='block'; return; }
+    suc.style.display='block';
+    document.getElementById('compte-name').textContent = name;
+    window._gradueName = name;
+    window._graduePid = pid;
+    window._gradueTelephone = telephone;
+  } catch(e){ err.textContent='Erreur réseau.'; err.style.display='block'; }
+}
+async function savePassword(){
+  const password = document.getElementById('compte-pwd-old').value;
+  const new_password = document.getElementById('compte-pwd-new').value;
+  const new_password2 = document.getElementById('compte-pwd-new2').value;
+  const err = document.getElementById('compte-pwd-error');
+  const suc = document.getElementById('compte-pwd-success');
+  err.style.display='none'; suc.style.display='none';
+  if(!password||!new_password){ err.textContent='Remplissez tous les champs.'; err.style.display='block'; return; }
+  if(new_password !== new_password2){ err.textContent='Les mots de passe ne correspondent pas.'; err.style.display='block'; return; }
+  if(new_password.length < 6){ err.textContent='Minimum 6 caractères.'; err.style.display='block'; return; }
+  try {
+    const res = await fetch(API_BASE + '/api/profile', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+localStorage.getItem('lm_jwt')},
+      body: JSON.stringify({ password, new_password })
+    });
+    const data = await res.json();
+    if(!res.ok){ err.textContent = data.error||'Erreur.'; err.style.display='block'; return; }
+    suc.style.display='block';
+    document.getElementById('compte-pwd-old').value='';
+    document.getElementById('compte-pwd-new').value='';
+    document.getElementById('compte-pwd-new2').value='';
+  } catch(e){ err.textContent='Erreur réseau.'; err.style.display='block'; }
 }
 function enterAdmin(role, name){
   _leadersList = null; // reset cache au login
@@ -639,6 +944,7 @@ function enterAdmin(role, name){
   renderAdmin();
 }
 function logout(){ clearSession(); _leadersList = null; goPage('page-home'); }
+function logoutAdmin(){ logout(); }
 
 async function getIntros() {
   try { return await publicFetch('/api/intros?slug=cilf'); }
@@ -661,6 +967,31 @@ function goPage(id){
   document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
   document.getElementById(id).classList.add("active");
   window.scrollTo(0,0);
+  // Pré-remplissage si gradué connecté
+  if(window._gradueName){
+    if(id==='page-form-solo'){
+      const parts = (window._gradueName||'').split(' ');
+      const fn = parts[0]||''; const ln = parts.slice(1).join(' ')||'';
+      const sf = document.getElementById('s-first'); const sl = document.getElementById('s-last');
+      const sp = document.getElementById('s-phone'); const se = document.getElementById('s-email');
+      if(sf&&!sf.value) sf.value=fn;
+      if(sl&&!sl.value) sl.value=ln;
+      if(sp&&!sp.value) sp.value=window._gradueTelephone||'';
+      if(se&&!se.value) se.value=window._graduEmail||'';
+    }
+    if(id==='page-form-guest'){
+      const parts = (window._gradueName||'').split(' ');
+      const fn = parts[0]||''; const ln = parts.slice(1).join(' ')||'';
+      const gf = document.getElementById('g-first'); const gl = document.getElementById('g-last');
+      const gp = document.getElementById('g-phone'); const ge = document.getElementById('g-email');
+      if(gf&&!gf.value) gf.value=fn;
+      if(gl&&!gl.value) gl.value=ln;
+      if(gp&&!gp.value) gp.value=window._gradueTelephone||'';
+      if(ge&&!ge.value) ge.value=window._graduEmail||'';
+    }
+  }
+  // Ouvre la page Mon compte
+  if(id==='page-compte') openMonCompte();
 }
 function switchTab(id,btn){
   document.querySelectorAll(".cfg-tab").forEach(b=>b.classList.remove("active"));
@@ -1477,7 +1808,7 @@ async function addUser(){
 }
 
 (async function init(){
-  // Vérifie d'abord les paramètres URL (pilf / invite) — priorité sur la session admin
+  // Vérifie d'abord les paramètres URL (pilf / invite) — priorité sur la session
   const isPilf = await checkPilfParam();
   if(isPilf) return;
   const isInvite = await checkInviteParam();
@@ -1485,7 +1816,12 @@ async function addUser(){
   // Restaure la session JWT si elle est encore valide
   const session = getSession();
   if(session){
-    enterAdmin(session.role, session.name);
+    if(session.role === 'gradue'){
+      const extra = getSessionExtra();
+      enterGradue(session.name, session.email, extra.pid||null, extra.telephone||null);
+    } else {
+      enterAdmin(session.role, session.name);
+    }
     return;
   }
   renderPublic();
