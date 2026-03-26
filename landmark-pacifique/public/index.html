@@ -181,6 +181,8 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
 .user-row-name { font-size:14px; font-weight:500; color:var(--navy-deep) }
 .user-row-email { font-size:12px; color:#7a8a9a }
 .user-row-actions { display:flex; gap:6px; flex-shrink:0 }
+.btn-edit-user { background:#eef4ff; color:#2563eb; border:1px solid #bcd0f7; border-radius:7px; padding:5px 12px; font-size:12px; font-weight:500; cursor:pointer; transition:background .15s }
+.btn-edit-user:hover { background:#dbeafe }
 .btn-approve { background:#28a745; color:#fff; border:none; border-radius:8px; padding:7px 14px; font-size:12px; font-weight:600; cursor:pointer; font-family:'DM Sans',sans-serif; transition:background .2s }
 .btn-approve:hover { background:#218838 }
 .btn-reject { background:#dc3545; color:#fff; border:none; border-radius:8px; padding:7px 14px; font-size:12px; font-weight:600; cursor:pointer; font-family:'DM Sans',sans-serif; transition:background .2s }
@@ -1973,14 +1975,46 @@ async function loadAllGradues(){
       const statusBadge = (u.status==='pending'||u.approved===false||u.validated===false)
         ? '<span class="badge-pending">En attente</span>'
         : (u.status==='rejected' ? '<span class="badge-rejected">Refusé</span>' : '<span class="badge-approved">Validé</span>');
-      return `<div class="user-row" id="gradue-row-${u.id||u.email}">
-        <div class="user-row-info">
-          <div class="user-row-name">${u.name||'—'} ${statusBadge}</div>
-          <div class="user-row-email">${u.email||''} ${u.pid?'• PID: '+u.pid:''} ${u.telephone?'• '+u.telephone:''}</div>
+      return `<div class="user-row" id="gradue-row-${u.id||u.email}" style="flex-direction:column;align-items:stretch">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+          <div class="user-row-info">
+            <div class="user-row-name">${u.name||'—'} ${statusBadge}</div>
+            <div class="user-row-email">${u.email||''} ${u.pid?'• PID: '+u.pid:''} ${u.telephone?'• '+u.telephone:''}</div>
+          </div>
+          <div class="user-row-actions">
+            ${(u.status==='pending'||u.approved===false||u.validated===false) ? `<button class="btn-approve" onclick="approveUser('${u.id||u.email}','${(u.email||'').replace(/'/g,"\\'")}')">✓ Approuver</button>` : ''}
+            <button class="btn-edit-user" onclick="toggleEditGradue('${u.id||u.email}')">✎ Modifier</button>
+            <button class="btn-delete-user" onclick="deleteUserConfirm('${u.id||u.email}','${(u.name||'').replace(/'/g,"\\'")}')">Supprimer</button>
+          </div>
         </div>
-        <div class="user-row-actions">
-          ${(u.status==='pending'||u.approved===false||u.validated===false) ? `<button class="btn-approve" onclick="approveUser('${u.id||u.email}','${(u.email||'').replace(/'/g,"\\'")}')">✓ Approuver</button>` : ''}
-          <button class="btn-delete-user" onclick="deleteUserConfirm('${u.id||u.email}','${(u.name||'').replace(/'/g,"\\'")}')">Supprimer</button>
+        <div id="edit-form-${u.id||u.email}" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--cream-3)">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:560px">
+            <div>
+              <label class="fl" style="margin-top:0;font-size:12px">Prénom et Nom</label>
+              <input type="text" class="ai" id="edit-name-${u.id||u.email}" value="${(u.name||'').replace(/"/g,'&quot;')}" style="font-size:13px;padding:7px 10px">
+            </div>
+            <div>
+              <label class="fl" style="margin-top:0;font-size:12px">Email</label>
+              <input type="email" class="ai" id="edit-email-${u.id||u.email}" value="${(u.email||'').replace(/"/g,'&quot;')}" style="font-size:13px;padding:7px 10px">
+            </div>
+            <div>
+              <label class="fl" style="margin-top:0;font-size:12px">PID (optionnel)</label>
+              <input type="text" class="ai" id="edit-pid-${u.id||u.email}" value="${u.pid||''}" maxlength="7" style="font-size:13px;padding:7px 10px">
+            </div>
+            <div>
+              <label class="fl" style="margin-top:0;font-size:12px">Téléphone (optionnel)</label>
+              <input type="tel" class="ai" id="edit-tel-${u.id||u.email}" value="${u.telephone||''}" style="font-size:13px;padding:7px 10px">
+            </div>
+            <div>
+              <label class="fl" style="margin-top:0;font-size:12px">Nouveau mot de passe</label>
+              <input type="password" class="ai" id="edit-pw-${u.id||u.email}" placeholder="Laisser vide = inchangé" style="font-size:13px;padding:7px 10px">
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:12px">
+            <button class="btn-approve" onclick="saveEditGradue('${u.id||u.email}')">✓ Enregistrer</button>
+            <button class="btn-delete-user" onclick="toggleEditGradue('${u.id||u.email}')">Annuler</button>
+            <span id="edit-msg-${u.id||u.email}" style="font-size:12px;display:none"></span>
+          </div>
         </div>
       </div>`;
     }).join('');
@@ -2028,6 +2062,34 @@ async function deleteUserConfirm(userId, userName){
     loadAllGradues(); loadPendingUsers(); loadPendingBadge();
   } catch(e){
     alert('Erreur lors de la suppression : ' + e.message);
+  }
+}
+
+// ── EDIT GRADUE (admin) ───────────────────────────────────────────────────────
+function toggleEditGradue(userId){
+  const form = document.getElementById('edit-form-'+userId);
+  if(!form) return;
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+async function saveEditGradue(userId){
+  const name  = document.getElementById('edit-name-'+userId)?.value.trim();
+  const email = document.getElementById('edit-email-'+userId)?.value.trim();
+  const pid   = document.getElementById('edit-pid-'+userId)?.value.trim();
+  const tel   = document.getElementById('edit-tel-'+userId)?.value.trim();
+  const pw    = document.getElementById('edit-pw-'+userId)?.value;
+  const msg   = document.getElementById('edit-msg-'+userId);
+  if(!name || !email){ msg.textContent='Nom et email requis.'; msg.style.color='#c00'; msg.style.display='inline'; return; }
+  if(pw && pw.length < 6){ msg.textContent='Mot de passe minimum 6 caractères.'; msg.style.color='#c00'; msg.style.display='inline'; return; }
+  msg.textContent='Enregistrement…'; msg.style.color='#7a8a9a'; msg.style.display='inline';
+  const body = { name, email, pid: pid||null, telephone: tel||null };
+  if(pw) body.password = pw;
+  try {
+    await apiFetch('/api/users/'+userId, { method:'PATCH', body: JSON.stringify(body) });
+    msg.textContent='✓ Modifié !'; msg.style.color='#1a9e6e';
+    setTimeout(() => { loadAllGradues(); }, 1200);
+  } catch(e){
+    msg.textContent='Erreur : '+e.message; msg.style.color='#c00';
   }
 }
 
