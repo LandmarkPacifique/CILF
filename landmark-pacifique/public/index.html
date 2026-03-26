@@ -163,7 +163,7 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
 .cfg-tab { background:none; border:1px solid var(--cream-3); color:#7a8a9a; border-radius:8px; padding:7px 16px; font-size:12px; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .2s }
 .cfg-tab.active { background:var(--cyan-pale); border-color:rgba(56,216,240,.4); color:var(--navy-deep); font-weight:500 }
 .cfg-panel { display:none } .cfg-panel.active { display:block }
-.tpl-ta { width:100%; height:220px; padding:12px; border:1px solid var(--cream-3); border-radius:10px; font-size:12px; background:var(--cream); color:var(--navy-deep); resize:vertical; font-family:monospace; line-height:1.6; outline:none }
+.stab-panel { display:none } .active-stab { display:block }
 .copy-btn { margin-top:10px; background:var(--cream-2); border:none; border-radius:8px; padding:8px 14px; font-size:12px; font-weight:500; cursor:pointer; color:#5a6a7a; font-family:'DM Sans',sans-serif; transition:background .2s }
 .copy-btn:hover { background:var(--cream-3) }
 .step-list { list-style:none; counter-reset:s; display:flex; flex-direction:column; gap:12px }
@@ -173,6 +173,22 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
 .tpl-card { margin-bottom:14px }
 .tpl-card h3 { font-family:'Cormorant Garamond',serif; font-size:16px; color:var(--navy-deep); margin:0 }
 .tpl-meta { font-size:11px; color:#8a9aaa; margin-bottom:10px }
+.badge-pending { background:#fff3cd; color:#856404; border:1px solid #ffc107; border-radius:20px; padding:3px 10px; font-size:10px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; display:inline-block; margin-left:6px }
+.badge-approved { background:#d4edda; color:#155724; border:1px solid #28a745; border-radius:20px; padding:3px 10px; font-size:10px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; display:inline-block; margin-left:6px }
+.badge-rejected { background:#f8d7da; color:#721c24; border:1px solid #dc3545; border-radius:20px; padding:3px 10px; font-size:10px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; display:inline-block; margin-left:6px }
+.user-row { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border:1px solid var(--cream-3); border-radius:10px; margin-bottom:8px; background:var(--cream); flex-wrap:wrap; gap:8px }
+.user-row-info { flex:1; min-width:200px }
+.user-row-name { font-size:14px; font-weight:500; color:var(--navy-deep) }
+.user-row-email { font-size:12px; color:#7a8a9a }
+.user-row-actions { display:flex; gap:6px; flex-shrink:0 }
+.btn-approve { background:#28a745; color:#fff; border:none; border-radius:8px; padding:7px 14px; font-size:12px; font-weight:600; cursor:pointer; font-family:'DM Sans',sans-serif; transition:background .2s }
+.btn-approve:hover { background:#218838 }
+.btn-reject { background:#dc3545; color:#fff; border:none; border-radius:8px; padding:7px 14px; font-size:12px; font-weight:600; cursor:pointer; font-family:'DM Sans',sans-serif; transition:background .2s }
+.btn-reject:hover { background:#c82333 }
+.btn-delete-user { background:none; border:1px solid #dc3545; color:#dc3545; border-radius:8px; padding:7px 12px; font-size:12px; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .2s }
+.btn-delete-user:hover { background:#dc3545; color:#fff }
+.pending-alert { background:#fff3cd; border:1px solid #ffc107; border-radius:10px; padding:12px 16px; margin-bottom:16px; font-size:13px; color:#856404; display:none }
+.pending-alert strong { display:block; font-size:14px; margin-bottom:2px }
 .login-screen { min-height:100vh; background:var(--navy-deep); display:flex; align-items:center; justify-content:center; padding:20px }
 .login-box { background:var(--white); border-radius:20px; padding:40px 36px; width:100%; max-width:360px; box-shadow:0 16px 60px rgba(0,20,60,.4); text-align:center }
 .login-box h2 { font-family:'Cormorant Garamond',serif; font-size:28px; color:var(--navy-deep); margin-bottom:6px }
@@ -515,7 +531,7 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
     <div class="cfg-tabs">
       <button class="cfg-tab active" onclick="switchTab('introductions',this)">CILF</button>
       <button class="cfg-tab" onclick="switchTab('pilf',this)">PILF / HILF</button>
-      <button id="tab-btn-settings" class="cfg-tab" onclick="switchTab('settings',this)">Paramètres</button>
+      <button id="tab-btn-settings" class="cfg-tab" onclick="switchTab('settings',this)">Paramètres <span id="pending-badge" style="display:none;background:#dc3545;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;margin-left:4px;vertical-align:middle"></span></button>
     </div>
 
     <div id="tab-introductions" class="cfg-panel active">
@@ -539,19 +555,90 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
     <div id="tab-settings" class="cfg-panel">
       <h2 class="admin-h2">Paramètres</h2>
       <p class="admin-desc">Gérez les accès au panneau admin. Seul l'administrateur voit cette section.</p>
-      <div class="admin-card">
-        <label class="fl" style="margin-top:0">Ajouter un utilisateur</label>
-        <div style="display:flex;flex-direction:column;gap:8px;max-width:400px">
-          <input type="text"  class="ai" id="cfg-new-name"  placeholder="Prénom Nom">
-          <input type="email" class="ai" id="cfg-new-email" placeholder="email@example.com">
-          <input type="password" class="ai" id="cfg-new-pw" placeholder="Mot de passe">
-          <select class="ai" id="cfg-new-role" style="padding:9px 12px;border-radius:8px;border:1px solid #ddd;font-family:inherit">
-            <option value="leader">Leader</option>
-            <option value="admin">Admin</option>
-          </select>
-          <button class="copy-btn" onclick="addUser()" style="padding:9px 18px;align-self:flex-start">Ajouter</button>
+
+      <!-- Sous-onglets Paramètres -->
+      <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap">
+        <button class="cfg-tab active" id="stab-btn-users" onclick="switchSettingsTab('users',this)">Utilisateurs admin</button>
+        <button class="cfg-tab" id="stab-btn-validation" onclick="switchSettingsTab('validation',this)">Validation inscriptions</button>
+        <button class="cfg-tab" id="stab-btn-manual" onclick="switchSettingsTab('manual',this)">Inscription manuelle</button>
+      </div>
+
+      <!-- Panneau : Utilisateurs admin -->
+      <div id="stab-users" class="stab-panel active-stab">
+        <div class="admin-card">
+          <label class="fl" style="margin-top:0">Ajouter un utilisateur</label>
+          <div style="display:flex;flex-direction:column;gap:8px;max-width:400px">
+            <input type="text"  class="ai" id="cfg-new-name"  placeholder="Prénom Nom">
+            <input type="email" class="ai" id="cfg-new-email" placeholder="email@example.com">
+            <input type="password" class="ai" id="cfg-new-pw" placeholder="Mot de passe">
+            <select class="ai" id="cfg-new-role" style="padding:9px 12px;border-radius:8px;border:1px solid #ddd;font-family:inherit">
+              <option value="leader">Leader</option>
+              <option value="admin">Admin</option>
+            </select>
+            <button class="copy-btn" onclick="addUser()" style="padding:9px 18px;align-self:flex-start">Ajouter</button>
+          </div>
+          <p id="cfg-user-msg" style="margin-top:8px;font-size:13px;display:none"></p>
         </div>
-        <p id="cfg-user-msg" style="margin-top:8px;font-size:13px;display:none"></p>
+      </div>
+
+      <!-- Panneau : Validation des inscriptions -->
+      <div id="stab-validation" class="stab-panel" style="display:none">
+        <div class="admin-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+            <div>
+              <p style="font-size:14px;font-weight:500;color:var(--navy-deep);margin:0">Comptes en attente de validation</p>
+              <p style="font-size:12px;color:#7a8a9a;margin:4px 0 0">Les nouveaux inscrits doivent être approuvés avant de pouvoir se connecter.</p>
+            </div>
+            <button class="copy-btn" onclick="loadPendingUsers()" style="padding:8px 16px">↻ Actualiser</button>
+          </div>
+          <div id="pending-users-list">
+            <p style="color:#7a8a9a;font-size:13px;text-align:center;padding:20px">Chargement…</p>
+          </div>
+        </div>
+        <div class="admin-card" style="margin-top:0">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+            <div>
+              <p style="font-size:14px;font-weight:500;color:var(--navy-deep);margin:0">Tous les comptes gradués</p>
+              <p style="font-size:12px;color:#7a8a9a;margin:4px 0 0">Gérez les comptes existants.</p>
+            </div>
+            <button class="copy-btn" onclick="loadAllGradues()" style="padding:8px 16px">↻ Actualiser</button>
+          </div>
+          <div id="all-gradues-list">
+            <p style="color:#7a8a9a;font-size:13px;text-align:center;padding:20px">Chargement…</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panneau : Inscription manuelle -->
+      <div id="stab-manual" class="stab-panel" style="display:none">
+        <div class="admin-card">
+          <p style="font-size:14px;font-weight:500;color:var(--navy-deep);margin-bottom:4px">Inscrire manuellement un gradué</p>
+          <p style="font-size:12px;color:#7a8a9a;margin-bottom:18px">Créez un compte gradué directement. Le compte sera immédiatement actif (validé).</p>
+          <div style="display:flex;flex-direction:column;gap:10px;max-width:420px">
+            <div>
+              <label class="fl" style="margin-top:0">Prénom et Nom</label>
+              <input type="text" class="ai" id="manual-name" placeholder="Prénom Nom">
+            </div>
+            <div>
+              <label class="fl" style="margin-top:0">Email</label>
+              <input type="email" class="ai" id="manual-email" placeholder="email@example.com">
+            </div>
+            <div>
+              <label class="fl" style="margin-top:0">PID (7 chiffres, optionnel)</label>
+              <input type="text" class="ai" id="manual-pid" placeholder="1234567" maxlength="7">
+            </div>
+            <div>
+              <label class="fl" style="margin-top:0">Téléphone (optionnel)</label>
+              <input type="tel" class="ai" id="manual-tel" placeholder="+689 00 00 00 00">
+            </div>
+            <div>
+              <label class="fl" style="margin-top:0">Mot de passe provisoire</label>
+              <input type="password" class="ai" id="manual-pw" placeholder="Minimum 6 caractères">
+            </div>
+          </div>
+          <p id="manual-reg-msg" style="margin-top:10px;font-size:13px;display:none"></p>
+          <button class="save-btn" style="margin-top:14px;max-width:300px" onclick="manualRegister()">Créer le compte</button>
+        </div>
       </div>
     </div>
   </div>
@@ -948,6 +1035,21 @@ function enterAdmin(role, name){
   if(nameEl) nameEl.textContent = name || '';
   goPage('page-admin');
   renderAdmin();
+  // Charge le badge des inscriptions en attente (admin seulement)
+  if(role === 'admin') loadPendingBadge();
+}
+
+async function loadPendingBadge(){
+  try {
+    const result = await apiFetch('/api/users-list?status=pending');
+    const list = Array.isArray(result) ? result : (result.users || result.data || []);
+    const count = list.filter(u => u.status === 'pending' || u.approved === false || u.validated === false).length;
+    const badge = document.getElementById('pending-badge');
+    if(badge){
+      if(count > 0){ badge.style.display='inline-flex'; badge.textContent=count; }
+      else { badge.style.display='none'; }
+    }
+  } catch(e){ /* silently fail */ }
 }
 function logout(){ clearSession(); _leadersList = null; goPage('page-login'); }
 function logoutAdmin(){ logout(); }
@@ -1792,6 +1894,158 @@ async function savePilf(){
     b.textContent='✓ Enregistré !'; b.classList.add('saved');
     setTimeout(()=>{b.textContent='Enregistrer et publier';b.classList.remove('saved');b.disabled=false;renderPilf();},3000);
   } catch(e){ b.textContent='⚠ Erreur'; b.disabled=false; }
+}
+
+
+
+// ── SETTINGS SUB-TABS ─────────────────────────────────────────────────────────
+function switchSettingsTab(id, btn){
+  document.querySelectorAll('#tab-settings .cfg-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.stab-panel').forEach(p=>{ p.style.display='none'; p.classList.remove('active-stab'); });
+  if(btn) btn.classList.add('active');
+  const panel = document.getElementById('stab-'+id);
+  if(panel){ panel.style.display='block'; panel.classList.add('active-stab'); }
+  if(id==='validation'){ loadPendingUsers(); loadAllGradues(); }
+}
+
+// ── LOAD PENDING USERS ────────────────────────────────────────────────────────
+async function loadPendingUsers(){
+  const container = document.getElementById('pending-users-list');
+  if(!container) return;
+  container.innerHTML = '<p style="color:#7a8a9a;font-size:13px;text-align:center;padding:12px">Chargement…</p>';
+  try {
+    const result = await apiFetch('/api/users-list?status=pending');
+    const list = Array.isArray(result) ? result : (result.users || result.data || []);
+    const pending = list.filter(u => u.status === 'pending' || u.approved === false || u.validated === false);
+    if(pending.length === 0){
+      container.innerHTML = '<p style="color:#0a8a0a;font-size:13px;text-align:center;padding:12px">✓ Aucun compte en attente de validation.</p>';
+      return;
+    }
+    container.innerHTML = pending.map(u => `
+      <div class="user-row" id="pending-row-${u.id||u.email}">
+        <div class="user-row-info">
+          <div class="user-row-name">${u.name||'—'} <span class="badge-pending">En attente</span></div>
+          <div class="user-row-email">${u.email||''} ${u.pid?'• PID: '+u.pid:''} ${u.telephone?'• '+u.telephone:''}</div>
+        </div>
+        <div class="user-row-actions">
+          <button class="btn-approve" onclick="approveUser('${u.id||u.email}','${(u.email||'').replace(/'/g,"\\'")}')">✓ Approuver</button>
+          <button class="btn-reject"  onclick="rejectUser('${u.id||u.email}','${(u.email||'').replace(/'/g,"\\'")}')">✕ Refuser</button>
+        </div>
+      </div>`).join('');
+  } catch(e){
+    container.innerHTML = '<p style="color:#c00;font-size:13px;text-align:center;padding:12px">Erreur lors du chargement des utilisateurs en attente.</p>';
+  }
+}
+
+// ── LOAD ALL GRADUES ──────────────────────────────────────────────────────────
+async function loadAllGradues(){
+  const container = document.getElementById('all-gradues-list');
+  if(!container) return;
+  container.innerHTML = '<p style="color:#7a8a9a;font-size:13px;text-align:center;padding:12px">Chargement…</p>';
+  try {
+    const result = await apiFetch('/api/users-list?role=gradue');
+    const list = Array.isArray(result) ? result : (result.users || result.data || []);
+    const gradues = list.filter(u => u.role === 'gradue' || !u.role);
+    if(gradues.length === 0){
+      container.innerHTML = '<p style="color:#7a8a9a;font-size:13px;text-align:center;padding:12px">Aucun compte gradué trouvé.</p>';
+      return;
+    }
+    container.innerHTML = gradues.map(u => {
+      const statusBadge = (u.status==='pending'||u.approved===false||u.validated===false)
+        ? '<span class="badge-pending">En attente</span>'
+        : (u.status==='rejected' ? '<span class="badge-rejected">Refusé</span>' : '<span class="badge-approved">Validé</span>');
+      return `<div class="user-row" id="gradue-row-${u.id||u.email}">
+        <div class="user-row-info">
+          <div class="user-row-name">${u.name||'—'} ${statusBadge}</div>
+          <div class="user-row-email">${u.email||''} ${u.pid?'• PID: '+u.pid:''} ${u.telephone?'• '+u.telephone:''}</div>
+        </div>
+        <div class="user-row-actions">
+          ${(u.status==='pending'||u.approved===false||u.validated===false) ? `<button class="btn-approve" onclick="approveUser('${u.id||u.email}','${(u.email||'').replace(/'/g,"\\'")}')">✓ Approuver</button>` : ''}
+          <button class="btn-delete-user" onclick="deleteUserConfirm('${u.id||u.email}','${(u.name||'').replace(/'/g,"\\'")}')">Supprimer</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e){
+    container.innerHTML = '<p style="color:#c00;font-size:13px;text-align:center;padding:12px">Erreur lors du chargement des gradués.</p>';
+  }
+}
+
+// ── APPROVE USER ──────────────────────────────────────────────────────────────
+async function approveUser(userId, userEmail){
+  try {
+    await apiFetch('/api/users/approve', { method:'POST', body: JSON.stringify({ userId, email: userEmail, status:'approved' }) });
+    loadPendingUsers(); loadAllGradues(); loadPendingBadge();
+  } catch(e){
+    try {
+      await apiFetch('/api/users/'+userId, { method:'PATCH', body: JSON.stringify({ status:'approved', validated:true, approved:true }) });
+      loadPendingUsers(); loadAllGradues(); loadPendingBadge();
+    } catch(e2){
+      alert('Erreur lors de l\'approbation. Vérifiez que l\'API supporte cette action.');
+    }
+  }
+}
+
+// ── REJECT USER ───────────────────────────────────────────────────────────────
+async function rejectUser(userId, userEmail){
+  if(!confirm('Refuser et supprimer ce compte ?')) return;
+  try {
+    await apiFetch('/api/users/approve', { method:'POST', body: JSON.stringify({ userId, email: userEmail, status:'rejected' }) });
+    loadPendingUsers(); loadAllGradues(); loadPendingBadge();
+  } catch(e){
+    try {
+      await apiFetch('/api/users/'+userId, { method:'DELETE' });
+      loadPendingUsers(); loadAllGradues(); loadPendingBadge();
+    } catch(e2){
+      alert('Erreur lors du refus. Vérifiez que l\'API supporte cette action.');
+    }
+  }
+}
+
+// ── DELETE USER ───────────────────────────────────────────────────────────────
+async function deleteUserConfirm(userId, userName){
+  if(!confirm('Supprimer le compte de ' + userName + ' ?')) return;
+  try {
+    await apiFetch('/api/users/'+userId, { method:'DELETE' });
+    loadAllGradues(); loadPendingUsers(); loadPendingBadge();
+  } catch(e){
+    alert('Erreur lors de la suppression : ' + e.message);
+  }
+}
+
+// ── MANUAL REGISTER (admin creates gradue) ────────────────────────────────────
+async function manualRegister(){
+  const name  = document.getElementById('manual-name').value.trim();
+  const email = document.getElementById('manual-email').value.trim();
+  const pid   = document.getElementById('manual-pid').value.trim();
+  const tel   = document.getElementById('manual-tel').value.trim();
+  const pw    = document.getElementById('manual-pw').value;
+  const msg   = document.getElementById('manual-reg-msg');
+  msg.style.display='none';
+  if(!name||!email||!pw){ msg.style.display='block'; msg.style.color='#c00'; msg.textContent='Nom, email et mot de passe requis.'; return; }
+  if(pw.length < 6){ msg.style.display='block'; msg.style.color='#c00'; msg.textContent='Le mot de passe doit contenir au moins 6 caractères.'; return; }
+  if(pid && !/^\d{7}$/.test(pid)){ msg.style.display='block'; msg.style.color='#c00'; msg.textContent='Le PID doit contenir exactement 7 chiffres.'; return; }
+  const btn = document.querySelector('#stab-manual .save-btn');
+  btn.disabled=true; btn.textContent='Création…';
+  try {
+    // On crée le compte avec status "approved" / validated:true pour qu'il soit actif immédiatement
+    const res = await fetch(API_BASE + '/api/register', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ name, email, password:pw, pid:pid||null, telephone:tel||null, role:'gradue', status:'approved', validated:true, approved:true })
+    });
+    const data = await res.json();
+    if(!res.ok){ msg.style.display='block'; msg.style.color='#c00'; msg.textContent = data.error || 'Erreur lors de la création.'; btn.disabled=false; btn.textContent='Créer le compte'; return; }
+    msg.style.display='block'; msg.style.color='green'; msg.textContent='✓ Compte créé avec succès pour ' + name + ' !';
+    document.getElementById('manual-name').value='';
+    document.getElementById('manual-email').value='';
+    document.getElementById('manual-pid').value='';
+    document.getElementById('manual-tel').value='';
+    document.getElementById('manual-pw').value='';
+    btn.disabled=false; btn.textContent='Créer le compte';
+  } catch(e){
+    msg.style.display='block'; msg.style.color='#c00'; msg.textContent='Erreur réseau, réessayez.';
+    btn.disabled=false; btn.textContent='Créer le compte';
+  }
 }
 
 
