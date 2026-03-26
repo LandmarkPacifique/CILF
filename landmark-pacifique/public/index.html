@@ -2297,12 +2297,7 @@ async function toggleMaintenance() {
 }
 
 async function checkMaintenance() {
-  try {
-    const cfg = await publicFetch('/api/config');
-    return cfg.maintenance === 'true';
-  } catch(e) {
-    return false;
-  }
+  return false; // maintenance désactivée
 }
 
 async function loadMaintenanceState() {
