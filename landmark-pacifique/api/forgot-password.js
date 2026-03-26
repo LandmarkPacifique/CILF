@@ -24,16 +24,17 @@ module.exports = async function handler(req, res) {
       SELECT id, name, role FROM users WHERE LOWER(email) = LOWER(${email})
     `;
 
-    // Réponse identique que l'email existe ou non (sécurité)
     if (rows.length === 0) {
+      console.log('Email non trouvé en base:', email);
       return res.status(200).json({ success: true });
     }
 
     const user = rows[0];
+    console.log('Utilisateur trouvé:', user.name);
 
     // 2. Génère un token sécurisé valable 1 heure
     const resetToken = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 3600 * 1000); // +1 heure
+    const expiresAt = new Date(Date.now() + 3600 * 1000);
 
     // 3. Sauvegarde le token en base
     await sql`
@@ -43,25 +44,31 @@ module.exports = async function handler(req, res) {
           updated_at = NOW()
       WHERE id = ${user.id}
     `;
+    console.log('Token sauvegardé en base');
 
     // 4. Construit le lien de reset
     const resetLink = `${APP_URL}?reset=${resetToken}`;
+    console.log('Reset link généré');
 
-    // 5. Appelle le webhook Make qui envoie l'email Brevo
-    const webhookRes = await fetch(MAKE_WEBHOOK_RESET, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type:       'forgot_password',
-        name:       user.name,
-        email:      email,
-        role:       user.role,
-        reset_link: resetLink
-      })
-    });
-
-    if (!webhookRes.ok) {
-      console.error('Make webhook error:', webhookRes.status, await webhookRes.text());
+    // 5. Appelle le webhook Make
+    console.log('Appel webhook Make:', MAKE_WEBHOOK_RESET);
+    try {
+      const webhookRes = await fetch(MAKE_WEBHOOK_RESET, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type:       'forgot_password',
+          name:       user.name,
+          email:      email,
+          role:       user.role,
+          reset_link: resetLink
+        })
+      });
+      const webhookBody = await webhookRes.text();
+      console.log('Make webhook status:', webhookRes.status);
+      console.log('Make webhook response:', webhookBody);
+    } catch (webhookErr) {
+      console.error('Make webhook fetch error:', webhookErr.message);
     }
 
     return res.status(200).json({ success: true });
