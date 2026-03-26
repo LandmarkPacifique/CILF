@@ -12,13 +12,11 @@ module.exports = async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      // Lecture publique — pas besoin d'être connecté
       const rows = await sql`SELECT key, value FROM config`;
       return res.status(200).json(Object.fromEntries(rows.map(r => [r.key, r.value])));
     }
 
     if (req.method === 'POST') {
-      // Écriture : vérifie le JWT
       const authHeader = req.headers['authorization'] || '';
       const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
 
@@ -33,7 +31,6 @@ module.exports = async function handler(req, res) {
         return res.status(401).json({ error: 'Token invalide' });
       }
 
-      // Seuls les admins et leaders peuvent modifier la config
       if (payload.role !== 'admin' && payload.role !== 'leader') {
         return res.status(403).json({ error: 'Accès refusé' });
       }
@@ -42,7 +39,7 @@ module.exports = async function handler(req, res) {
       for (const [key, value] of Object.entries(cfg)) {
         await sql`
           INSERT INTO config (key, value) VALUES (${key}, ${String(value)})
-          ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = NOW()
+          ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
         `;
       }
       return res.status(200).json({ status: 'ok' });
