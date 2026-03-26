@@ -1164,6 +1164,22 @@ function enterAdmin(role, name){
   const leaderTools = document.getElementById('leader-tools');
   if(leaderTools) leaderTools.style.display = 'none';
 
+  // Mettre à jour les boutons de nav du site public (page-home, page-intros)
+  // pour que l'admin/leader puisse revenir à l'admin sans se reconnecter
+  ['home','intros'].forEach(suffix => {
+    const btnAdmin = document.getElementById('btn-admin-'+suffix);
+    if(btnAdmin){
+      btnAdmin.textContent = '← Admin';
+      btnAdmin.onclick = () => goPage('page-admin');
+      btnAdmin.style.display = '';
+    }
+    // Masquer Mon compte et Déconnexion gradué (non pertinents pour admin/leader)
+    const btnMC = document.getElementById('btn-mon-compte-'+suffix);
+    const btnLO = document.getElementById('btn-logout-'+suffix);
+    if(btnMC) btnMC.style.display = 'none';
+    if(btnLO) btnLO.style.display = 'none';
+  });
+
   // Affiche le nom dans la topbar
   const nameEl = document.getElementById('admin-user-name');
   if(nameEl) nameEl.textContent = name || '';
@@ -1185,7 +1201,20 @@ async function loadPendingBadge(){
     }
   } catch(e){ /* silently fail */ }
 }
-function logout(){ clearSession(); _leadersList = null; goPage('page-login'); }
+function logout(){
+  clearSession();
+  _leadersList = null;
+  // Remettre les boutons de nav du site public à leur état initial
+  ['home','intros'].forEach(suffix => {
+    const btnAdmin = document.getElementById('btn-admin-'+suffix);
+    if(btnAdmin){
+      btnAdmin.textContent = 'Connexion';
+      btnAdmin.onclick = () => goPage('page-login');
+      btnAdmin.style.display = '';
+    }
+  });
+  goPage('page-login');
+}
 function logoutAdmin(){ logout(); }
 
 async function getIntros() {
