@@ -270,7 +270,7 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
     <button class="back-link" onclick="goPage('page-intros')">← Retour</button>
     <div class="form-card">
       <h2 class="form-title serif">Mes informations</h2>
-      <p class="form-subtitle">Je participe à cette introduction en tant que graduate.</p>
+      <p class="form-subtitle">Je participe à cette introduction en tant que gradué.</p>
       <div class="form-recap" id="solo-recap"></div>
       <div class="form-group"><label class="form-label">Prénom</label><input type="text" class="form-input" id="s-first" placeholder="Prénom"></div>
       <div class="form-group"><label class="form-label">Nom</label><input type="text" class="form-input" id="s-last" placeholder="Nom"></div>
@@ -302,7 +302,7 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
 
       <div class="form-recap" id="guest-recap"></div>
 
-      <!-- GRADUATE -->
+      <!-- GRADUÉ -->
       <span class="form-section-label" style="margin-top:0">Vos informations</span>
 
       <div class="form-group">
@@ -472,7 +472,7 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
       </div>
       <div id="invite-invalid" style="display:none;text-align:center;padding:20px">
         <div style="font-size:32px;margin-bottom:12px">⚠️</div>
-        <p style="font-size:14px;color:#5a6a7a">Ce lien d'invitation est invalide ou a expiré.<br>Demandez un nouveau lien à votre graduate.</p>
+        <p style="font-size:14px;color:#5a6a7a">Ce lien d'invitation est invalide ou a expiré.<br>Demandez un nouveau lien à votre gradué.</p>
       </div>
     </div>
   </div>
@@ -924,7 +924,7 @@ async function selectIntroInvite(id){
   window._cachedIntros = intros;
   const intro = getSelIntro(intros);
   if(!intro){ alert("Introduction introuvable, veuillez réessayer."); return; }
-  // Store intro for invite form — graduate fills their name/email to generate the link
+  // Store intro for invite form — gradué fills their name/email to generate the link
   window._inviteLinkIntro = intro;
   document.getElementById("guest-recap").innerHTML=buildRecap(intro);
   document.getElementById("guest-form-subtitle").textContent="Envoi d'une invitation personnalisée à mon invité(e)";
@@ -950,7 +950,7 @@ function getInviteLink(introId, gradName, gradEmail){
   return window.location.origin + window.location.pathname + '?invite=' + token;
 }
 
-// Called on page load — checks for ?pilf= in URL (lien direct pour graduate PILF)
+// Called on page load — checks for ?pilf= in URL (lien direct pour gradué PILF)
 async function checkPilfParam(){
   const params = new URLSearchParams(window.location.search);
   const pilfId = params.get('pilf');
@@ -1109,7 +1109,7 @@ async function submitSolo(){
   const ccNCFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","NC").split("·")[1]||"":"";
   const ccFRFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","FR").split("·")[1]||"":"";
   const btn=document.getElementById("solo-submit");btn.disabled=true;btn.textContent="Envoi…";
-  // Webhook Make (email graduate)
+  // Webhook Make (email gradué)
   try{
     await fetch("https://hook.us2.make.com/2njt9kkq4ovz75l0yg3otstsda4ug6ry", {
       method:"POST",
@@ -1354,8 +1354,8 @@ function makePilfForm(intro, i) {
       </div>
     </div>
     <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--cream-2)">
-      <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--navy-mid);margin-bottom:8px">Lien d'inscription pour le graduate</div>
-      <p style="font-size:12px;color:#6a7a8a;margin-bottom:10px;line-height:1.5">Copiez ce lien et envoyez-le directement au graduate. Il s'inscrira lui-même et renseignera les informations de son invité.</p>
+      <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--navy-mid);margin-bottom:8px">Lien d'inscription pour le gradué</div>
+      <p style="font-size:12px;color:#6a7a8a;margin-bottom:10px;line-height:1.5">Copiez ce lien et envoyez-le directement au gradué. Il s'inscrira lui-même et renseignera les informations de son invité.</p>
       <div id="pilf-link-wrap-${i}" style="display:flex;gap:8px;align-items:center">
         <input type="text" id="pilf-link-${i}" class="ai" readonly style="background:#f0f4f8;color:#5a6a7a;cursor:text;font-size:12px;flex:1" placeholder="Enregistrez d'abord pour générer le lien…">
         <button onclick="copyPilfLink(${i})" id="pilf-copy-btn-${i}" style="background:var(--cyan);color:var(--navy-deep);border:none;border-radius:8px;padding:9px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;flex-shrink:0;transition:all .2s">📋 Copier</button>
