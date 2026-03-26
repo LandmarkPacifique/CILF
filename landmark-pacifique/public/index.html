@@ -456,13 +456,13 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
   <div class="login-screen">
     <div class="login-box" style="max-width:400px">
       <img class="logo-img-small" src="" alt="Landmark Pacifique" style="height:56px;width:auto;object-fit:contain;display:block;margin:0 auto 16px">
-      <h2 style="margin-bottom:4px">Espace membres</h2>
+      <h2 style="margin-bottom:4px" id="login-title">Espace membres</h2>
       <p style="margin-bottom:18px">Landmark Pacifique</p>
 
       <!-- Onglets -->
-      <div class="auth-tabs">
-        <button class="auth-tab active" onclick="switchAuthTab('login',this)">Connexion</button>
-        <button class="auth-tab" onclick="switchAuthTab('register',this)">Créer un compte</button>
+      <div class="auth-tabs" id="auth-tabs-bar">
+        <button class="auth-tab active" id="tab-login-btn" onclick="switchAuthTab('login',this)">Connexion</button>
+        <button class="auth-tab" id="tab-register-btn" onclick="switchAuthTab('register',this)">Créer un compte</button>
       </div>
 
       <!-- Panneau Connexion -->
@@ -528,7 +528,7 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
         Nous serons de retour très prochainement.
       </p>
       <p style="font-size:13px;color:#4a5a6a;margin-top:24px">
-        <a href="#" onclick="goPage('page-login');return false;" style="color:#4a5a6a;text-decoration:none;opacity:0.5;font-size:11px">Administration</a>
+        <a href="#" onclick="goLoginAdmin();return false;" style="color:#4a5a6a;text-decoration:none;opacity:0.5;font-size:11px">Administration</a>
       </p>
     </div>
   </div>
@@ -937,15 +937,18 @@ async function doLogin(){
     document.getElementById('pw-input').value='';
     err.style.display='none';
     if(data.role === 'gradue'){
-      // Gradué : bloqué si maintenance
+      // Gradué : bloqué si maintenance ou mode admin
+      if(_loginAdminMode){ err.style.display='block'; err.textContent='Accès non autorisé pendant la maintenance.'; btn.disabled=false; btn.textContent='Se connecter'; return; }
       const isMaint = await checkMaintenance();
       if(isMaint){ goPage('page-maintenance'); return; }
       enterGradue(data.name, email, data.pid, data.telephone);
     } else if(data.role === 'admin'){
       // Admin : toujours autorisé
+      resetLoginMode();
       enterAdmin(data.role, data.name);
     } else {
-      // Leader : bloqué si maintenance
+      // Leader : bloqué si maintenance ou mode admin
+      if(_loginAdminMode){ err.style.display='block'; err.textContent='Accès non autorisé pendant la maintenance.'; btn.disabled=false; btn.textContent='Se connecter'; return; }
       const isMaint = await checkMaintenance();
       if(isMaint){ err.style.display='block'; err.textContent='Site en maintenance. Seuls les admins peuvent se connecter.'; btn.disabled=false; btn.textContent='Se connecter'; return; }
       enterAdmin(data.role, data.name);
@@ -2280,6 +2283,30 @@ async function doResetPassword(){
   }
 }
 
+
+// ── LOGIN MODE ADMIN (maintenance) ────────────────────────────────────────────
+let _loginAdminMode = false;
+
+function goLoginAdmin() {
+  _loginAdminMode = true;
+  // Cacher onglet inscription et lien mot de passe oublié
+  const tabsBar = document.getElementById('auth-tabs-bar');
+  const registerTab = document.getElementById('tab-register-btn');
+  const loginTitle = document.getElementById('login-title');
+  if(tabsBar) tabsBar.style.display = 'none';
+  if(loginTitle) loginTitle.textContent = 'Accès administrateur';
+  // Forcer le panneau connexion
+  switchAuthTab('login', document.getElementById('tab-login-btn'));
+  goPage('page-login');
+}
+
+function resetLoginMode() {
+  _loginAdminMode = false;
+  const tabsBar = document.getElementById('auth-tabs-bar');
+  const loginTitle = document.getElementById('login-title');
+  if(tabsBar) tabsBar.style.display = '';
+  if(loginTitle) loginTitle.textContent = 'Espace membres';
+}
 
 // ── MAINTENANCE ───────────────────────────────────────────────────────────────
 let _maintenanceActive = false;
