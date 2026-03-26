@@ -1066,6 +1066,7 @@ function enterGradue(name, email, pid, telephone){
 
 function logoutGradue(){
   clearSession();
+  _profileCache = null; // Vide le cache profil
   window._gradueName=null; window._graduEmail=null; window._graduePid=null; window._gradueTelephone=null;
   ['home','intros'].forEach(id=>{
     const mc = document.getElementById('btn-mon-compte-'+id);
@@ -1082,6 +1083,7 @@ function logoutGradue(){
 }
 
 // ── PAGE MON COMPTE ───────────────────────────────────────────────────────────
+let _profileCache = null; // Cache du profil pour éviter les appels répétés
 async function openMonCompte(){
   goPage('page-compte');
   const session = getSession();
@@ -1093,6 +1095,23 @@ async function openMonCompte(){
   // Affiche le bouton "← Admin" si l'utilisateur est admin ou leader
   const btnRetourAdmin = document.getElementById('btn-retour-admin');
   if(btnRetourAdmin) btnRetourAdmin.style.display = (session.role === 'admin' || session.role === 'leader') ? '' : 'none';
+
+  // Si le cache est disponible, on l'utilise immédiatement (pas de délai ressenti)
+  if(_profileCache){
+    document.getElementById('compte-name-input').value = _profileCache.name || '';
+    document.getElementById('compte-tel-input').value = _profileCache.telephone || '';
+    document.getElementById('compte-pid-input').value = _profileCache.pid || '';
+    return;
+  }
+
+  // Indicateur de chargement sur les champs
+  const nameInput = document.getElementById('compte-name-input');
+  const telInput  = document.getElementById('compte-tel-input');
+  const pidInput  = document.getElementById('compte-pid-input');
+  nameInput.placeholder = 'Chargement…';
+  telInput.placeholder  = 'Chargement…';
+  pidInput.placeholder  = 'Chargement…';
+
   // Pré-remplit depuis l'API
   try {
     const res = await fetch(API_BASE + '/api/profile', {
@@ -1100,11 +1119,18 @@ async function openMonCompte(){
     });
     if(res.ok){
       const data = await res.json();
-      document.getElementById('compte-name-input').value = data.name || '';
-      document.getElementById('compte-tel-input').value = data.telephone || '';
-      document.getElementById('compte-pid-input').value = data.pid || '';
+      _profileCache = data; // Mise en cache
+      nameInput.value = data.name || '';
+      telInput.value  = data.telephone || '';
+      pidInput.value  = data.pid || '';
     }
   } catch(e){ console.error('profile fetch:', e); }
+  finally {
+    // Restore placeholders
+    nameInput.placeholder = 'Prénom Nom';
+    telInput.placeholder  = '+689 00 00 00 00';
+    pidInput.placeholder  = '1234567';
+  }
 }
 async function saveProfile(){
   const name = document.getElementById('compte-name-input').value.trim();
@@ -1122,6 +1148,7 @@ async function saveProfile(){
     });
     const data = await res.json();
     if(!res.ok){ err.textContent = data.error||'Erreur.'; err.style.display='block'; return; }
+    _profileCache = null; // Invalide le cache après modification
     suc.style.display='block';
     document.getElementById('compte-name').textContent = name;
     window._gradueName = name;
