@@ -619,7 +619,7 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
     <div class="cfg-tabs">
       <button class="cfg-tab active" onclick="switchTab('introductions',this)">CILF</button>
       <button class="cfg-tab" onclick="switchTab('pilf',this)">PILF / HILF</button>
-      <button id="tab-btn-settings" class="cfg-tab" onclick="switchTab('settings',this)">Paramètres <span id="pending-badge" style="display:none;background:#dc3545;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;margin-left:4px;vertical-align:middle"></span></button>
+      <button id="tab-btn-settings" class="cfg-tab" onclick="switchTab('settings',this)">Paramètres <span id="pending-badge" style="display:none;background:#dc3545;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:700;align-items:center;justify-content:center;margin-left:4px;vertical-align:middle"></span></button>
     </div>
 
     <div id="tab-introductions" class="cfg-panel active">
@@ -1170,6 +1170,7 @@ function enterAdmin(role, name){
   goPage('page-admin');
   renderAdmin();
   if(role === 'admin') loadPendingBadge();
+  else { const badge = document.getElementById('pending-badge'); if(badge) badge.style.display='none'; }
 }
 
 async function loadPendingBadge(){
