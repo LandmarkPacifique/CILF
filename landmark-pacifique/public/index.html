@@ -787,7 +787,7 @@ function toUTC(d,h){
   return Math.floor(Date.UTC(y,m-1,dd,hh-TZ.TAH,mn)/1000);
 }
 const API_BASE = 'https://www.landmark-pacifique.fr';
-let _adminToken = localStorage.getItem('lm_jwt') || null;
+let _adminToken = sessionStorage.getItem('lm_jwt') || null;
 
 async function apiFetch(path, opts = {}) {
   const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
@@ -814,23 +814,24 @@ function jwtDecode(token){
   try{ return JSON.parse(atob(token.split('.')[1])); }catch{ return null; }
 }
 function getSession(){
-  const token = localStorage.getItem('lm_jwt');
+  const token = sessionStorage.getItem('lm_jwt');
   if(!token) return null;
   const payload = jwtDecode(token);
-  if(!payload) { localStorage.removeItem('lm_jwt'); return null; }
+  if(!payload) { sessionStorage.removeItem('lm_jwt'); return null; }
   return payload; // { id, role, name, email }
 }
 function setSession(token, extra){
-  localStorage.setItem('lm_jwt', token);
+  sessionStorage.setItem('lm_jwt', token);
   _adminToken = token;
-  if(extra) localStorage.setItem('lm_user_extra', JSON.stringify(extra));
+  if(extra) sessionStorage.setItem('lm_user_extra', JSON.stringify(extra));
 }
 function getSessionExtra(){
-  try{ return JSON.parse(localStorage.getItem('lm_user_extra'))||{}; }catch{ return {}; }
+  try{ return JSON.parse(sessionStorage.getItem('lm_user_extra'))||{}; }catch{ return {}; }
 }
 function clearSession(){
-  localStorage.removeItem('lm_jwt');
-  localStorage.removeItem('lm_user_extra');
+  sessionStorage.removeItem('lm_jwt');
+  sessionStorage.removeItem('lm_user_extra');
+  sessionStorage.removeItem('lm_last_page');
   _adminToken = null;
 }
 
@@ -987,7 +988,7 @@ async function openMonCompte(){
   // Pré-remplit depuis l'API
   try {
     const res = await fetch(API_BASE + '/api/profile', {
-      headers:{ 'Authorization':'Bearer '+localStorage.getItem('lm_jwt') }
+      headers:{ 'Authorization':'Bearer '+sessionStorage.getItem('lm_jwt') }
     });
     if(res.ok){
       const data = await res.json();
@@ -1008,7 +1009,7 @@ async function saveProfile(){
   try {
     const res = await fetch(API_BASE + '/api/profile', {
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+localStorage.getItem('lm_jwt')},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+sessionStorage.getItem('lm_jwt')},
       body: JSON.stringify({ name, telephone, pid })
     });
     const data = await res.json();
@@ -1033,7 +1034,7 @@ async function savePassword(){
   try {
     const res = await fetch(API_BASE + '/api/profile', {
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+localStorage.getItem('lm_jwt')},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+sessionStorage.getItem('lm_jwt')},
       body: JSON.stringify({ password, new_password })
     });
     const data = await res.json();
@@ -1082,15 +1083,15 @@ function logoutAdmin(){ logout(); }
 
 async function getIntros() {
   try { return await publicFetch('/api/intros?slug=cilf'); }
-  catch(e) { try{return JSON.parse(localStorage.getItem('lm_intros'))||DEF;}catch{return DEF;} }
+  catch(e) { try{return JSON.parse(sessionStorage.getItem('lm_intros'))||DEF;}catch{return DEF;} }
 }
 async function getPilfIntros() {
   try { return await publicFetch('/api/intros?slug=pilf'); }
-  catch(e) { try{return JSON.parse(localStorage.getItem('lm_pilf'))||DEF_PILF;}catch{return DEF_PILF;} }
+  catch(e) { try{return JSON.parse(sessionStorage.getItem('lm_pilf'))||DEF_PILF;}catch{return DEF_PILF;} }
 }
 async function getCfg() {
   try { return await publicFetch('/api/config'); }
-  catch(e) { try{return JSON.parse(localStorage.getItem('lm_config'))||{};}catch{return {};} }
+  catch(e) { try{return JSON.parse(sessionStorage.getItem('lm_config'))||{};}catch{return {};} }
 }
 
 const DEF = [
@@ -1101,6 +1102,11 @@ function goPage(id){
   document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
   document.getElementById(id).classList.add("active");
   window.scrollTo(0,0);
+  // Mémorise la page active si l'utilisateur est connecté (hors pages auth)
+  const _protectedPages = ['page-home','page-intros','page-compte','page-admin'];
+  if(_protectedPages.includes(id) && sessionStorage.getItem('lm_jwt')){
+    sessionStorage.setItem('lm_last_page', id);
+  }
   // Pré-remplissage si gradué connecté
   if(window._gradueName){
     if(id==='page-form-solo'){
@@ -1764,7 +1770,7 @@ var DEF_PILF = [
 ];
 async function getPilfIntros() {
   try { return await publicFetch('/api/intros?slug=pilf'); }
-  catch(e) { try{return JSON.parse(localStorage.getItem('lm_pilf'))||DEF_PILF;}catch{return DEF_PILF;} }
+  catch(e) { try{return JSON.parse(sessionStorage.getItem('lm_pilf'))||DEF_PILF;}catch{return DEF_PILF;} }
 }
 
 function makePilfForm(intro, i) {
@@ -2202,8 +2208,14 @@ async function doResetPassword(){
     if(session.role === 'gradue'){
       const extra = getSessionExtra();
       enterGradue(session.name, session.email, extra.pid||null, extra.telephone||null);
-      // Gradué → page d'accueil
-      goPage('page-home');
+      // Gradué → restaure la dernière page visitée ou page d'accueil par défaut
+      const lastPage = sessionStorage.getItem('lm_last_page');
+      const validPages = ['page-home','page-intros','page-compte'];
+      if(lastPage && validPages.includes(lastPage)){
+        goPage(lastPage);
+      } else {
+        goPage('page-home');
+      }
     } else {
       // Leader ou Admin → page admin
       enterAdmin(session.role, session.name);
