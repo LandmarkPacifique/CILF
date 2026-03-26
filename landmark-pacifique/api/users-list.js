@@ -24,7 +24,7 @@ module.exports = async function handler(req, res) {
 
   try {
     const users = await sql`
-      SELECT name, email
+      SELECT id, name, email, pid, telephone, status, role, approved, validated
       FROM users
       ORDER BY name ASC
     `;
