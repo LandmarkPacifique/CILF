@@ -806,6 +806,15 @@ function makeAdminForm(intro, i) {
   const fr  = fmtTZ(intro.date, intro.heure, 'TAH', 'FR');
   const hFinAuto   = intro.heureFin   || (intro.heure   ? autoEndTime(intro.heure)     : '');
   const ccHFinAuto = intro.ccHeureFin || (intro.ccHeure ? autoEndTime1h(intro.ccHeure) : '');
+  const endTAH = hFinAuto ? fmtTZ(intro.date, hFinAuto, 'TAH', 'TAH').split('·')[1]||'' : '';
+  const endNC  = hFinAuto ? fmtTZ(intro.date, hFinAuto, 'TAH', 'NC').split('·')[1]||''  : '';
+  const endFR  = hFinAuto ? fmtTZ(intro.date, hFinAuto, 'TAH', 'FR').split('·')[1]||''  : '';
+  const ccTAH  = intro.ccDate && intro.ccHeure ? fmtTZ(intro.ccDate, intro.ccHeure, 'TAH', 'TAH') : '';
+  const ccNC   = intro.ccDate && intro.ccHeure ? fmtTZ(intro.ccDate, intro.ccHeure, 'TAH', 'NC')  : '';
+  const ccFR   = intro.ccDate && intro.ccHeure ? fmtTZ(intro.ccDate, intro.ccHeure, 'TAH', 'FR')  : '';
+  const ccEndTAH = (intro.ccDate && ccHFinAuto) ? fmtTZ(intro.ccDate, ccHFinAuto, 'TAH', 'TAH').split('·')[1]||'' : '';
+  const ccEndNC  = (intro.ccDate && ccHFinAuto) ? fmtTZ(intro.ccDate, ccHFinAuto, 'TAH', 'NC').split('·')[1]||''  : '';
+  const ccEndFR  = (intro.ccDate && ccHFinAuto) ? fmtTZ(intro.ccDate, ccHFinAuto, 'TAH', 'FR').split('·')[1]||''  : '';
   const d = document.createElement('div');
   d.className = 'admin-card';
   d.id = 'intro-form-' + i;
@@ -816,6 +825,7 @@ function makeAdminForm(intro, i) {
       ${(intro.zoomIntro||intro.zoomCC) ? `<span style="font-size:11px;color:#0a9e6e;background:#e8f8f0;border:1px solid #b7e8d2;border-radius:20px;padding:3px 10px;margin-right:8px">🔗 Zoom configuré</span>` : `<span style="font-size:11px;color:#856404;background:#fff3cd;border:1px solid #ffc107;border-radius:20px;padding:3px 10px;margin-right:8px">⚠ Zoom manquant</span>`}
       <button class="remove-intro-btn" onclick="window._removeIntro(this)" title="Supprimer">✕ Supprimer</button>
     </div>
+    ${intro.modified_by ? `<p style="font-size:11px;color:#9aabb8;margin:4px 0 12px">✎ Dernière modification : <strong style="color:#5a6a7a">${intro.modified_by}</strong>${intro.modified_at ? ' — ' + new Date(intro.modified_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : ''}</p>` : ''}
     <label class="fl" style="margin-top:0">Leadeur</label>
     <div style="position:relative">
       <input class="ai" type="text" id="leader-cilf-input-${i}" placeholder="Taper le nom du leadeur…" autocomplete="off"
@@ -858,14 +868,19 @@ function makeAdminForm(intro, i) {
     </div>
     <label class="fl">Email Leadeur <span style="font-size:10px;color:#aab8c4">(rempli automatiquement)</span></label>
     <input class="ai" type="email" value="${intro.animateurEmail||''}" readonly style="background:#f0f4f8;color:#7a8a9a;cursor:not-allowed" id="email-cilf-${i}">
-    ${intro.modified_by ? `<p style="font-size:11px;color:#9aabb8;margin-top:8px">✎ Dernière modification : <strong style="color:#5a6a7a">${intro.modified_by}</strong>${intro.modified_at ? ' — ' + new Date(intro.modified_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : ''}</p>` : ''}
     <div class="ptz">
       <div class="ptz-title">Aperçu horaires calculés</div>
       <div class="ptz-grid">
-        <div><div class="ptz-l">Tahiti</div><div class="ptz-v" id="ptz-tah-${i}">${tah}</div></div>
-        <div><div class="ptz-l">Nouvelle-Calédonie</div><div class="ptz-v" id="ptz-nc-${i}">${nc}</div></div>
-        <div><div class="ptz-l">France</div><div class="ptz-v" id="ptz-fr-${i}">${fr}</div></div>
+        <div><div class="ptz-l">Tahiti</div><div class="ptz-v" id="ptz-tah-${i}">${tah}${endTAH ? ' → ' + endTAH : ''}</div></div>
+        <div><div class="ptz-l">Nouvelle-Calédonie</div><div class="ptz-v" id="ptz-nc-${i}">${nc}${endNC ? ' → ' + endNC : ''}</div></div>
+        <div><div class="ptz-l">France</div><div class="ptz-v" id="ptz-fr-${i}">${fr}${endFR ? ' → ' + endFR : ''}</div></div>
       </div>
+      ${ccTAH ? `<div style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--navy-mid);margin:10px 0 6px">Creation Call</div>
+      <div class="ptz-grid">
+        <div><div class="ptz-l">Tahiti</div><div class="ptz-v">${ccTAH}${ccEndTAH ? ' → ' + ccEndTAH : ''}</div></div>
+        <div><div class="ptz-l">Nouvelle-Calédonie</div><div class="ptz-v">${ccNC}${ccEndNC ? ' → ' + ccEndNC : ''}</div></div>
+        <div><div class="ptz-l">France</div><div class="ptz-v">${ccFR}${ccEndFR ? ' → ' + ccEndFR : ''}</div></div>
+      </div>` : ''}
     </div>`;
   // Populate autocomplete after insert
   setTimeout(() => {
@@ -2306,6 +2321,15 @@ function makePilfForm(intro, i) {
   const fr  = fmtTZ(intro.date, intro.heure, 'TAH', 'FR');
   const hFinAuto   = intro.heureFin   || (intro.heure   ? autoEndTime(intro.heure)     : '');
   const ccHFinAuto = intro.ccHeureFin || (intro.ccHeure ? autoEndTime1h(intro.ccHeure) : '');
+  const endTAH = hFinAuto ? fmtTZ(intro.date, hFinAuto, 'TAH', 'TAH').split('·')[1]||'' : '';
+  const endNC  = hFinAuto ? fmtTZ(intro.date, hFinAuto, 'TAH', 'NC').split('·')[1]||''  : '';
+  const endFR  = hFinAuto ? fmtTZ(intro.date, hFinAuto, 'TAH', 'FR').split('·')[1]||''  : '';
+  const ccTAH  = intro.ccDate && intro.ccHeure ? fmtTZ(intro.ccDate, intro.ccHeure, 'TAH', 'TAH') : '';
+  const ccNC   = intro.ccDate && intro.ccHeure ? fmtTZ(intro.ccDate, intro.ccHeure, 'TAH', 'NC')  : '';
+  const ccFR   = intro.ccDate && intro.ccHeure ? fmtTZ(intro.ccDate, intro.ccHeure, 'TAH', 'FR')  : '';
+  const ccEndTAH = (intro.ccDate && ccHFinAuto) ? fmtTZ(intro.ccDate, ccHFinAuto, 'TAH', 'TAH').split('·')[1]||'' : '';
+  const ccEndNC  = (intro.ccDate && ccHFinAuto) ? fmtTZ(intro.ccDate, ccHFinAuto, 'TAH', 'NC').split('·')[1]||''  : '';
+  const ccEndFR  = (intro.ccDate && ccHFinAuto) ? fmtTZ(intro.ccDate, ccHFinAuto, 'TAH', 'FR').split('·')[1]||''  : '';
   const d = document.createElement('div');
   d.className = 'admin-card';
   d.style.marginBottom = '16px';
@@ -2316,6 +2340,7 @@ function makePilfForm(intro, i) {
       ${(intro.zoomIntro||intro.zoomCC) ? `<span style="font-size:11px;color:#0a9e6e;background:#e8f8f0;border:1px solid #b7e8d2;border-radius:20px;padding:3px 10px;margin-right:8px">🔗 Zoom configuré</span>` : `<span style="font-size:11px;color:#856404;background:#fff3cd;border:1px solid #ffc107;border-radius:20px;padding:3px 10px;margin-right:8px">⚠ Zoom manquant</span>`}
       <button class="remove-intro-btn" onclick="window._removePilf(this)" title="Supprimer">✕ Supprimer</button>
     </div>
+    ${intro.modified_by ? `<p style="font-size:11px;color:#9aabb8;margin:4px 0 12px">✎ Dernière modification : <strong style="color:#5a6a7a">${intro.modified_by}</strong>${intro.modified_at ? ' — ' + new Date(intro.modified_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : ''}</p>` : ''}
     <label class="fl" style="margin-top:0">Leadeur</label>
     <div style="position:relative">
       <input class="ai" type="text" id="leader-pilf-input-${i}" placeholder="Taper le nom du leadeur…" autocomplete="off"
@@ -2360,14 +2385,19 @@ function makePilfForm(intro, i) {
     <input class="ai" type="text" value="${intro.pilfGradueName||''}" placeholder="Prénom Nom du gradué" oninput="pilfUpdate(${i},'pilfGradueName',this.value)" id="pilf-gradue-name-${i}">
         <label class="fl">Email Leadeur <span style="font-size:10px;color:#aab8c4">(rempli automatiquement)</span></label>
     <input class="ai" type="email" value="${intro.animateurEmail||''}" readonly style="background:#f0f4f8;color:#7a8a9a;cursor:not-allowed" id="email-pilf-${i}">
-    ${intro.modified_by ? `<p style="font-size:11px;color:#9aabb8;margin-top:8px">✎ Dernière modification : <strong style="color:#5a6a7a">${intro.modified_by}</strong>${intro.modified_at ? ' — ' + new Date(intro.modified_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : ''}</p>` : ''}
     <div class="ptz">
       <div class="ptz-title">Aperçu horaires calculés</div>
       <div class="ptz-grid">
-        <div><div class="ptz-l">Tahiti</div><div class="ptz-v" id="pptz-tah-${i}">${tah}</div></div>
-        <div><div class="ptz-l">Nouvelle-Calédonie</div><div class="ptz-v" id="pptz-nc-${i}">${nc}</div></div>
-        <div><div class="ptz-l">France</div><div class="ptz-v" id="pptz-fr-${i}">${fr}</div></div>
+        <div><div class="ptz-l">Tahiti</div><div class="ptz-v" id="pptz-tah-${i}">${tah}${endTAH ? ' → ' + endTAH : ''}</div></div>
+        <div><div class="ptz-l">Nouvelle-Calédonie</div><div class="ptz-v" id="pptz-nc-${i}">${nc}${endNC ? ' → ' + endNC : ''}</div></div>
+        <div><div class="ptz-l">France</div><div class="ptz-v" id="pptz-fr-${i}">${fr}${endFR ? ' → ' + endFR : ''}</div></div>
       </div>
+      ${ccTAH ? `<div style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--navy-mid);margin:10px 0 6px">Creation Call</div>
+      <div class="ptz-grid">
+        <div><div class="ptz-l">Tahiti</div><div class="ptz-v">${ccTAH}${ccEndTAH ? ' → ' + ccEndTAH : ''}</div></div>
+        <div><div class="ptz-l">Nouvelle-Calédonie</div><div class="ptz-v">${ccNC}${ccEndNC ? ' → ' + ccEndNC : ''}</div></div>
+        <div><div class="ptz-l">France</div><div class="ptz-v">${ccFR}${ccEndFR ? ' → ' + ccEndFR : ''}</div></div>
+      </div>` : ''}
     </div>
     <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--cream-2)">
       <div style="font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--navy-mid);margin-bottom:8px">Lien d'inscription pour le gradué</div>
