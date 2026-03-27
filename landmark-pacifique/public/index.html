@@ -1311,6 +1311,12 @@ function enterAdmin(role, name){
   window._sessionFonction = fonction;
   window._sessionName = name;
 
+  // Remplir les infos de session pour permettre l'inscription aux introductions
+  const session = getSession();
+  window._gradueName = name;
+  window._graduEmail = session ? session.email : null;
+  window._gradueTelephone = extra.telephone || null;
+
   // Onglet Paramètres visible pour tous
   const settingsTab = document.getElementById('tab-btn-settings');
   if(settingsTab) settingsTab.style.display = '';
