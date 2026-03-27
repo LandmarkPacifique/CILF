@@ -926,6 +926,13 @@ const TZ   = {TAH:-10, NC:11, FR:1};
 const DAYS = ["Dim.","Lun.","Mar.","Mer.","Jeu.","Ven.","Sam."];
 const MTHS = ["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
 
+// Extrait l'ID numérique d'un lien Zoom (chiffres après le dernier /)
+function extractZoomId(url) {
+  if (!url) return '';
+  const match = url.match(/\/(\d+)/);
+  return match ? match[1] : '';
+}
+
 function fmtTZ(d,h,from,to){
   if(!d||!h)return"—";
   const[y,m,dd]=d.split("-").map(Number),[hh,mn]=h.split(":").map(Number);
@@ -1604,7 +1611,8 @@ async function selectPilfIntro(id){
         heure_fin_tah:tahFin, heure_fin_nc:ncFin, heure_fin_fr:frFin,
         cc_tah:ccTAH, cc_nc:ccNC, cc_fr:ccFR,
         cc_fin_tah:ccTAHFin, cc_fin_nc:ccNCFin, cc_fin_fr:ccFRFin,
-        zoom_intro:intro.zoomIntro||"", zoom_cc:intro.zoomCC||""
+        zoom_intro:intro.zoomIntro||"", zoom_cc:intro.zoomCC||"",
+        zoom_intro_id:extractZoomId(intro.zoomIntro), zoom_cc_id:extractZoomId(intro.zoomCC)
       })
     });
     logToSheets("graduate",{prenom:fn,nom:ln,email:window._graduEmail,telephone:window._gradueTelephone||"",pays:"",animateur:intro.animateur,titre:intro.titre,date_tah:tah,introduction_id:intro.id});
@@ -1832,7 +1840,8 @@ async function selectIntro(id){
         heure_fin_tah:tahFin, heure_fin_nc:ncFin, heure_fin_fr:frFin,
         cc_tah:ccTAH, cc_nc:ccNC, cc_fr:ccFR,
         cc_fin_tah:ccTAHFin, cc_fin_nc:ccNCFin, cc_fin_fr:ccFRFin,
-        zoom_intro:intro.zoomIntro||"", zoom_cc:intro.zoomCC||""
+        zoom_intro:intro.zoomIntro||"", zoom_cc:intro.zoomCC||"",
+        zoom_intro_id:extractZoomId(intro.zoomIntro), zoom_cc_id:extractZoomId(intro.zoomCC)
       })
     });
     logToSheets("graduate",{prenom:fn,nom:ln,email:window._graduEmail,telephone:window._gradueTelephone||"",pays:"",animateur:intro.animateur,titre:intro.titre,date_tah:tah,introduction_id:intro.id});
@@ -1986,6 +1995,7 @@ async function submitInvite(){
         cc_tah:ccTAH, cc_nc:ccNC, cc_fr:ccFR,
         cc_fin_tah:ccTAHFin, cc_fin_nc:ccNCFin, cc_fin_fr:ccFRFin,
         zoom_intro:intro.zoomIntro||"", zoom_cc:intro.zoomCC||"",
+        zoom_intro_id:extractZoomId(intro.zoomIntro), zoom_cc_id:extractZoomId(intro.zoomCC),
         t3h:tMatin, t30:t40
       })
     });
@@ -2068,7 +2078,8 @@ async function submitSolo(){
         heure_fin_tah:tahFin, heure_fin_nc:ncFin, heure_fin_fr:frFin,
         cc_tah:ccTAH, cc_nc:ccNC, cc_fr:ccFR,
         cc_fin_tah:ccTAHFin, cc_fin_nc:ccNCFin, cc_fin_fr:ccFRFin,
-        zoom_intro:intro.zoomIntro||"", zoom_cc:intro.zoomCC||""
+        zoom_intro:intro.zoomIntro||"", zoom_cc:intro.zoomCC||"",
+        zoom_intro_id:extractZoomId(intro.zoomIntro), zoom_cc_id:extractZoomId(intro.zoomCC)
       })
     });
   }catch(e){console.error("Make webhook solo:",e);}
@@ -2134,6 +2145,7 @@ async function submitWithGuest(){
         cc_tah:ccTAH, cc_nc:ccNC, cc_fr:ccFR,
         cc_fin_tah:ccTAHFin, cc_fin_nc:ccNCFin, cc_fin_fr:ccFRFin,
         zoom_intro:intro.zoomIntro||"", zoom_cc:intro.zoomCC||"",
+        zoom_intro_id:extractZoomId(intro.zoomIntro), zoom_cc_id:extractZoomId(intro.zoomCC),
         invite_link:getInviteLink(intro.id, gfn+" "+gln, gem),
         t3h:tMatin, t30:t40
       })
