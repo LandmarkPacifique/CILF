@@ -2164,7 +2164,7 @@ async function submitWithGuest(){
   logToSheets("graduate",{prenom:gfn,nom:gln,email:gem,telephone:document.getElementById("g-phone").value.trim(),pays:"",animateur:intro.animateur,titre:intro.titre,date_tah:fmtTZ(intro.date,intro.heure,"TAH","TAH"),invite:ufn+" "+uln,introduction_id:intro.id});
   logToSheets("guest",{prenom:ufn,nom:uln,email:uem,telephone:"",graduate:gfn+" "+gln,graduate_email:gem,animateur:intro.animateur,titre:intro.titre,date_tah:fmtTZ(intro.date,intro.heure,"TAH","TAH"),introduction_id:intro.id});
   ["g-first","g-last","g-email","g-phone","gu-first","gu-last","gu-email"].forEach(id=>document.getElementById(id).value="");
-  showConfirm("Inscription confirmée !",`\u2019Ia ora na ! ${ufn} ${uln} est bien inscrit(e). Un email de confirmation lui a \u00e9t\u00e9 envoy\u00e9.`,tMatin,t40,false,intro);
+  showConfirm("Inscription confirmée !",`\u2019Ia ora na ! Un email de confirmation a \u00e9t\u00e9 envoy\u00e9 à ${ufn} ${uln} pour s'inscrire. `,tMatin,t40,false,intro);
 }
 
 // ── CONFIRMATION ──────────────────────────────────────────────────────────────
