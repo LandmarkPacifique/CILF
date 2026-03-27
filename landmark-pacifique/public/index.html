@@ -2113,7 +2113,7 @@ async function saveAll(){
   if(!draft) return;
   for(var _i=0; _i<draft.length; _i++){
     if(!draft[_i].animateur || !draft[_i].animateur.trim()){
-      alert('L'introduction '+(_i+1)+' n'a pas de leadeur. Veuillez sélectionner un leadeur avant d'enregistrer.');
+      alert("L'introduction "+(_i+1)+" n'a pas de leadeur. Veuillez sélectionner un leadeur avant d'enregistrer.");
       return;
     }
   }
@@ -2332,7 +2332,7 @@ async function savePilf(){
   if(!pilfDraft) return;
   for(var _j=0; _j<pilfDraft.length; _j++){
     if(!pilfDraft[_j].animateur || !pilfDraft[_j].animateur.trim()){
-      alert('La PILF/HILF '+(_j+1)+' n'a pas de leadeur. Veuillez sélectionner un leadeur avant d'enregistrer.');
+      alert("La PILF/HILF "+(_j+1)+" n'a pas de leadeur. Veuillez sélectionner un leadeur avant d'enregistrer.");
       return;
     }
   }
