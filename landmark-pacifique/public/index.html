@@ -191,6 +191,9 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
 .btn-delete-user:hover { background:#dc3545; color:#fff }
 .pending-alert { background:#fff3cd; border:1px solid #ffc107; border-radius:10px; padding:12px 16px; margin-bottom:16px; font-size:13px; color:#856404; display:none }
 .pending-alert strong { display:block; font-size:14px; margin-bottom:2px }
+/* Autocomplete leader suggestions */
+#leader-suggestions-cilf-0 div:hover, #leader-suggestions-pilf-0 div:hover,
+[id^="leader-suggestions-"] div:hover { background:var(--cyan-pale); }
 .login-screen { min-height:100vh; background:var(--navy-deep); display:flex; align-items:center; justify-content:center; padding:20px }
 .login-box { background:var(--white); border-radius:20px; padding:40px 36px; width:100%; max-width:360px; box-shadow:0 16px 60px rgba(0,20,60,.4); text-align:center }
 .login-box h2 { font-family:'Cormorant Garamond',serif; font-size:28px; color:var(--navy-deep); margin-bottom:6px }
@@ -688,8 +691,15 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
             <input type="password" class="ai" id="cfg-new-pw" placeholder="Mot de passe">
             <select class="ai" id="cfg-new-role" style="padding:9px 12px;border-radius:8px;border:1px solid #ddd;font-family:inherit">
               <option value="utilisateur">Utilisateur (Gradué)</option>
-              <option value="admin">Admin (Leader)</option>
+              <option value="admin">Admin</option>
               <option value="superadmin">Super Admin</option>
+            </select>
+            <select class="ai" id="cfg-new-fonction" style="padding:9px 12px;border-radius:8px;border:1px solid #ddd;font-family:inherit">
+              <option value="">— Fonction (optionnel) —</option>
+              <option value="leader_intro">Leader d'intro</option>
+              <option value="leader_pilf">Leader PILF/HILF</option>
+              <option value="gradue">Gradué</option>
+              <option value="staff">Staff</option>
             </select>
             <button class="copy-btn" onclick="addUser()" style="padding:9px 18px;align-self:flex-start">Ajouter</button>
           </div>
@@ -828,12 +838,19 @@ function makeAdminForm(intro, i) {
     <div class="admin-card-hdr">
       <div class="admin-num">${i+1}</div>
       <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--navy-deep);flex:1">Community Introduction of the Landmark Forum ${i+1}</span>
+      ${(intro.zoomIntro||intro.zoomCC) ? `<span style="font-size:11px;color:#0a9e6e;background:#e8f8f0;border:1px solid #b7e8d2;border-radius:20px;padding:3px 10px;margin-right:8px">🔗 Zoom configuré</span>` : `<span style="font-size:11px;color:#856404;background:#fff3cd;border:1px solid #ffc107;border-radius:20px;padding:3px 10px;margin-right:8px">⚠ Zoom manquant</span>`}
       <button class="remove-intro-btn" onclick="window._removeIntro(this)" title="Supprimer">✕ Supprimer</button>
     </div>
     <label class="fl" style="margin-top:0">Leadeur</label>
-    <select class="ai" id="leader-cilf-${i}" onchange="onLeaderChange('cilf',${i},this)">
-      <option value="">— Choisir un leadeur —</option>
-    </select>
+    <div style="position:relative">
+      <input class="ai" type="text" id="leader-cilf-input-${i}" placeholder="Taper le nom du leadeur…" autocomplete="off"
+        value="${intro.animateur||''}"
+        oninput="filterLeaderSuggestions('cilf',${i},this.value)"
+        onfocus="filterLeaderSuggestions('cilf',${i},this.value)"
+        onblur="setTimeout(()=>hideLeaderSuggestions('cilf',${i}),200)">
+      <input type="hidden" id="leader-cilf-${i}" value="${intro.animateur||''}">
+      <div id="leader-suggestions-cilf-${i}" style="position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #ddd;border-radius:0 0 8px 8px;max-height:180px;overflow-y:auto;z-index:200;display:none;box-shadow:0 4px 12px rgba(0,0,0,.1)"></div>
+    </div>
     <label class="fl">Titre / thème</label>
     <input class="ai" type="text" value="${intro.titre||''}" oninput="draftUpdate(${i},'titre',this.value)">
     <div class="ag2">
@@ -866,6 +883,7 @@ function makeAdminForm(intro, i) {
     </div>
     <label class="fl">Email Leadeur <span style="font-size:10px;color:#aab8c4">(rempli automatiquement)</span></label>
     <input class="ai" type="email" value="${intro.animateurEmail||''}" readonly style="background:#f0f4f8;color:#7a8a9a;cursor:not-allowed" id="email-cilf-${i}">
+    ${intro.modified_by ? `<p style="font-size:11px;color:#9aabb8;margin-top:8px">✎ Dernière modification : <strong style="color:#5a6a7a">${intro.modified_by}</strong>${intro.modified_at ? ' — ' + new Date(intro.modified_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : ''}</p>` : ''}
     <div class="ptz">
       <div class="ptz-title">Aperçu horaires calculés</div>
       <div class="ptz-grid">
@@ -874,8 +892,16 @@ function makeAdminForm(intro, i) {
         <div><div class="ptz-l">France</div><div class="ptz-v" id="ptz-fr-${i}">${fr}</div></div>
       </div>
     </div>`;
-  // Populate dropdown after insert
-  setTimeout(() => fillLeaderSelect('cilf', i, intro.animateur), 0);
+  // Populate autocomplete after insert
+  setTimeout(() => {
+    getLeadersList(); // preload leaders list
+    if(intro.animateur){
+      const emailEl = document.getElementById(`email-cilf-${i}`);
+      const leaders = (_leadersList || []);
+      const match = leaders.find(u => u.name === intro.animateur);
+      if(match && emailEl) emailEl.value = match.email;
+    }
+  }, 0);
   return d;
 }
 
@@ -964,6 +990,13 @@ async function doLogin(){
     });
     const data = await res.json();
     if(!res.ok){ err.style.display='block'; err.textContent = data.error || 'Identifiants incorrects'; btn.disabled=false; btn.textContent='Se connecter'; return; }
+    // Vérifier si le compte est en attente de validation
+    if(data.status === 'pending' || data.approved === false || data.validated === false){
+      err.style.display='block';
+      err.textContent='Votre compte est en attente de validation par un administrateur.';
+      btn.disabled=false; btn.textContent='Se connecter';
+      return;
+    }
     setSession(data.token, { pid: data.pid, telephone: data.telephone });
     document.getElementById('pw-email').value='';
     document.getElementById('pw-input').value='';
@@ -1015,9 +1048,18 @@ async function doRegister(){
     });
     const data = await res.json();
     if(!res.ok){ err.textContent = data.error || 'Erreur lors de la création.'; err.style.display='block'; btn.disabled=false; btn.textContent='Créer mon compte'; return; }
-    setSession(data.token, { pid, telephone: tel });
+    // NE PAS connecter automatiquement — le compte doit être validé par un admin
     btn.disabled=false; btn.textContent='Créer mon compte';
-    enterGradue(name, email, pid, tel);
+    // Afficher un message de succès sans connexion
+    const panel = document.getElementById('auth-panel-register');
+    if(panel){
+      panel.innerHTML = `<div style="text-align:center;padding:20px 0">
+        <div style="font-size:40px;margin-bottom:16px">✅</div>
+        <p style="font-weight:600;color:var(--navy-deep);font-size:16px;margin-bottom:10px">Compte créé avec succès !</p>
+        <p style="font-size:13px;color:#7a8a9a;line-height:1.7">Votre compte est <strong>en attente de validation</strong> par un administrateur.<br>Vous recevrez un accès une fois votre compte approuvé.</p>
+        <button class="login-btn" style="margin-top:20px" onclick="switchAuthTab('login', document.getElementById('tab-login-btn'))">← Retour à la connexion</button>
+      </div>`;
+    }
   } catch(e){
     err.textContent='Erreur de connexion, réessayez.'; err.style.display='block';
     btn.disabled=false; btn.textContent='Créer mon compte';
@@ -1471,12 +1513,13 @@ async function fillLeaderSelect(type, i, currentName){
   const users = await getLeadersList();
   const sel = document.getElementById(`leader-${type}-${i}`);
   if(!sel) return;
-  const leaders = users.filter(u => u.role === 'leader' || u.role === 'admin' || u.role === 'superadmin');
+  // Filtrer par fonction leader_intro OU leader_pilf, ou role admin/superadmin sans fonction définie (rétrocompatibilité)
+  const leaders = users.filter(u => u.fonction === 'leader_intro' || u.fonction === 'leader_pilf' || ((!u.fonction) && (u.role === 'admin' || u.role === 'superadmin')));
   leaders.forEach(u => {
     const opt = document.createElement('option');
     opt.value = u.name;
     opt.dataset.email = u.email;
-    opt.textContent = u.name;
+    opt.textContent = u.name + (u.fonction === 'leader_intro' ? ' (Leader intro)' : u.fonction === 'leader_pilf' ? ' (Leader PILF)' : '');
     if(u.name === currentName) opt.selected = true;
     sel.appendChild(opt);
   });
@@ -1488,6 +1531,46 @@ async function fillLeaderSelect(type, i, currentName){
       if(emailEl) emailEl.value = match.email;
     }
   }
+}
+
+function filterLeaderSuggestions(type, i, query){
+  const suggestionsEl = document.getElementById(`leader-suggestions-${type}-${i}`);
+  if(!suggestionsEl) return;
+  const leaders = (_leadersList || []).filter(u => u.fonction === 'leader_intro' || u.fonction === 'leader_pilf' || ((!u.fonction) && (u.role === 'admin' || u.role === 'superadmin')));
+  const filtered = query.trim() === '' ? leaders : leaders.filter(u => (u.name||'').toLowerCase().includes(query.toLowerCase()));
+  if(filtered.length === 0){
+    suggestionsEl.style.display = 'none';
+    return;
+  }
+  suggestionsEl.innerHTML = filtered.map(u => `
+    <div style="padding:9px 14px;cursor:pointer;font-size:13px;color:var(--navy-deep);border-bottom:1px solid var(--cream-2)"
+      onmousedown="selectLeaderSuggestion('${type}',${i},'${(u.name||'').replace(/'/g,"\\'")}','${(u.email||'').replace(/'/g,"\\'")}')">
+      ${u.name||'—'} <span style="font-size:11px;color:#9aabb8">${u.fonction ? '('+u.fonction.replace('_',' ')+')' : u.role}</span>
+    </div>`).join('');
+  suggestionsEl.style.display = 'block';
+}
+
+function selectLeaderSuggestion(type, i, name, email){
+  const inputEl = document.getElementById(`leader-${type}-input-${i}`);
+  const hiddenEl = document.getElementById(`leader-${type}-${i}`);
+  const suggestionsEl = document.getElementById(`leader-suggestions-${type}-${i}`);
+  const emailEl = document.getElementById(`email-${type}-${i}`);
+  if(inputEl) inputEl.value = name;
+  if(hiddenEl) hiddenEl.value = name;
+  if(emailEl) emailEl.value = email;
+  if(suggestionsEl) suggestionsEl.style.display = 'none';
+  if(type === 'cilf'){
+    draftUpdate(i, 'animateur', name);
+    draftUpdate(i, 'animateurEmail', email);
+  } else {
+    pilfUpdate(i, 'animateur', name);
+    pilfUpdate(i, 'animateurEmail', email);
+  }
+}
+
+function hideLeaderSuggestions(type, i){
+  const suggestionsEl = document.getElementById(`leader-suggestions-${type}-${i}`);
+  if(suggestionsEl) suggestionsEl.style.display = 'none';
 }
 function onLeaderChange(type, i, sel){
   const name  = sel.value;
@@ -1986,7 +2069,11 @@ async function saveAll(){
   const b=document.getElementById('save-btn');
   b.disabled=true; b.textContent='Enregistrement…';
   try {
-    await apiFetch('/api/intros',{method:'POST',body:JSON.stringify({slug:'cilf',intros:draft})});
+    const session = getSession();
+    const modifiedBy = session ? session.name : null;
+    const modifiedById = session ? session.id : null;
+    const modifiedAt = new Date().toISOString();
+    await apiFetch('/api/intros',{method:'POST',body:JSON.stringify({slug:'cilf',intros:draft,modified_by:modifiedBy,modified_by_id:modifiedById,modified_at:modifiedAt})});
     draft=null;
     b.textContent='✓ Enregistré et publié !'; b.classList.add('saved');
     setTimeout(()=>{b.textContent='Enregistrer et publier';b.classList.remove('saved');b.disabled=false;renderAdmin();},3000);
@@ -2016,12 +2103,19 @@ function makePilfForm(intro, i) {
     <div class="admin-card-hdr">
       <div class="admin-num">${i+1}</div>
       <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--navy-deep);flex:1">Introduction PILF/HILF ${i+1}</span>
+      ${(intro.zoomIntro||intro.zoomCC) ? `<span style="font-size:11px;color:#0a9e6e;background:#e8f8f0;border:1px solid #b7e8d2;border-radius:20px;padding:3px 10px;margin-right:8px">🔗 Zoom configuré</span>` : `<span style="font-size:11px;color:#856404;background:#fff3cd;border:1px solid #ffc107;border-radius:20px;padding:3px 10px;margin-right:8px">⚠ Zoom manquant</span>`}
       <button class="remove-intro-btn" onclick="window._removePilf(this)" title="Supprimer">✕ Supprimer</button>
     </div>
     <label class="fl" style="margin-top:0">Leadeur</label>
-    <select class="ai" id="leader-pilf-${i}" onchange="onLeaderChange('pilf',${i},this)">
-      <option value="">— Choisir un leadeur —</option>
-    </select>
+    <div style="position:relative">
+      <input class="ai" type="text" id="leader-pilf-input-${i}" placeholder="Taper le nom du leadeur…" autocomplete="off"
+        value="${intro.animateur||''}"
+        oninput="filterLeaderSuggestions('pilf',${i},this.value)"
+        onfocus="filterLeaderSuggestions('pilf',${i},this.value)"
+        onblur="setTimeout(()=>hideLeaderSuggestions('pilf',${i}),200)">
+      <input type="hidden" id="leader-pilf-${i}" value="${intro.animateur||''}">
+      <div id="leader-suggestions-pilf-${i}" style="position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #ddd;border-radius:0 0 8px 8px;max-height:180px;overflow-y:auto;z-index:200;display:none;box-shadow:0 4px 12px rgba(0,0,0,.1)"></div>
+    </div>
     <label class="fl">Titre / thème</label>
     <input class="ai" type="text" value="${intro.titre||''}" oninput="pilfUpdate(${i},'titre',this.value)">
     <div class="ag2">
@@ -2056,6 +2150,7 @@ function makePilfForm(intro, i) {
     <input class="ai" type="text" value="${intro.pilfGradueName||''}" placeholder="Prénom Nom du gradué" oninput="pilfUpdate(${i},'pilfGradueName',this.value)" id="pilf-gradue-name-${i}">
         <label class="fl">Email Leadeur <span style="font-size:10px;color:#aab8c4">(rempli automatiquement)</span></label>
     <input class="ai" type="email" value="${intro.animateurEmail||''}" readonly style="background:#f0f4f8;color:#7a8a9a;cursor:not-allowed" id="email-pilf-${i}">
+    ${intro.modified_by ? `<p style="font-size:11px;color:#9aabb8;margin-top:8px">✎ Dernière modification : <strong style="color:#5a6a7a">${intro.modified_by}</strong>${intro.modified_at ? ' — ' + new Date(intro.modified_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : ''}</p>` : ''}
     <div class="ptz">
       <div class="ptz-title">Aperçu horaires calculés</div>
       <div class="ptz-grid">
@@ -2073,7 +2168,15 @@ function makePilfForm(intro, i) {
       </div>
       <p id="pilf-copy-msg-${i}" style="display:none;font-size:11px;color:#0a8a0a;margin-top:6px">✓ Lien copié !</p>
     </div>`;
-  setTimeout(() => fillLeaderSelect('pilf', i, intro.animateur), 0);
+  setTimeout(() => {
+    getLeadersList(); // preload leaders list
+    if(intro.animateur){
+      const emailEl = document.getElementById(`email-pilf-${i}`);
+      const leaders = (_leadersList || []);
+      const match = leaders.find(u => u.name === intro.animateur);
+      if(match && emailEl) emailEl.value = match.email;
+    }
+  }, 0);
   return d;
 }
 
@@ -2161,7 +2264,11 @@ async function savePilf(){
   const b=document.getElementById('pilf-save-btn');
   b.disabled=true; b.textContent='Enregistrement…';
   try {
-    await apiFetch('/api/intros',{method:'POST',body:JSON.stringify({slug:'pilf',intros:pilfDraft})});
+    const session = getSession();
+    const modifiedBy = session ? session.name : null;
+    const modifiedById = session ? session.id : null;
+    const modifiedAt = new Date().toISOString();
+    await apiFetch('/api/intros',{method:'POST',body:JSON.stringify({slug:'pilf',intros:pilfDraft,modified_by:modifiedBy,modified_by_id:modifiedById,modified_at:modifiedAt})});
     pilfDraft=null;
     b.textContent='✓ Enregistré !'; b.classList.add('saved');
     setTimeout(()=>{b.textContent='Enregistrer et publier';b.classList.remove('saved');b.disabled=false;renderPilf();},3000);
@@ -2210,12 +2317,13 @@ async function loadLeadersList(){
     container.innerHTML = sorted.map(u => {
       const r = getRoleInfo(u.role);
       const badgeHtml = `<span style="background:${r.bg};color:${r.color};border:1px solid ${r.border};border-radius:20px;padding:3px 10px;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;display:inline-block;margin-left:6px">${r.label}</span>`;
+      const fonctionBadge = u.fonction ? `<span style="background:#f0f4ff;color:#5a6a9a;border:1px solid #c8d4f0;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:500;display:inline-block;margin-left:4px">${u.fonction.replace('_',' ')}</span>` : '';
       const delBtn = isSuperAdmin ? `<button class="btn-delete-user" onclick="deleteLeaderConfirm('${u.id||u.email}','${(u.name||'').replace(/'/g,"\\'")}')">Supprimer</button>` : '';
       return `
       <div class="user-row" id="leader-row-${u.id||u.email}" style="flex-direction:column;align-items:stretch">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
           <div class="user-row-info">
-            <div class="user-row-name">${u.name||'—'} ${badgeHtml}</div>
+            <div class="user-row-name">${u.name||'—'} ${badgeHtml}${fonctionBadge}</div>
             <div class="user-row-email">${u.email||''} ${u.pid?'• PID: '+u.pid:''} ${u.telephone?'• '+u.telephone:''}</div>
           </div>
           <div class="user-row-actions">
@@ -2233,6 +2341,14 @@ async function loadLeadersList(){
               <label class="fl" style="margin-top:0;font-size:12px">Email</label>
               <input type="email" class="ai" id="leader-email-${u.id||u.email}" value="${(u.email||'').replace(/"/g,'&quot;')}" style="font-size:13px;padding:7px 10px">
             </div>
+            <div>
+              <label class="fl" style="margin-top:0;font-size:12px">PID (optionnel)</label>
+              <input type="text" class="ai" id="leader-pid-${u.id||u.email}" value="${u.pid||''}" maxlength="7" style="font-size:13px;padding:7px 10px">
+            </div>
+            <div>
+              <label class="fl" style="margin-top:0;font-size:12px">Téléphone (optionnel)</label>
+              <input type="tel" class="ai" id="leader-tel-${u.id||u.email}" value="${u.telephone||''}" style="font-size:13px;padding:7px 10px">
+            </div>
             <div style="grid-column:1/-1">
               <label class="fl" style="margin-top:0;font-size:12px">Nouveau mot de passe <span style="color:#9aabb8">(laisser vide pour ne pas changer)</span></label>
               <input type="password" class="ai" id="leader-pw-${u.id||u.email}" placeholder="Minimum 6 caractères" style="font-size:13px;padding:7px 10px">
@@ -2241,8 +2357,18 @@ async function loadLeadersList(){
               <label class="fl" style="margin-top:0;font-size:12px">Rôle</label>
               <select class="ai" id="leader-role-${u.id||u.email}" style="font-size:13px;padding:7px 10px;border-radius:8px;border:1px solid #ddd;font-family:inherit">
                 <option value="utilisateur" ${(u.role==='utilisateur'||u.role==='gradue') ? 'selected' : ''}>Utilisateur (Gradué)</option>
-                <option value="admin" ${u.role==='admin' ? 'selected' : ''}>Admin (Leader)</option>
+                <option value="admin" ${u.role==='admin' ? 'selected' : ''}>Admin</option>
                 <option value="superadmin" ${u.role==='superadmin' ? 'selected' : ''}>Super Admin</option>
+              </select>
+            </div>
+            <div>
+              <label class="fl" style="margin-top:0;font-size:12px">Fonction</label>
+              <select class="ai" id="leader-fonction-${u.id||u.email}" style="font-size:13px;padding:7px 10px;border-radius:8px;border:1px solid #ddd;font-family:inherit">
+                <option value="">— Aucune —</option>
+                <option value="leader_intro" ${u.fonction==='leader_intro' ? 'selected' : ''}>Leader d'intro</option>
+                <option value="leader_pilf" ${u.fonction==='leader_pilf' ? 'selected' : ''}>Leader PILF/HILF</option>
+                <option value="gradue" ${u.fonction==='gradue' ? 'selected' : ''}>Gradué</option>
+                <option value="staff" ${u.fonction==='staff' ? 'selected' : ''}>Staff</option>
               </select>
             </div>
           </div>
@@ -2268,13 +2394,16 @@ function toggleEditLeader(userId){
 async function saveEditLeader(userId){
   const name  = document.getElementById('leader-name-'+userId)?.value.trim();
   const email = document.getElementById('leader-email-'+userId)?.value.trim();
+  const pid   = document.getElementById('leader-pid-'+userId)?.value.trim();
+  const tel   = document.getElementById('leader-tel-'+userId)?.value.trim();
   const pw    = document.getElementById('leader-pw-'+userId)?.value;
   const role  = document.getElementById('leader-role-'+userId)?.value;
+  const fonction = document.getElementById('leader-fonction-'+userId)?.value;
   const msg   = document.getElementById('leader-msg-'+userId);
   if(!name || !email){ msg.textContent='Nom et email requis.'; msg.style.color='#c00'; msg.style.display='inline'; return; }
   if(pw && pw.length < 6){ msg.textContent='Mot de passe minimum 6 caractères.'; msg.style.color='#c00'; msg.style.display='inline'; return; }
   msg.textContent='Enregistrement…'; msg.style.color='#7a8a9a'; msg.style.display='inline';
-  const body = { name, email, role };
+  const body = { name, email, role, pid: pid||null, telephone: tel||null, fonction: fonction||null };
   if(pw) body.password = pw;
   try {
     await apiFetch('/api/users', { method:'POST', body: JSON.stringify({ action:'edit', userId, ...body }) });
@@ -2375,6 +2504,24 @@ async function loadAllGradues(){
               <label class="fl" style="margin-top:0;font-size:12px">Nouveau mot de passe</label>
               <input type="password" class="ai" id="edit-pw-${u.id||u.email}" placeholder="Laisser vide = inchangé" style="font-size:13px;padding:7px 10px">
             </div>
+            <div>
+              <label class="fl" style="margin-top:0;font-size:12px">Rôle</label>
+              <select class="ai" id="edit-role-${u.id||u.email}" style="font-size:13px;padding:7px 10px;border-radius:8px;border:1px solid #ddd;font-family:inherit">
+                <option value="utilisateur" ${(u.role==='utilisateur'||u.role==='gradue'||!u.role) ? 'selected' : ''}>Utilisateur (Gradué)</option>
+                <option value="admin" ${u.role==='admin' ? 'selected' : ''}>Admin</option>
+                <option value="superadmin" ${u.role==='superadmin' ? 'selected' : ''}>Super Admin</option>
+              </select>
+            </div>
+            <div>
+              <label class="fl" style="margin-top:0;font-size:12px">Fonction</label>
+              <select class="ai" id="edit-fonction-${u.id||u.email}" style="font-size:13px;padding:7px 10px;border-radius:8px;border:1px solid #ddd;font-family:inherit">
+                <option value="">— Aucune —</option>
+                <option value="leader_intro" ${u.fonction==='leader_intro' ? 'selected' : ''}>Leader d'intro</option>
+                <option value="leader_pilf" ${u.fonction==='leader_pilf' ? 'selected' : ''}>Leader PILF/HILF</option>
+                <option value="gradue" ${u.fonction==='gradue' ? 'selected' : ''}>Gradué</option>
+                <option value="staff" ${u.fonction==='staff' ? 'selected' : ''}>Staff</option>
+              </select>
+            </div>
           </div>
           <div style="display:flex;align-items:center;gap:10px;margin-top:12px">
             <button class="btn-approve" onclick="saveEditGradue('${u.id||u.email}')">✓ Enregistrer</button>
@@ -2434,11 +2581,13 @@ async function saveEditGradue(userId){
   const pid   = document.getElementById('edit-pid-'+userId)?.value.trim();
   const tel   = document.getElementById('edit-tel-'+userId)?.value.trim();
   const pw    = document.getElementById('edit-pw-'+userId)?.value;
+  const role  = document.getElementById('edit-role-'+userId)?.value;
+  const fonction = document.getElementById('edit-fonction-'+userId)?.value;
   const msg   = document.getElementById('edit-msg-'+userId);
   if(!name || !email){ msg.textContent='Nom et email requis.'; msg.style.color='#c00'; msg.style.display='inline'; return; }
   if(pw && pw.length < 6){ msg.textContent='Mot de passe minimum 6 caractères.'; msg.style.color='#c00'; msg.style.display='inline'; return; }
   msg.textContent='Enregistrement…'; msg.style.color='#7a8a9a'; msg.style.display='inline';
-  const body = { name, email, pid: pid||null, telephone: tel||null };
+  const body = { name, email, pid: pid||null, telephone: tel||null, role: role||'utilisateur', fonction: fonction||null };
   if(pw) body.password = pw;
   try {
     await apiFetch('/api/users', { method:'POST', body: JSON.stringify({ action:'edit', userId, ...body }) });
@@ -2496,10 +2645,11 @@ async function addUser(){
   const email = document.getElementById('cfg-new-email').value.trim();
   const pw    = document.getElementById('cfg-new-pw').value;
   const role  = document.getElementById('cfg-new-role').value;
+  const fonction = document.getElementById('cfg-new-fonction').value;
   const msg   = document.getElementById('cfg-user-msg');
   if(!name||!email||!pw){ msg.style.display='block'; msg.style.color='#c00'; msg.textContent='Veuillez remplir tous les champs.'; return; }
   try {
-    await apiFetch('/api/users', { method:'POST', body: JSON.stringify({name, email, password: pw, role}) });
+    await apiFetch('/api/users', { method:'POST', body: JSON.stringify({name, email, password: pw, role, fonction: fonction||null}) });
     msg.style.display='block'; msg.style.color='green'; msg.textContent='Utilisateur ajouté avec succès !';
     document.getElementById('cfg-new-name').value='';
     document.getElementById('cfg-new-email').value='';
