@@ -1,7 +1,6 @@
 // api/login.js
 const { neon } = require('@neondatabase/serverless');
 const jwt = require('jsonwebtoken');
-
 const sql = neon(process.env.DATABASE_URL);
 
 module.exports = async function handler(req, res) {
@@ -9,20 +8,18 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
-
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Méthode non autorisée' });
   }
 
   const { email, password } = req.body || {};
-
   if (!email || !password) {
     return res.status(400).json({ error: 'Email et mot de passe requis' });
   }
 
   try {
     const result = await sql`
-      SELECT id, role, name, pid, telephone
+      SELECT id, role, name, pid, telephone, status, validated
       FROM users
       WHERE email = ${email}
         AND password_hash = crypt(${password}, password_hash)
@@ -34,7 +31,11 @@ module.exports = async function handler(req, res) {
 
     const user = result[0];
 
-    // Pas d'expiration du JWT
+    // ✅ Vérification du statut de validation
+    if (user.status !== 'approved' || !user.validated) {
+      return res.status(403).json({ error: 'Votre compte est en attente de validation par un administrateur.' });
+    }
+
     const token = jwt.sign(
       { id: user.id, role: user.role, name: user.name, email },
       process.env.JWT_SECRET
