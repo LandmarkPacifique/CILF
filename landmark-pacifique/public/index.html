@@ -630,8 +630,8 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
   </div>
   <div class="admin-wrap">
     <div class="cfg-tabs">
-      <button class="cfg-tab active" onclick="switchTab('introductions',this)">CILF</button>
-      <button class="cfg-tab" onclick="switchTab('pilf',this)">PILF / HILF</button>
+      <button id="tab-btn-cilf" class="cfg-tab active" onclick="switchTab('introductions',this)">CILF</button>
+      <button id="tab-btn-pilf" class="cfg-tab" onclick="switchTab('pilf',this)">PILF / HILF</button>
       <button id="tab-btn-settings" class="cfg-tab" onclick="switchTab('settings',this)">Paramètres <span id="pending-badge" style="display:none;background:#dc3545;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:700;align-items:center;justify-content:center;margin-left:4px;vertical-align:middle"></span></button>
     </div>
 
@@ -894,27 +894,27 @@ function makeAdminForm(intro, i) {
   setTimeout(() => {
     getLeadersList(); // preload leaders list
     if(intro.animateur){
-      const emailEl = document.getElementById(`email-cilf-${i}`);
+      const emailEl = document.getElementById('email-cilf-'+i);
       const leaders = (_leadersList || []);
       const match = leaders.find(u => u.name === intro.animateur);
       if(match && emailEl) emailEl.value = match.email;
     }
-    // Si leader connecté et champ vide, pré-remplir avec son nom
+    // Si leader connecté et champ leadeur vide, pré-remplir avec son nom
     if(!intro.animateur && window._sessionFonction === 'leader_intro' && window._sessionName){
-      const inputEl = document.getElementById(`leader-cilf-input-${i}`);
-      const hiddenEl = document.getElementById(`leader-cilf-${i}`);
+      const inputEl = document.getElementById('leader-cilf-input-'+i);
+      const hiddenEl = document.getElementById('leader-cilf-'+i);
       if(inputEl && !inputEl.value){
         inputEl.value = window._sessionName;
         if(hiddenEl) hiddenEl.value = window._sessionName;
         draftUpdate(i, 'animateur', window._sessionName);
-        // Remplir l'email du leader connecté
-        const leaders2 = (_leadersList || []);
-        const selfMatch = leaders2.find(u => u.name === window._sessionName);
-        if(selfMatch){
-          const emailEl2 = document.getElementById(`email-cilf-${i}`);
-          if(emailEl2) emailEl2.value = selfMatch.email;
-          draftUpdate(i, 'animateurEmail', selfMatch.email);
-        }
+        getLeadersList().then(function(leaders2){
+          const selfMatch = leaders2.find(function(u){ return u.name === window._sessionName; });
+          if(selfMatch){
+            const emailEl2 = document.getElementById('email-cilf-'+i);
+            if(emailEl2) emailEl2.value = selfMatch.email;
+            draftUpdate(i, 'animateurEmail', selfMatch.email);
+          }
+        });
       }
     }
   }, 0);
@@ -956,9 +956,9 @@ async function apiFetch(path, opts = {}) {
   const url = API_BASE + path + (_adminToken ? sep + '_token=' + encodeURIComponent(_adminToken) : '');
   const res = await fetch(url, { ...opts, headers });
   if (!res.ok) {
-    let serverMsg = '';
-    try { const d = await res.clone().json(); serverMsg = d.error || d.message || ''; } catch{}
-    throw new Error(`API ${path} → ${res.status}${serverMsg ? ' : ' + serverMsg : ''}`);
+    var serverMsg = '';
+    try { var d = await res.clone().json(); serverMsg = d.error || d.message || ''; } catch(e){}
+    throw new Error('API '+path+' → '+res.status+(serverMsg ? ' : '+serverMsg : ''));
   }
   return res.json();
 }
@@ -1279,10 +1279,10 @@ function enterAdmin(role, name){
   if(settingsTab) settingsTab.style.display = '';
 
   // Onglets CILF et PILF : visibles pour leaders et superadmins uniquement
-  const cilfTab = document.querySelector('.cfg-tab[onclick*=\'introductions\']');
-  const pilfTab = document.querySelector('.cfg-tab[onclick*=\'pilf\']');
-  if(cilfTab) cilfTab.style.display = (isLeader || isSuperAdmin) ? '' : 'none';
-  if(pilfTab) pilfTab.style.display = (isLeader || isSuperAdmin) ? '' : 'none';
+  var cilfTabEl = document.getElementById('tab-btn-cilf');
+  var pilfTabEl = document.getElementById('tab-btn-pilf');
+  if(cilfTabEl) cilfTabEl.style.display = (isLeader || isSuperAdmin) ? '' : 'none';
+  if(pilfTabEl) pilfTabEl.style.display = (isLeader || isSuperAdmin) ? '' : 'none';
 
   // Bloc leader-tools séparé : plus utilisé, toujours caché
   const leaderTools = document.getElementById('leader-tools');
@@ -1309,10 +1309,10 @@ function enterAdmin(role, name){
   goPage('page-admin');
   renderAdmin();
 
-  // Si admin pur (pas leader, pas superadmin) : forcer l'onglet Paramètres actif
+  // Admin pur (pas leader, pas superadmin) : aller directement sur Paramètres
   if(isAdmin && !isLeader){
-    setTimeout(() => {
-      const settingsBtn = document.getElementById('tab-btn-settings');
+    setTimeout(function(){
+      var settingsBtn = document.getElementById('tab-btn-settings');
       if(settingsBtn) switchTab('settings', settingsBtn);
     }, 50);
   }
@@ -2111,10 +2111,9 @@ window._removeIntro = function(btnEl){
 };
 async function saveAll(){
   if(!draft) return;
-  // Vérifier que chaque intro a un leadeur
-  for(let i=0; i<draft.length; i++){
-    if(!draft[i].animateur || !draft[i].animateur.trim()){
-      alert(`L'introduction ${i+1} n'a pas de leadeur. Veuillez sélectionner un leadeur avant d'enregistrer.`);
+  for(var _i=0; _i<draft.length; _i++){
+    if(!draft[_i].animateur || !draft[_i].animateur.trim()){
+      alert('L'introduction '+(_i+1)+' n'a pas de leadeur. Veuillez sélectionner un leadeur avant d'enregistrer.');
       return;
     }
   }
@@ -2129,17 +2128,7 @@ async function saveAll(){
     draft=null;
     b.textContent='✓ Enregistré et publié !'; b.classList.add('saved');
     setTimeout(()=>{b.textContent='Enregistrer et publier';b.classList.remove('saved');b.disabled=false;renderAdmin();},3000);
-  } catch(e){
-    b.textContent='⚠ Erreur';
-    b.disabled=false;
-    // Afficher le message d'erreur du serveur si disponible
-    const errMsg = e.message || '';
-    if(errMsg.includes('403')){
-      alert('Erreur 403 : accès refusé par le serveur. Essayez de vous déconnecter et reconnecter pour obtenir un nouveau token.');
-    } else {
-      alert('Erreur lors de l'enregistrement : ' + errMsg);
-    }
-  }
+  } catch(e){ b.textContent='⚠ Erreur'; b.disabled=false; }
 }
 
 // ── PILF ──────────────────────────────────────────────────────────────────────
@@ -2233,26 +2222,27 @@ function makePilfForm(intro, i) {
   setTimeout(() => {
     getLeadersList(); // preload leaders list
     if(intro.animateur){
-      const emailEl = document.getElementById(`email-pilf-${i}`);
+      const emailEl = document.getElementById('email-pilf-'+i);
       const leaders = (_leadersList || []);
       const match = leaders.find(u => u.name === intro.animateur);
       if(match && emailEl) emailEl.value = match.email;
     }
-    // Si leader connecté et champ vide, pré-remplir avec son nom
+    // Si leader connecté et champ leadeur vide, pré-remplir avec son nom
     if(!intro.animateur && window._sessionFonction === 'leader_intro' && window._sessionName){
-      const inputEl = document.getElementById(`leader-pilf-input-${i}`);
-      const hiddenEl = document.getElementById(`leader-pilf-${i}`);
+      const inputEl = document.getElementById('leader-pilf-input-'+i);
+      const hiddenEl = document.getElementById('leader-pilf-'+i);
       if(inputEl && !inputEl.value){
         inputEl.value = window._sessionName;
         if(hiddenEl) hiddenEl.value = window._sessionName;
         pilfUpdate(i, 'animateur', window._sessionName);
-        const leaders2 = (_leadersList || []);
-        const selfMatch = leaders2.find(u => u.name === window._sessionName);
-        if(selfMatch){
-          const emailEl2 = document.getElementById(`email-pilf-${i}`);
-          if(emailEl2) emailEl2.value = selfMatch.email;
-          pilfUpdate(i, 'animateurEmail', selfMatch.email);
-        }
+        getLeadersList().then(function(leaders2){
+          const selfMatch = leaders2.find(function(u){ return u.name === window._sessionName; });
+          if(selfMatch){
+            const emailEl2 = document.getElementById('email-pilf-'+i);
+            if(emailEl2) emailEl2.value = selfMatch.email;
+            pilfUpdate(i, 'animateurEmail', selfMatch.email);
+          }
+        });
       }
     }
   }, 0);
@@ -2340,10 +2330,9 @@ window._removePilf = function(btnEl){
 
 async function savePilf(){
   if(!pilfDraft) return;
-  // Vérifier que chaque PILF a un leadeur
-  for(let i=0; i<pilfDraft.length; i++){
-    if(!pilfDraft[i].animateur || !pilfDraft[i].animateur.trim()){
-      alert(`La PILF/HILF ${i+1} n'a pas de leadeur. Veuillez sélectionner un leadeur avant d'enregistrer.`);
+  for(var _j=0; _j<pilfDraft.length; _j++){
+    if(!pilfDraft[_j].animateur || !pilfDraft[_j].animateur.trim()){
+      alert('La PILF/HILF '+(_j+1)+' n'a pas de leadeur. Veuillez sélectionner un leadeur avant d'enregistrer.');
       return;
     }
   }
@@ -2358,16 +2347,7 @@ async function savePilf(){
     pilfDraft=null;
     b.textContent='✓ Enregistré !'; b.classList.add('saved');
     setTimeout(()=>{b.textContent='Enregistrer et publier';b.classList.remove('saved');b.disabled=false;renderPilf();},3000);
-  } catch(e){
-    b.textContent='⚠ Erreur';
-    b.disabled=false;
-    const errMsg = e.message || '';
-    if(errMsg.includes('403')){
-      alert('Erreur 403 : accès refusé par le serveur. Essayez de vous déconnecter et reconnecter pour obtenir un nouveau token.');
-    } else {
-      alert('Erreur lors de l'enregistrement : ' + errMsg);
-    }
-  }
+  } catch(e){ b.textContent='⚠ Erreur'; b.disabled=false; }
 }
 
 
