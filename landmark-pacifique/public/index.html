@@ -641,6 +641,7 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
       <div id="admin-forms"></div>
       <button class="add-intro-btn" onclick="addIntro()">+ Ajouter une introduction au Landmark Forum</button>
       <button class="save-btn" id="save-btn" onclick="saveAll()">Enregistrer et publier</button>
+      <div id="debug-panel" style="display:none;margin-top:16px;padding:12px 16px;background:#fff8e1;border:1px solid #ffc107;border-radius:8px;font-size:12px;font-family:monospace;color:#5a4000;white-space:pre-wrap;word-break:break-all;max-height:200px;overflow-y:auto"></div>
     </div>
 
     <div id="tab-pilf" class="cfg-panel">
@@ -954,10 +955,46 @@ async function apiFetch(path, opts = {}) {
   // Ajoute aussi le token en query param comme fallback
   const sep = path.includes('?') ? '&' : '?';
   const url = API_BASE + path + (_adminToken ? sep + '_token=' + encodeURIComponent(_adminToken) : '');
+
+  // Debug : log la requête
+  const debugInfo = {
+    url: url.replace(/_token=[^&]+/, '_token=[REDACTED]'),
+    method: opts.method || 'GET',
+    tokenPresent: !!_adminToken,
+    tokenRole: _adminToken ? (jwtDecode(_adminToken)||{}).role : null,
+    tokenExp: _adminToken ? new Date(((jwtDecode(_adminToken)||{}).exp||0)*1000).toISOString() : null,
+    bodyKeys: opts.body ? Object.keys(JSON.parse(opts.body)) : null,
+  };
+  console.log('[apiFetch →]', debugInfo);
+
   const res = await fetch(url, { ...opts, headers });
   if (!res.ok) {
     var serverMsg = '';
-    try { var d = await res.clone().json(); serverMsg = d.error || d.message || ''; } catch(e){}
+    var rawBody = '';
+    try { rawBody = await res.clone().text(); } catch(e){}
+    try { var d = JSON.parse(rawBody); serverMsg = d.error || d.message || ''; } catch(e){ serverMsg = rawBody.slice(0,200); }
+
+    const errDetail = {
+      status: res.status,
+      statusText: res.statusText,
+      serverMsg,
+      etag: res.headers.get('etag'),
+      ...debugInfo
+    };
+    console.error('[apiFetch ✗]', errDetail);
+
+    // Affiche dans le panneau debug si dispo
+    const panel = document.getElementById('debug-panel');
+    if(panel){
+      panel.style.display = 'block';
+      panel.textContent = '❌ Erreur ' + res.status + ' sur ' + debugInfo.method + ' ' + path + '\n'
+        + 'Message serveur : ' + (serverMsg || '(vide)') + '\n'
+        + 'Rôle dans le token : ' + (debugInfo.tokenRole || 'ABSENT') + '\n'
+        + 'Token expiré le : ' + (debugInfo.tokenExp || 'N/A') + '\n'
+        + 'ETag : ' + (errDetail.etag || 'aucun') + '\n'
+        + 'Corps du body envoyé (clés) : ' + JSON.stringify(debugInfo.bodyKeys);
+    }
+
     throw new Error('API '+path+' → '+res.status+(serverMsg ? ' : '+serverMsg : ''));
   }
   return res.json();
@@ -2128,7 +2165,14 @@ async function saveAll(){
     draft=null;
     b.textContent='✓ Enregistré et publié !'; b.classList.add('saved');
     setTimeout(()=>{b.textContent='Enregistrer et publier';b.classList.remove('saved');b.disabled=false;renderAdmin();},3000);
-  } catch(e){ b.textContent='⚠ Erreur'; b.disabled=false; }
+  } catch(e){
+    b.textContent='⚠ Erreur';
+    b.disabled=false;
+    // Affiche le message d'erreur complet pour diagnostic
+    const msg = e.message || String(e);
+    console.error('[saveAll CILF]', msg);
+    alert('Erreur lors de l\'enregistrement :\n' + msg + '\n\nVérifiez la console (F12) pour plus de détails.');
+  }
 }
 
 // ── PILF ──────────────────────────────────────────────────────────────────────
@@ -2347,7 +2391,13 @@ async function savePilf(){
     pilfDraft=null;
     b.textContent='✓ Enregistré !'; b.classList.add('saved');
     setTimeout(()=>{b.textContent='Enregistrer et publier';b.classList.remove('saved');b.disabled=false;renderPilf();},3000);
-  } catch(e){ b.textContent='⚠ Erreur'; b.disabled=false; }
+  } catch(e){
+    b.textContent='⚠ Erreur';
+    b.disabled=false;
+    const msg = e.message || String(e);
+    console.error('[savePilf]', msg);
+    alert('Erreur lors de l\'enregistrement PILF :\n' + msg + '\n\nVérifiez la console (F12) pour plus de détails.');
+  }
 }
 
 
