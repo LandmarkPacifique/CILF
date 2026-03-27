@@ -1867,8 +1867,8 @@ async function selectIntroInvite(id){
 
 
 // ── INVITE LINK SYSTEM ────────────────────────────────────────────────────────
-function makeInviteToken(introId, gradName, gradEmail){
-  const data = JSON.stringify({iid: String(introId), gn: gradName, ge: gradEmail, ts: Date.now()});
+function makeInviteToken(introId, gradName, gradEmail, guestName, guestEmail){
+  const data = JSON.stringify({iid: String(introId), gn: gradName, ge: gradEmail, un: guestName||'', ue: guestEmail||'', ts: Date.now()});
   return btoa(unescape(encodeURIComponent(data)))
     .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
@@ -1879,8 +1879,8 @@ function parseInviteToken(token){
     return JSON.parse(decodeURIComponent(escape(atob(padded))));
   } catch(e){ return null; }
 }
-function getInviteLink(introId, gradName, gradEmail){
-  const token = makeInviteToken(introId, gradName, gradEmail);
+function getInviteLink(introId, gradName, gradEmail, guestName, guestEmail){
+  const token = makeInviteToken(introId, gradName, gradEmail, guestName, guestEmail);
   return window.location.origin + window.location.pathname + '?invite=' + token;
 }
 
@@ -1930,6 +1930,17 @@ async function checkInviteParam(){
     document.getElementById('invite-recap').innerHTML = buildRecapGuest(intro);
     document.getElementById('invite-grad-notice').innerHTML =
       '🤝 Vous avez été invité(e) par <strong>' + data.gn + '</strong>';
+
+    // Si le nom/email de l'invité sont dans le token → pré-remplir et masquer les champs
+    if(data.un && data.ue){
+      const parts = data.un.split(' ');
+      document.getElementById('inv-first').value = parts[0] || '';
+      document.getElementById('inv-last').value  = parts.slice(1).join(' ') || '';
+      document.getElementById('inv-email').value = data.ue;
+      // Masquer les champs — l'invité n'a qu'à confirmer
+      document.querySelectorAll('#invite-content .form-section-label, #invite-content .form-group').forEach(el => el.style.display='none');
+    }
+
     window._inviteIntro = intro;
   } catch(e){
     document.getElementById('invite-loading').style.display='none';
@@ -1939,16 +1950,22 @@ async function checkInviteParam(){
 }
 
 async function submitInvite(){
-  const fn = document.getElementById('inv-first').value.trim();
-  const ln = document.getElementById('inv-last').value.trim();
-  const em = document.getElementById('inv-email').value.trim();
-  const err = document.getElementById('invite-error');
-  if(!fn||!ln||!em){err.textContent="Veuillez remplir tous les champs.";err.style.display="block";return;}
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){err.textContent="Email invalide.";err.style.display="block";return;}
-  err.style.display="none";
-  const intro = window._inviteIntro;
   const data  = window._inviteData;
+  const intro = window._inviteIntro;
+  const err = document.getElementById('invite-error');
   if(!intro||!data){err.textContent="Erreur : invitation invalide.";err.style.display="block";return;}
+
+  // Infos invité : depuis le token si disponibles, sinon depuis les champs
+  const fn = (data.un ? data.un.split(' ')[0] : document.getElementById('inv-first').value.trim());
+  const ln = (data.un ? data.un.split(' ').slice(1).join(' ') : document.getElementById('inv-last').value.trim());
+  const em = (data.ue || document.getElementById('inv-email').value.trim());
+
+  // Validation seulement si les champs sont visibles (pas de token)
+  if(!data.un || !data.ue){
+    if(!fn||!ln||!em){err.textContent="Veuillez remplir tous les champs.";err.style.display="block";return;}
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){err.textContent="Email invalide.";err.style.display="block";return;}
+  }
+  err.style.display="none";
   const btn = document.getElementById('invite-submit');
   btn.disabled=true; btn.textContent="Envoi…";
   const tah=fmtTZ(intro.date,intro.heure,"TAH","TAH"),nc=fmtTZ(intro.date,intro.heure,"TAH","NC"),fr=fmtTZ(intro.date,intro.heure,"TAH","FR");
@@ -2138,7 +2155,7 @@ async function submitWithGuest(){
         cc_fin_tah:ccTAHFin, cc_fin_nc:ccNCFin, cc_fin_fr:ccFRFin,
         zoom_intro:intro.zoomIntro||"", zoom_cc:intro.zoomCC||"",
         zoom_intro_id:extractZoomId(intro.zoomIntro), zoom_cc_id:extractZoomId(intro.zoomCC),
-        invite_link:getInviteLink(intro.id, gfn+" "+gln, gem),
+        invite_link:getInviteLink(intro.id, gfn+" "+gln, gem, ufn+" "+uln, uem),
         t3h:tMatin, t30:t40
       })
     });
