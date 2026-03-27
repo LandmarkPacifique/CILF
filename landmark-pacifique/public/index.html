@@ -637,7 +637,7 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
       <p class="admin-desc">Gérez les PILF / HILF. Chaque introduction dispose d'un bouton d'inscription avec invité.</p>
       <div id="pilf-forms"></div>
       <button class="add-intro-btn" onclick="addPilfIntro()">+ Ajouter une PILF</button>
-      <button class="save-btn" id="pilf-save-btn" onclick="savePilf()">Enregistrer</button>
+      <button class="save-btn" id="pilf-save-btn" onclick="savePilf()" style="display:none">Enregistrer</button>
     </div>
 
 
@@ -2407,6 +2407,10 @@ function makePilfForm(intro, i) {
         <button onclick="copyPilfLink(${i})" id="pilf-copy-btn-${i}" style="background:var(--cyan);color:var(--navy-deep);border:none;border-radius:8px;padding:9px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;flex-shrink:0;transition:all .2s">📋 Copier</button>
       </div>
       <p id="pilf-copy-msg-${i}" style="display:none;font-size:11px;color:#0a8a0a;margin-top:6px">✓ Lien copié !</p>
+    </div>
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--cream-2);display:flex;align-items:center;gap:12px">
+      <button id="pilf-save-one-btn-${i}" class="save-btn" onclick="savePilfOne(${i})" style="margin:0">Enregistrer cette PILF</button>
+      <span id="pilf-save-one-msg-${i}" style="font-size:12px;display:none"></span>
     </div>`;
   setTimeout(() => {
     getLeadersList(); // preload leaders list
@@ -2516,6 +2520,36 @@ window._removePilf = function(btnEl){
   wrap.innerHTML = '';
   pilfDraft.forEach(function(intro, j){ wrap.appendChild(makePilfForm(intro, j)); });
 };
+
+async function savePilfOne(i){
+  if(!pilfDraft || !pilfDraft[i]) return;
+  const intro = pilfDraft[i];
+  if(!intro.animateur || !intro.animateur.trim()){
+    alert("Veuillez sélectionner un leadeur avant d'enregistrer.");
+    return;
+  }
+  const b = document.getElementById('pilf-save-one-btn-'+i);
+  const msg = document.getElementById('pilf-save-one-msg-'+i);
+  b.disabled=true; b.textContent='Enregistrement…';
+  msg.style.display='none';
+  try {
+    const session = getSession();
+    const modifiedBy = session ? session.name : null;
+    const modifiedById = session ? session.id : null;
+    const modifiedAt = new Date().toISOString();
+    // On met à jour uniquement cette PILF dans le tableau complet
+    const updatedIntros = pilfDraft.map((o, j) => j === i ? {...o, modified_by: modifiedBy, modified_by_id: modifiedById, modified_at: modifiedAt} : o);
+    await apiFetch('/api/intros',{method:'POST',body:JSON.stringify({slug:'pilf',intros:updatedIntros,modified_by:modifiedBy,modified_by_id:modifiedById,modified_at:modifiedAt})});
+    pilfDraft = updatedIntros;
+    b.textContent='✓ Enregistré !'; b.classList.add('saved');
+    msg.textContent='✓ PILF '+(i+1)+' enregistrée'; msg.style.color='#0a9e6e'; msg.style.display='inline';
+    setTimeout(()=>{ b.textContent='Enregistrer cette PILF'; b.classList.remove('saved'); b.disabled=false; },3000);
+  } catch(e){
+    b.textContent='⚠ Erreur'; b.disabled=false;
+    msg.textContent='Erreur : '+(e.message||e); msg.style.color='#c00'; msg.style.display='inline';
+    console.error('[savePilfOne]', e);
+  }
+}
 
 async function savePilf(){
   if(!pilfDraft) return;
