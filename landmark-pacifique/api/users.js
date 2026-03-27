@@ -27,7 +27,7 @@ module.exports = async function handler(req, res) {
     return res.status(403).json({ error: 'Accès réservé aux administrateurs' });
   }
 
-  const { action, userId, name, email, password, role, pid, telephone, fonction } = req.body || {};
+  const { action, userId, name, email, password, role, pid, telephone } = req.body || {};
 
   // ── APPROUVER ────────────────────────────────────────────────────────────────
   if (action === 'approve') {
@@ -70,7 +70,6 @@ module.exports = async function handler(req, res) {
     if (!userId) return res.status(400).json({ error: 'userId requis' });
     try {
       if (password) {
-        // ✅ pgcrypto comme le reste de la DB (pas bcrypt)
         await sql`
           UPDATE users SET
             name          = COALESCE(${name || null}, name),
@@ -78,7 +77,6 @@ module.exports = async function handler(req, res) {
             role          = COALESCE(${role || null}, role),
             pid           = ${pid || null},
             telephone     = ${telephone || null},
-            fonction      = ${fonction || null},
             password_hash = crypt(${password}, gen_salt('bf'))
           WHERE id = ${userId}
         `;
@@ -89,8 +87,7 @@ module.exports = async function handler(req, res) {
             email     = COALESCE(${email || null}, email),
             role      = COALESCE(${role || null}, role),
             pid       = ${pid || null},
-            telephone = ${telephone || null},
-            fonction  = ${fonction || null}
+            telephone = ${telephone || null}
           WHERE id = ${userId}
         `;
       }
@@ -113,8 +110,8 @@ module.exports = async function handler(req, res) {
   }
   try {
     await sql`
-      INSERT INTO users (email, password_hash, role, name, approved, fonction)
-      VALUES (${email}, crypt(${password}, gen_salt('bf')), ${role}, ${name}, true, ${fonction || null})
+      INSERT INTO users (email, password_hash, role, name, approved)
+      VALUES (${email}, crypt(${password}, gen_salt('bf')), ${role}, ${name}, true)
     `;
     return res.status(201).json({ success: true });
   } catch (err) {
