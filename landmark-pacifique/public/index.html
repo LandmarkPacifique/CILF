@@ -695,8 +695,9 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
               <option value="superadmin">Super Admin</option>
             </select>
             <select class="ai" id="cfg-new-fonction" style="padding:9px 12px;border-radius:8px;border:1px solid #ddd;font-family:inherit">
-              <option value="">— Fonction (optionnel) —</option>
+              <option value="">— Fonction (obligatoire) —</option>
               <option value="leader_intro">Leader d'introduction</option>
+              <option value="gradue">Gradué</option>
             </select>
             <button class="copy-btn" onclick="addUser()" style="padding:9px 18px;align-self:flex-start">Ajouter</button>
           </div>
@@ -898,6 +899,24 @@ function makeAdminForm(intro, i) {
       const match = leaders.find(u => u.name === intro.animateur);
       if(match && emailEl) emailEl.value = match.email;
     }
+    // Si leader connecté et champ vide, pré-remplir avec son nom
+    if(!intro.animateur && window._sessionFonction === 'leader_intro' && window._sessionName){
+      const inputEl = document.getElementById(`leader-cilf-input-${i}`);
+      const hiddenEl = document.getElementById(`leader-cilf-${i}`);
+      if(inputEl && !inputEl.value){
+        inputEl.value = window._sessionName;
+        if(hiddenEl) hiddenEl.value = window._sessionName;
+        draftUpdate(i, 'animateur', window._sessionName);
+        // Remplir l'email du leader connecté
+        const leaders2 = (_leadersList || []);
+        const selfMatch = leaders2.find(u => u.name === window._sessionName);
+        if(selfMatch){
+          const emailEl2 = document.getElementById(`email-cilf-${i}`);
+          if(emailEl2) emailEl2.value = selfMatch.email;
+          draftUpdate(i, 'animateurEmail', selfMatch.email);
+        }
+      }
+    }
   }, 0);
   return d;
 }
@@ -994,7 +1013,7 @@ async function doLogin(){
       btn.disabled=false; btn.textContent='Se connecter';
       return;
     }
-    setSession(data.token, { pid: data.pid, telephone: data.telephone });
+    setSession(data.token, { pid: data.pid, telephone: data.telephone, fonction: data.fonction||null });
     document.getElementById('pw-email').value='';
     document.getElementById('pw-input').value='';
     err.style.display='none';
@@ -1240,16 +1259,32 @@ async function savePassword(){
 function enterAdmin(role, name){
   _leadersList = null;
 
-  // Onglet Paramètres visible pour admin ET leader
+  // Récupérer la fonction depuis la session extra
+  const extra = getSessionExtra();
+  const fonction = extra.fonction || null;
+  const isLeader = (fonction === 'leader_intro');
+  const isSuperAdmin = (role === 'superadmin');
+  const isAdmin = (role === 'admin');
+
+  // Mémoriser pour usage dans les formulaires
+  window._sessionFonction = fonction;
+  window._sessionName = name;
+
+  // Onglet Paramètres visible pour tous
   const settingsTab = document.getElementById('tab-btn-settings');
   if(settingsTab) settingsTab.style.display = '';
+
+  // Onglets CILF et PILF : visibles pour leaders et superadmins uniquement
+  const cilfTab = document.querySelector('.cfg-tab[onclick*=\'introductions\']');
+  const pilfTab = document.querySelector('.cfg-tab[onclick*=\'pilf\']');
+  if(cilfTab) cilfTab.style.display = (isLeader || isSuperAdmin) ? '' : 'none';
+  if(pilfTab) pilfTab.style.display = (isLeader || isSuperAdmin) ? '' : 'none';
 
   // Bloc leader-tools séparé : plus utilisé, toujours caché
   const leaderTools = document.getElementById('leader-tools');
   if(leaderTools) leaderTools.style.display = 'none';
 
-  // Mettre à jour les boutons de nav du site public (page-home, page-intros)
-  // pour que l'admin/leader puisse revenir à l'admin sans se reconnecter
+  // Mettre à jour les boutons de nav du site public
   ['home','intros'].forEach(suffix => {
     const btnAdmin = document.getElementById('btn-admin-'+suffix);
     if(btnAdmin){
@@ -1257,7 +1292,6 @@ function enterAdmin(role, name){
       btnAdmin.onclick = () => goPage('page-admin');
       btnAdmin.style.display = '';
     }
-    // Masquer Mon compte et Déconnexion gradué (non pertinents pour admin/leader)
     const btnMC = document.getElementById('btn-mon-compte-'+suffix);
     const btnLO = document.getElementById('btn-logout-'+suffix);
     if(btnMC) btnMC.style.display = 'none';
@@ -1267,8 +1301,18 @@ function enterAdmin(role, name){
   // Affiche le nom dans la topbar
   const nameEl = document.getElementById('admin-user-name');
   if(nameEl) nameEl.textContent = name || '';
+
   goPage('page-admin');
   renderAdmin();
+
+  // Si admin pur (pas leader, pas superadmin) : forcer l'onglet Paramètres actif
+  if(isAdmin && !isLeader){
+    setTimeout(() => {
+      const settingsBtn = document.getElementById('tab-btn-settings');
+      if(settingsBtn) switchTab('settings', settingsBtn);
+    }, 50);
+  }
+
   if(role === 'admin' || role === 'superadmin') loadPendingBadge();
   else { const badge = document.getElementById('pending-badge'); if(badge) badge.style.display='none'; }
 }
@@ -2063,6 +2107,13 @@ window._removeIntro = function(btnEl){
 };
 async function saveAll(){
   if(!draft) return;
+  // Vérifier que chaque intro a un leadeur
+  for(let i=0; i<draft.length; i++){
+    if(!draft[i].animateur || !draft[i].animateur.trim()){
+      alert(`L'introduction ${i+1} n'a pas de leadeur. Veuillez sélectionner un leadeur avant d'enregistrer.`);
+      return;
+    }
+  }
   const b=document.getElementById('save-btn');
   b.disabled=true; b.textContent='Enregistrement…';
   try {
@@ -2173,6 +2224,23 @@ function makePilfForm(intro, i) {
       const match = leaders.find(u => u.name === intro.animateur);
       if(match && emailEl) emailEl.value = match.email;
     }
+    // Si leader connecté et champ vide, pré-remplir avec son nom
+    if(!intro.animateur && window._sessionFonction === 'leader_intro' && window._sessionName){
+      const inputEl = document.getElementById(`leader-pilf-input-${i}`);
+      const hiddenEl = document.getElementById(`leader-pilf-${i}`);
+      if(inputEl && !inputEl.value){
+        inputEl.value = window._sessionName;
+        if(hiddenEl) hiddenEl.value = window._sessionName;
+        pilfUpdate(i, 'animateur', window._sessionName);
+        const leaders2 = (_leadersList || []);
+        const selfMatch = leaders2.find(u => u.name === window._sessionName);
+        if(selfMatch){
+          const emailEl2 = document.getElementById(`email-pilf-${i}`);
+          if(emailEl2) emailEl2.value = selfMatch.email;
+          pilfUpdate(i, 'animateurEmail', selfMatch.email);
+        }
+      }
+    }
   }, 0);
   return d;
 }
@@ -2258,6 +2326,13 @@ window._removePilf = function(btnEl){
 
 async function savePilf(){
   if(!pilfDraft) return;
+  // Vérifier que chaque PILF a un leadeur
+  for(let i=0; i<pilfDraft.length; i++){
+    if(!pilfDraft[i].animateur || !pilfDraft[i].animateur.trim()){
+      alert(`La PILF/HILF ${i+1} n'a pas de leadeur. Veuillez sélectionner un leadeur avant d'enregistrer.`);
+      return;
+    }
+  }
   const b=document.getElementById('pilf-save-btn');
   b.disabled=true; b.textContent='Enregistrement…';
   try {
@@ -2641,6 +2716,7 @@ async function addUser(){
   const fonction = document.getElementById('cfg-new-fonction').value;
   const msg   = document.getElementById('cfg-user-msg');
   if(!name||!email||!pw){ msg.style.display='block'; msg.style.color='#c00'; msg.textContent='Veuillez remplir tous les champs.'; return; }
+  if(!fonction){ msg.style.display='block'; msg.style.color='#c00'; msg.textContent='Veuillez sélectionner une fonction (Leader ou Gradué).'; return; }
   try {
     await apiFetch('/api/users', { method:'POST', body: JSON.stringify({name, email, password: pw, role, fonction: fonction||null}) });
     msg.style.display='block'; msg.style.color='green'; msg.textContent='Utilisateur ajouté avec succès !';
