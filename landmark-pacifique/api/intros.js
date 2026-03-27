@@ -29,6 +29,7 @@ module.exports = async function handler(req, res) {
       const rows = await sql`
         SELECT id, animateur, titre, date, heure, heure_fin,
                animateur_email, cc_date, cc_heure, cc_heure_fin,
+               zoom_intro, zoom_cc,
                modified_by, modified_by_id, modified_at
         FROM introductions WHERE slug = ${slug} ORDER BY id ASC
       `;
@@ -43,6 +44,8 @@ module.exports = async function handler(req, res) {
         ccDate:         fmtDate(r.cc_date),
         ccHeure:        r.cc_heure,
         ccHeureFin:     r.cc_heure_fin,
+        zoomIntro:      r.zoom_intro     || null,
+        zoomCC:         r.zoom_cc        || null,
         modified_by:    r.modified_by    || null,
         modified_by_id: r.modified_by_id || null,
         modified_at:    r.modified_at    || null,
@@ -91,6 +94,7 @@ module.exports = async function handler(req, res) {
           INSERT INTO introductions
             (slug, animateur, titre, date, heure, heure_fin,
              animateur_email, cc_date, cc_heure, cc_heure_fin,
+             zoom_intro, zoom_cc,
              modified_by, modified_by_id, modified_at)
           VALUES
             (${slug},
@@ -103,6 +107,8 @@ module.exports = async function handler(req, res) {
              ${orNull(intro.ccDate)},
              ${orNull(intro.ccHeure)},
              ${orNull(intro.ccHeureFin)},
+             ${orNull(intro.zoomIntro)},
+             ${orNull(intro.zoomCC)},
              ${modified_by},
              ${modified_by_id},
              ${orNull(modified_at)})
