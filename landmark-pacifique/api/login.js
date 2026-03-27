@@ -19,7 +19,7 @@ module.exports = async function handler(req, res) {
 
   try {
     const result = await sql`
-      SELECT id, role, name, pid, telephone, approved, validated
+      SELECT id, role, name, pid, telephone, approved
       FROM users
       WHERE email = ${email}
         AND password_hash = crypt(${password}, password_hash)
@@ -32,7 +32,7 @@ module.exports = async function handler(req, res) {
     const user = result[0];
 
     // ✅ Vérification du statut de validation
-    if (user.approved === false || user.validated === false) {
+    if (user.approved === false || user.approved === null) {
       return res.status(403).json({ error: 'Votre compte est en attente de validation par un administrateur.' });
     }
 
