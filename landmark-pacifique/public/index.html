@@ -633,7 +633,7 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
     </div>
 
     <div id="tab-introductions" class="cfg-panel active">
-      <h2 class="admin-h2">Community Introduction Landmark Forum</h2>
+      <h2 class="admin-h2">Community Introduction of the Landmark Forum</h2>
       <p class="admin-desc">Modifiez, ajoutez ou supprimez des introductions au Landmark Forum. Les horaires calculés automatiquement. Vous pouvez ajouter autant d'introductions au Landmark Forum que nécessaire.</p>
       <div id="admin-forms"></div>
       <button class="add-intro-btn" onclick="addIntro()">+ Ajouter une introduction au Landmark Forum</button>
@@ -1380,7 +1380,7 @@ function buildPublicCard(intro, badgeLabel, type) {
   c.innerHTML = `
     <div class="intro-card-top">
       <span class="intro-badge" style="${badgeStyle}">${badgeLabel}</span>
-      <h3 class="intro-card-name">${intro.animateur}</h3>
+      <h3 class="intro-card-name">Leader: ${intro.animateur}</h3>
       <p class="intro-card-theme">${intro.titre||''}</p>
       <table style="width:100%;border-collapse:collapse;margin-top:4px">
         <tr><td colspan="2" style="padding:4px 0 4px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--navy-mid)">Introduction au Landmark Forum</td></tr>
