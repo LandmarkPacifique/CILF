@@ -955,7 +955,11 @@ async function apiFetch(path, opts = {}) {
   const sep = path.includes('?') ? '&' : '?';
   const url = API_BASE + path + (_adminToken ? sep + '_token=' + encodeURIComponent(_adminToken) : '');
   const res = await fetch(url, { ...opts, headers });
-  if (!res.ok) throw new Error(`API ${path} → ${res.status}`);
+  if (!res.ok) {
+    let serverMsg = '';
+    try { const d = await res.clone().json(); serverMsg = d.error || d.message || ''; } catch{}
+    throw new Error(`API ${path} → ${res.status}${serverMsg ? ' : ' + serverMsg : ''}`);
+  }
   return res.json();
 }
 
@@ -2125,7 +2129,17 @@ async function saveAll(){
     draft=null;
     b.textContent='✓ Enregistré et publié !'; b.classList.add('saved');
     setTimeout(()=>{b.textContent='Enregistrer et publier';b.classList.remove('saved');b.disabled=false;renderAdmin();},3000);
-  } catch(e){ b.textContent='⚠ Erreur'; b.disabled=false; }
+  } catch(e){
+    b.textContent='⚠ Erreur';
+    b.disabled=false;
+    // Afficher le message d'erreur du serveur si disponible
+    const errMsg = e.message || '';
+    if(errMsg.includes('403')){
+      alert('Erreur 403 : accès refusé par le serveur. Essayez de vous déconnecter et reconnecter pour obtenir un nouveau token.');
+    } else {
+      alert('Erreur lors de l'enregistrement : ' + errMsg);
+    }
+  }
 }
 
 // ── PILF ──────────────────────────────────────────────────────────────────────
@@ -2344,7 +2358,16 @@ async function savePilf(){
     pilfDraft=null;
     b.textContent='✓ Enregistré !'; b.classList.add('saved');
     setTimeout(()=>{b.textContent='Enregistrer et publier';b.classList.remove('saved');b.disabled=false;renderPilf();},3000);
-  } catch(e){ b.textContent='⚠ Erreur'; b.disabled=false; }
+  } catch(e){
+    b.textContent='⚠ Erreur';
+    b.disabled=false;
+    const errMsg = e.message || '';
+    if(errMsg.includes('403')){
+      alert('Erreur 403 : accès refusé par le serveur. Essayez de vous déconnecter et reconnecter pour obtenir un nouveau token.');
+    } else {
+      alert('Erreur lors de l'enregistrement : ' + errMsg);
+    }
+  }
 }
 
 
