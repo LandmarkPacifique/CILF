@@ -1704,6 +1704,42 @@ function hideLeaderSuggestions(type, i){
   const suggestionsEl = document.getElementById(`leader-suggestions-${type}-${i}`);
   if(suggestionsEl) suggestionsEl.style.display = 'none';
 }
+
+function filterGradueSuggestions(i, query){
+  const suggestionsEl = document.getElementById(`gradue-suggestions-pilf-${i}`);
+  if(!suggestionsEl) return;
+  // Récupérer le leadeur actuellement sélectionné pour l'exclure
+  const leaderName = (document.getElementById('leader-pilf-'+i)||{}).value || '';
+  const all = (_leadersList || []);
+  // Filtrer : gradués et utilisateurs uniquement, exclure le leadeur
+  const gradues = all.filter(u =>
+    (u.role === 'gradue' || u.role === 'utilisateur') &&
+    u.name !== leaderName
+  );
+  const filtered = query.trim() === '' ? gradues : gradues.filter(u => (u.name||'').toLowerCase().includes(query.toLowerCase()));
+  if(filtered.length === 0){ suggestionsEl.style.display='none'; return; }
+  suggestionsEl.innerHTML = filtered.map(u => `
+    <div style="padding:9px 14px;cursor:pointer;font-size:13px;color:var(--navy-deep);border-bottom:1px solid var(--cream-2)"
+      onmousedown="selectGradueSuggestion(${i},'${(u.name||'').replace(/'/g,"\\'")}')">
+      ${u.name||'—'} <span style="font-size:11px;color:#9aabb8">${u.pid ? '• PID: '+u.pid : ''}</span>
+    </div>`).join('');
+  suggestionsEl.style.display = 'block';
+}
+
+function selectGradueSuggestion(i, name){
+  const inputEl  = document.getElementById('pilf-gradue-input-'+i);
+  const hiddenEl = document.getElementById('pilf-gradue-hidden-'+i);
+  const suggestionsEl = document.getElementById('gradue-suggestions-pilf-'+i);
+  if(inputEl)  inputEl.value  = name;
+  if(hiddenEl) hiddenEl.value = name;
+  if(suggestionsEl) suggestionsEl.style.display = 'none';
+  pilfUpdate(i, 'pilfGradueName', name);
+}
+
+function hideGradueSuggestions(i){
+  const suggestionsEl = document.getElementById('gradue-suggestions-pilf-'+i);
+  if(suggestionsEl) suggestionsEl.style.display = 'none';
+}
 function onLeaderChange(type, i, sel){
   const name  = sel.value;
   const email = sel.options[sel.selectedIndex]?.dataset?.email || '';
@@ -2382,7 +2418,15 @@ function makePilfForm(intro, i) {
       <input class="ai" type="url" value="${intro.zoomCC||''}" placeholder="https://zoom.us/j/…" oninput="pilfUpdate(${i},'zoomCC',this.value)" id="zoom-cc-pilf-${i}">
     </div>
     <label class="fl">Nom &amp; prénom du gradué <span style="font-size:10px;color:#aab8c4">(gradué responsable de cette PILF)</span></label>
-    <input class="ai" type="text" value="${intro.pilfGradueName||''}" placeholder="Prénom Nom du gradué" oninput="pilfUpdate(${i},'pilfGradueName',this.value)" id="pilf-gradue-name-${i}">
+    <div style="position:relative">
+      <input class="ai" type="text" id="pilf-gradue-input-${i}" placeholder="Taper le prénom ou nom du gradué…" autocomplete="off"
+        value="${intro.pilfGradueName||''}"
+        oninput="filterGradueSuggestions(${i},this.value)"
+        onfocus="filterGradueSuggestions(${i},this.value)"
+        onblur="setTimeout(()=>hideGradueSuggestions(${i}),200)">
+      <input type="hidden" id="pilf-gradue-hidden-${i}" value="${intro.pilfGradueName||''}">
+      <div id="gradue-suggestions-pilf-${i}" style="position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #ddd;border-radius:0 0 8px 8px;max-height:180px;overflow-y:auto;z-index:200;display:none;box-shadow:0 4px 12px rgba(0,0,0,.1)"></div>
+    </div>
         <label class="fl">Email Leadeur <span style="font-size:10px;color:#aab8c4">(rempli automatiquement)</span></label>
     <input class="ai" type="email" value="${intro.animateurEmail||''}" readonly style="background:#f0f4f8;color:#7a8a9a;cursor:not-allowed" id="email-pilf-${i}">
     <div class="ptz">
