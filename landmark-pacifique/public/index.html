@@ -799,12 +799,12 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
           <input class="form-input" type="email" id="inv-email" placeholder="votre@email.com">
         </div>
         <div class="form-error" id="invite-error"></div>
-        <button class="submit-btn" id="invite-submit" onclick="submitInvite()">Confirmer ma réservation</button>
+        <button class="submit-btn" id="invite-submit" onclick="submitInvite()">Confirmer ma place à cette introduction au Landmark Forum</button>
         <p class="form-notice" id="invite-grad-notice" style="margin-top:16px;font-size:12px;color:#7a8a9a"></p>
       </div>
       <div id="invite-invalid" style="display:none;text-align:center;padding:20px">
         <div style="font-size:32px;margin-bottom:12px">⚠️</div>
-        <p style="font-size:14px;color:#5a6a7a">Ce lien d'invitation est invalide ou a expiré.<br>Demandez un nouveau lien à votre gradué.</p>
+        <p style="font-size:14px;color:#5a6a7a">Ce lien d'invitation est invalide ou a expiré.<br>Demandez un nouveau lien à la personne qui vous à invité.</p>
       </div>
     </div>
   </div>
@@ -824,7 +824,7 @@ function makeAdminForm(intro, i) {
   d.innerHTML = `
     <div class="admin-card-hdr">
       <div class="admin-num">${i+1}</div>
-      <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--navy-deep);flex:1">Community Introduction of the Landmark Forum ${i+1}</span>
+      <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--navy-deep);flex:1">CILF ${i+1}</span>
       ${(intro.zoomIntro||intro.zoomCC) ? `<span style="font-size:11px;color:#0a9e6e;background:#e8f8f0;border:1px solid #b7e8d2;border-radius:20px;padding:3px 10px;margin-right:8px">🔗 Zoom configuré</span>` : `<span style="font-size:11px;color:#856404;background:#fff3cd;border:1px solid #ffc107;border-radius:20px;padding:3px 10px;margin-right:8px">⚠ Zoom manquant</span>`}
       <button class="remove-intro-btn" onclick="window._removeIntro(this)" title="Supprimer">✕ Supprimer</button>
     </div>
