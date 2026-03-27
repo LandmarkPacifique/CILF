@@ -1603,7 +1603,8 @@ async function selectPilfIntro(id){
         date_tah:tah, date_nc:nc, date_fr:fr,
         heure_fin_tah:tahFin, heure_fin_nc:ncFin, heure_fin_fr:frFin,
         cc_tah:ccTAH, cc_nc:ccNC, cc_fr:ccFR,
-        cc_fin_tah:ccTAHFin, cc_fin_nc:ccNCFin, cc_fin_fr:ccFRFin
+        cc_fin_tah:ccTAHFin, cc_fin_nc:ccNCFin, cc_fin_fr:ccFRFin,
+        zoom_intro:intro.zoomIntro||"", zoom_cc:intro.zoomCC||""
       })
     });
     logToSheets("graduate",{prenom:fn,nom:ln,email:window._graduEmail,telephone:window._gradueTelephone||"",pays:"",animateur:intro.animateur,titre:intro.titre,date_tah:tah,introduction_id:intro.id});
@@ -1830,7 +1831,8 @@ async function selectIntro(id){
         date_tah:tah, date_nc:nc, date_fr:fr,
         heure_fin_tah:tahFin, heure_fin_nc:ncFin, heure_fin_fr:frFin,
         cc_tah:ccTAH, cc_nc:ccNC, cc_fr:ccFR,
-        cc_fin_tah:ccTAHFin, cc_fin_nc:ccNCFin, cc_fin_fr:ccFRFin
+        cc_fin_tah:ccTAHFin, cc_fin_nc:ccNCFin, cc_fin_fr:ccFRFin,
+        zoom_intro:intro.zoomIntro||"", zoom_cc:intro.zoomCC||""
       })
     });
     logToSheets("graduate",{prenom:fn,nom:ln,email:window._graduEmail,telephone:window._gradueTelephone||"",pays:"",animateur:intro.animateur,titre:intro.titre,date_tah:tah,introduction_id:intro.id});
@@ -1983,6 +1985,7 @@ async function submitInvite(){
         heure_fin_tah:tahFin, heure_fin_nc:ncFin, heure_fin_fr:frFin,
         cc_tah:ccTAH, cc_nc:ccNC, cc_fr:ccFR,
         cc_fin_tah:ccTAHFin, cc_fin_nc:ccNCFin, cc_fin_fr:ccFRFin,
+        zoom_intro:intro.zoomIntro||"", zoom_cc:intro.zoomCC||"",
         t3h:tMatin, t30:t40
       })
     });
@@ -2064,7 +2067,8 @@ async function submitSolo(){
         date_tah:tah, date_nc:nc, date_fr:fr,
         heure_fin_tah:tahFin, heure_fin_nc:ncFin, heure_fin_fr:frFin,
         cc_tah:ccTAH, cc_nc:ccNC, cc_fr:ccFR,
-        cc_fin_tah:ccTAHFin, cc_fin_nc:ccNCFin, cc_fin_fr:ccFRFin
+        cc_fin_tah:ccTAHFin, cc_fin_nc:ccNCFin, cc_fin_fr:ccFRFin,
+        zoom_intro:intro.zoomIntro||"", zoom_cc:intro.zoomCC||""
       })
     });
   }catch(e){console.error("Make webhook solo:",e);}
@@ -2129,6 +2133,7 @@ async function submitWithGuest(){
         heure_fin_tah:tahFin, heure_fin_nc:ncFin, heure_fin_fr:frFin,
         cc_tah:ccTAH, cc_nc:ccNC, cc_fr:ccFR,
         cc_fin_tah:ccTAHFin, cc_fin_nc:ccNCFin, cc_fin_fr:ccFRFin,
+        zoom_intro:intro.zoomIntro||"", zoom_cc:intro.zoomCC||"",
         invite_link:getInviteLink(intro.id, gfn+" "+gln, gem),
         t3h:tMatin, t30:t40
       })
