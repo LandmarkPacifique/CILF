@@ -28,8 +28,9 @@ module.exports = async function handler(req, res) {
     return res.status(401).json({ error: 'Token invalide ou expiré' });
   }
 
-  if (payload.role !== 'admin' && payload.role !== 'leader') {
-    return res.status(403).json({ error: 'Accès réservé aux administrateurs et leaders' });
+  // ✏️ CHANGEMENT 1 : anciennement 'admin' || 'leader' → 'superadmin' || 'admin'
+  if (payload.role !== 'superadmin' && payload.role !== 'admin') {
+    return res.status(403).json({ error: 'Accès réservé aux administrateurs' });
   }
 
   const { action, userId, name, email, password, role, pid, telephone } = req.body || {};
@@ -46,7 +47,7 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  // ── REFUSER (gradués en attente) ─────────────────────────────────────────────
+  // ── REFUSER ──────────────────────────────────────────────────────────────────
   if (action === 'reject') {
     if (!userId) return res.status(400).json({ error: 'userId requis' });
     try {
@@ -58,11 +59,12 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  // ── SUPPRIMER UN LEADER / ADMIN ──────────────────────────────────────────────
+  // ── SUPPRIMER ────────────────────────────────────────────────────────────────
   if (action === 'delete') {
     if (!userId) return res.status(400).json({ error: 'userId requis' });
-    if (payload.role !== 'admin') {
-      return res.status(403).json({ error: 'Seul un admin peut supprimer un utilisateur' });
+    // ✏️ CHANGEMENT 2 : anciennement 'admin' → 'superadmin'
+    if (payload.role !== 'superadmin') {
+      return res.status(403).json({ error: 'Seul un super admin peut supprimer un utilisateur' });
     }
     try {
       await sql`DELETE FROM users WHERE id = ${userId}`;
@@ -73,7 +75,7 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  // ── MODIFIER UN UTILISATEUR ──────────────────────────────────────────────────
+  // ── MODIFIER ─────────────────────────────────────────────────────────────────
   if (action === 'edit') {
     if (!userId) return res.status(400).json({ error: 'userId requis' });
     try {
@@ -83,6 +85,7 @@ module.exports = async function handler(req, res) {
           UPDATE users SET
             name      = COALESCE(${name || null}, name),
             email     = COALESCE(${email || null}, email),
+            role      = COALESCE(${role || null}, role),
             pid       = ${pid || null},
             telephone = ${telephone || null},
             password_hash = ${passwordHash}
@@ -93,6 +96,7 @@ module.exports = async function handler(req, res) {
           UPDATE users SET
             name      = COALESCE(${name || null}, name),
             email     = COALESCE(${email || null}, email),
+            role      = COALESCE(${role || null}, role),
             pid       = ${pid || null},
             telephone = ${telephone || null}
           WHERE id = ${userId}
@@ -105,15 +109,16 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  // ── CRÉER UN ADMIN / LEADER ──────────────────────────────────────────────────
+  // ── CRÉER ─────────────────────────────────────────────────────────────────────
   if (!name || !email || !password || !role) {
     return res.status(400).json({ error: 'Tous les champs sont requis' });
   }
-  if (!['admin', 'leader'].includes(role)) {
+  // ✏️ CHANGEMENT 3 : nouveaux rôles valides + restriction superadmin
+  if (!['superadmin', 'admin', 'utilisateur'].includes(role)) {
     return res.status(400).json({ error: 'Rôle invalide' });
   }
-  if (role === 'admin' && payload.role !== 'admin') {
-    return res.status(403).json({ error: 'Seul un admin peut créer un autre admin' });
+  if (role === 'superadmin' && payload.role !== 'superadmin') {
+    return res.status(403).json({ error: 'Seul un super admin peut créer un autre super admin' });
   }
 
   try {
