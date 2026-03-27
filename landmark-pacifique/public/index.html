@@ -384,31 +384,19 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
     <button class="back-link" onclick="goPage('page-intros')">← Retour</button>
 
     <div class="form-card">
-      <h2 class="form-title serif">Inscription</h2>
+      <h2 class="form-title serif">Inviter quelqu'un</h2>
       <p class="form-subtitle" id="guest-form-subtitle">Je souhaite m'inscrire à une introduction.</p>
 
       <div class="form-recap" id="guest-recap"></div>
 
-      <!-- GRADUÉ -->
-      <span class="form-section-label" style="margin-top:0">Vos informations</span>
-
-      <div class="form-group">
-        <label class="form-label">Prénom</label>
-        <input type="text" class="form-input" id="g-first" placeholder="Votre prénom">
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Nom</label>
-        <input type="text" class="form-input" id="g-last" placeholder="Votre nom">
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Email</label>
-        <input type="email" class="form-input" id="g-email" placeholder="votre@email.com">
-      </div>
+      <!-- GRADUÉ — champs cachés, remplis depuis la session -->
+      <input type="hidden" id="g-first">
+      <input type="hidden" id="g-last">
+      <input type="hidden" id="g-email">
+      <input type="hidden" id="g-phone">
 
       <!-- INVITÉ -->
-      <span class="form-section-label">Identité de votre invité(e)</span>
+      <span class="form-section-label" style="margin-top:0">Informations de votre invité(e)</span>
 
       <div class="form-group">
         <label class="form-label">Prénom</label>
@@ -427,11 +415,11 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
 
       <p class="form-error" id="guest-error"></p>
 
-      <button class="submit-btn" id="guest-submit" onclick="submitWithGuest()">Envoyer</button>
+      <button class="submit-btn" id="guest-submit" onclick="submitWithGuest()">Envoyer l'invitation</button>
 
       <p class="form-notice">
-        Confirmation automatique envoyée à vous et votre invité(e).<br>
-        Rappels Zoom ~1h et 40 min avant programmés automatiquement.
+        Un lien d'invitation personnalisé sera envoyé à votre invité(e).<br>
+        Rappels automatiques programmés avant l'introduction.
       </p>
     </div>
   </div>
@@ -1440,12 +1428,13 @@ function goPage(id){
     if(id==='page-form-guest'){
       const parts = (window._gradueName||'').split(' ');
       const fn = parts[0]||''; const ln = parts.slice(1).join(' ')||'';
+      // Remplir les champs cachés depuis la session
       const gf = document.getElementById('g-first'); const gl = document.getElementById('g-last');
       const gp = document.getElementById('g-phone'); const ge = document.getElementById('g-email');
-      if(gf&&!gf.value) gf.value=fn;
-      if(gl&&!gl.value) gl.value=ln;
-      if(gp&&!gp.value) gp.value=window._gradueTelephone||'';
-      if(ge&&!ge.value) ge.value=window._graduEmail||'';
+      if(gf) gf.value=fn;
+      if(gl) gl.value=ln;
+      if(gp) gp.value=window._gradueTelephone||'';
+      if(ge) ge.value=window._graduEmail||'';
     }
   }
   // Ouvre la page Mon compte
@@ -2090,15 +2079,18 @@ async function submitSolo(){
 
 // ── SUBMIT WITH GUEST ─────────────────────────────────────────────────────────
 async function submitWithGuest(){
-  const gfn=document.getElementById("g-first").value.trim();
-  const gln=document.getElementById("g-last").value.trim();
-  const gem=document.getElementById("g-email").value.trim();
+  // Infos gradué depuis la session (champs cachés)
+  const gfn = window._gradueName ? window._gradueName.split(' ')[0] : document.getElementById("g-first").value.trim();
+  const gln = window._gradueName ? window._gradueName.split(' ').slice(1).join(' ') : document.getElementById("g-last").value.trim();
+  const gem = window._graduEmail || document.getElementById("g-email").value.trim();
+  // Infos invité (seuls champs visibles)
   const ufn=document.getElementById("gu-first").value.trim();
   const uln=document.getElementById("gu-last").value.trim();
   const uem=document.getElementById("gu-email").value.trim();
   const err=document.getElementById("guest-error");
-  if(!gfn||!gln||!gem||!ufn||!uln||!uem){err.textContent="Veuillez remplir tous les champs.";err.style.display="block";return;}
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(gem)||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(uem)){err.textContent="Vérifiez les adresses email.";err.style.display="block";return;}
+  if(!ufn||!uln||!uem){err.textContent="Veuillez remplir tous les champs de votre invité(e).";err.style.display="block";return;}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(uem)){err.textContent="Email de l'invité(e) invalide.";err.style.display="block";return;}
+  if(!gem){err.textContent="Erreur : session expirée, veuillez vous reconnecter.";err.style.display="block";return;}
   err.style.display="none";
   let intro;
   if(window._isPilfSubmit && window._pilfSelIntro){
@@ -2169,7 +2161,8 @@ function showConfirm(title,body,tMatin,t40,isGuest,intro){
       <div class="tl-row"><div class="tl-dot"></div><span><strong>Maintenant</strong> — confirmation d'inscription</span></div>
       <div class="tl-row"><div class="tl-dot"></div><span><strong>Matin à 7h00 TAH</strong> — rappel matinal<br><small style="color:var(--navy-mid)">${fmt(tMatin)}</small></span></div>
       <div class="tl-row"><div class="tl-dot"></div><span><strong>40 min avant</strong> — rappel final<br><small style="color:var(--navy-mid)">${fmt(t40)}</small></span></div>`;
-  } else { tl.innerHTML=""; }
+    tl.style.display="";
+  } else { tl.innerHTML=""; tl.style.display="none"; }
   const horDiv=document.getElementById("confirm-horaires");
   const horContent=document.getElementById("confirm-horaires-content");
   if(intro&&intro.date&&intro.heure){
