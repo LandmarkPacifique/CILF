@@ -836,7 +836,7 @@ function makeAdminForm(intro, i) {
   d.innerHTML = `
     <div class="admin-card-hdr">
       <div class="admin-num">${i+1}</div>
-      <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--navy-deep);flex:1">CILF ${i+1}</span>
+      <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--navy-deep);flex:1">Community Introduction of the Landmark Forum ${i+1}</span>
       ${(intro.zoomIntro||intro.zoomCC) ? `<span style="font-size:11px;color:#0a9e6e;background:#e8f8f0;border:1px solid #b7e8d2;border-radius:20px;padding:3px 10px;margin-right:8px">🔗 Zoom configuré</span>` : `<span style="font-size:11px;color:#856404;background:#fff3cd;border:1px solid #ffc107;border-radius:20px;padding:3px 10px;margin-right:8px">⚠ Zoom manquant</span>`}
       <button class="remove-intro-btn" onclick="window._removeIntro(this)" title="Supprimer">✕ Supprimer</button>
     </div>
@@ -1554,14 +1554,57 @@ async function renderPublic(){
 
 // ── SELECTION PILF (public) ───────────────────────────────────────────────────
 async function selectPilfIntro(id){
+  // Connexion obligatoire
+  if(!window._gradueName || !window._graduEmail){
+    goPage('page-auth');
+    return;
+  }
+
   const pilfIntros = window._cachedPilfIntros || await getPilfIntros();
   window._cachedPilfIntros = pilfIntros;
   const intro = pilfIntros.find(o=>String(o.id)===String(id));
   if(!intro){ alert("Introduction introuvable, veuillez réessayer."); return; }
-  window._pilfSelIntro = intro;
-  window._isPilfSubmit = true;
-  document.getElementById("solo-recap").innerHTML=buildRecap(intro);
-  goPage("page-form-solo");
+
+  const btn = document.querySelector(`button[onclick="selectPilfIntro('${id}')"]`);
+  if(btn){ btn.disabled=true; btn.textContent="Envoi…"; }
+
+  try {
+    const fn = window._gradueName.split(' ')[0] || '';
+    const ln = window._gradueName.split(' ').slice(1).join(' ') || '';
+    const tah=fmtTZ(intro.date,intro.heure,"TAH","TAH"),nc=fmtTZ(intro.date,intro.heure,"TAH","NC"),fr=fmtTZ(intro.date,intro.heure,"TAH","FR");
+    const hFin=intro.heureFin||autoEndTime(intro.heure);
+    const tahFin=hFin?fmtTZ(intro.date,hFin,"TAH","TAH").split("·")[1]||"":"";
+    const ncFin=hFin?fmtTZ(intro.date,hFin,"TAH","NC").split("·")[1]||"":"";
+    const frFin=hFin?fmtTZ(intro.date,hFin,"TAH","FR").split("·")[1]||"":"";
+    const ccHFin=intro.ccHeureFin||(intro.ccHeure?autoEndTime1h(intro.ccHeure):"");
+    const ccTAH=intro.ccDate&&intro.ccHeure?fmtTZ(intro.ccDate,intro.ccHeure,"TAH","TAH"):"";
+    const ccNC=intro.ccDate&&intro.ccHeure?fmtTZ(intro.ccDate,intro.ccHeure,"TAH","NC"):"";
+    const ccFR=intro.ccDate&&intro.ccHeure?fmtTZ(intro.ccDate,intro.ccHeure,"TAH","FR"):"";
+    const ccTAHFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","TAH").split("·")[1]||"":"";
+    const ccNCFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","NC").split("·")[1]||"":"";
+    const ccFRFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","FR").split("·")[1]||"":"";
+    await fetch("https://hook.us2.make.com/2njt9kkq4ovz75l0yg3otstsda4ug6ry", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        type:"solo",
+        grad_name:window._gradueName,
+        grad_email:window._graduEmail,
+        telephone:window._gradueTelephone||"",
+        animateur:intro.animateur,
+        animateur_email:intro.animateurEmail||"",
+        titre:intro.titre,
+        date_tah:tah, date_nc:nc, date_fr:fr,
+        heure_fin_tah:tahFin, heure_fin_nc:ncFin, heure_fin_fr:frFin,
+        cc_tah:ccTAH, cc_nc:ccNC, cc_fr:ccFR,
+        cc_fin_tah:ccTAHFin, cc_fin_nc:ccNCFin, cc_fin_fr:ccFRFin
+      })
+    });
+    logToSheets("graduate",{prenom:fn,nom:ln,email:window._graduEmail,telephone:window._gradueTelephone||"",pays:"",animateur:intro.animateur,titre:intro.titre,date_tah:tah,introduction_id:intro.id});
+  } catch(e){ console.error("selectPilfIntro direct:", e); }
+
+  if(btn){ btn.disabled=false; btn.textContent="Je m'inscris →"; }
+  showConfirm("Inscription confirmée !",`'Ia ora na ${window._gradueName.split(' ')[0]} ! Un email de confirmation vous a été envoyé.`,null,null);
 }
 async function selectPilfIntroInvite(id){
   const pilfIntros = window._cachedPilfIntros || await getPilfIntros();
@@ -1736,13 +1779,59 @@ function buildRecap(intro){
   return html;
 }
 async function selectIntro(id){
+  // Connexion obligatoire
+  if(!window._gradueName || !window._graduEmail){
+    goPage('page-auth');
+    return;
+  }
+
   selIntroId = String(id);
   const intros = await getIntros();
   window._cachedIntros = intros;
   const intro = getSelIntro(intros);
   if(!intro){ alert("Introduction introuvable, veuillez réessayer."); return; }
-  document.getElementById("solo-recap").innerHTML=buildRecap(intro);
-  goPage("page-form-solo");
+
+  // Trouver et désactiver le bouton pendant l'envoi
+  const btn = document.querySelector(`button[onclick="selectIntro('${id}')"]`);
+  if(btn){ btn.disabled=true; btn.textContent="Envoi…"; }
+
+  try {
+    const fn = window._gradueName.split(' ')[0] || '';
+    const ln = window._gradueName.split(' ').slice(1).join(' ') || '';
+    const tah=fmtTZ(intro.date,intro.heure,"TAH","TAH"),nc=fmtTZ(intro.date,intro.heure,"TAH","NC"),fr=fmtTZ(intro.date,intro.heure,"TAH","FR");
+    const hFin=intro.heureFin||autoEndTime(intro.heure);
+    const tahFin=hFin?fmtTZ(intro.date,hFin,"TAH","TAH").split("·")[1]||"":"";
+    const ncFin=hFin?fmtTZ(intro.date,hFin,"TAH","NC").split("·")[1]||"":"";
+    const frFin=hFin?fmtTZ(intro.date,hFin,"TAH","FR").split("·")[1]||"":"";
+    const ccHFin=intro.ccHeureFin||(intro.ccHeure?autoEndTime1h(intro.ccHeure):"");
+    const ccTAH=intro.ccDate&&intro.ccHeure?fmtTZ(intro.ccDate,intro.ccHeure,"TAH","TAH"):"";
+    const ccNC=intro.ccDate&&intro.ccHeure?fmtTZ(intro.ccDate,intro.ccHeure,"TAH","NC"):"";
+    const ccFR=intro.ccDate&&intro.ccHeure?fmtTZ(intro.ccDate,intro.ccHeure,"TAH","FR"):"";
+    const ccTAHFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","TAH").split("·")[1]||"":"";
+    const ccNCFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","NC").split("·")[1]||"":"";
+    const ccFRFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","FR").split("·")[1]||"":"";
+    await fetch("https://hook.us2.make.com/2njt9kkq4ovz75l0yg3otstsda4ug6ry", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        type:"solo",
+        grad_name:window._gradueName,
+        grad_email:window._graduEmail,
+        telephone:window._gradueTelephone||"",
+        animateur:intro.animateur,
+        animateur_email:intro.animateurEmail||"",
+        titre:intro.titre,
+        date_tah:tah, date_nc:nc, date_fr:fr,
+        heure_fin_tah:tahFin, heure_fin_nc:ncFin, heure_fin_fr:frFin,
+        cc_tah:ccTAH, cc_nc:ccNC, cc_fr:ccFR,
+        cc_fin_tah:ccTAHFin, cc_fin_nc:ccNCFin, cc_fin_fr:ccFRFin
+      })
+    });
+    logToSheets("graduate",{prenom:fn,nom:ln,email:window._graduEmail,telephone:window._gradueTelephone||"",pays:"",animateur:intro.animateur,titre:intro.titre,date_tah:tah,introduction_id:intro.id});
+  } catch(e){ console.error("selectIntro direct:", e); }
+
+  if(btn){ btn.disabled=false; btn.textContent="Je m'inscris →"; }
+  showConfirm("Inscription confirmée !",`'Ia ora na ${window._gradueName.split(' ')[0]} ! Un email de confirmation vous a été envoyé.`,null,null);
 }
 function goForm(type){
   const intro = (window._isPilfSubmit && window._pilfSelIntro) ? window._pilfSelIntro : (window._cachedIntros ? getSelIntro(window._cachedIntros) : null);
@@ -1893,10 +1982,15 @@ async function submitInvite(){
     });
   }catch(e){console.error("Make webhook invite:",e);}
   btn.disabled=false;
+  // Injecter la vidéo YouTube pour l'invité
+  const yt = document.getElementById('confirm-youtube');
+  if(yt) yt.src = 'https://www.youtube.com/embed/TMo2xTY82-g?si=geFE-LAXueOUKVt7';
   showConfirm(
     "Réservation confirmée !",
-    `\'Ia ora na ${fn} ! Un email de confirmation vous a été envoyé. À bientôt !`,
-    tMatin, t40
+    `'Ia ora na ${fn} ! Un email de confirmation vous a été envoyé. À bientôt !`,
+    tMatin, t40,
+    true,   // isGuest → cache le bouton retour, cache la nav, affiche la vidéo
+    intro
   );
 }
 
