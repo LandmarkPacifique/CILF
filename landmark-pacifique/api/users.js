@@ -4,23 +4,19 @@ const jwt = require('jsonwebtoken');
 
 const sql = neon(process.env.DATABASE_URL);
 
-// Désactiver le body parser automatique de Vercel
-export const config = { api: { bodyParser: false } };
-
 async function parseBody(req) {
   return new Promise((resolve, reject) => {
-    let data = '';
-    req.setEncoding('utf-8');
-    req.on('data', chunk => { data += chunk; });
+    let data = Buffer.alloc(0);
+    req.on('data', chunk => { data = Buffer.concat([data, chunk]); });
     req.on('end', () => {
-      try { resolve(JSON.parse(data)); }
+      try { resolve(JSON.parse(data.toString('utf-8'))); }
       catch { resolve({}); }
     });
     req.on('error', reject);
   });
 }
 
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -142,4 +138,7 @@ module.exports = async function handler(req, res) {
     console.error('Create user error:', err);
     return res.status(500).json({ error: 'Erreur serveur', detail: err.message });
   }
-};
+}
+
+handler.config = { api: { bodyParser: false } };
+module.exports = handler;
