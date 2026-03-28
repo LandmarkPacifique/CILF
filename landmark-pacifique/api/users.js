@@ -4,10 +4,27 @@ const jwt = require('jsonwebtoken');
 
 const sql = neon(process.env.DATABASE_URL);
 
+// Désactiver le body parser automatique de Vercel
+export const config = { api: { bodyParser: false } };
+
+async function parseBody(req) {
+  return new Promise((resolve, reject) => {
+    let data = '';
+    req.setEncoding('utf-8');
+    req.on('data', chunk => { data += chunk; });
+    req.on('end', () => {
+      try { resolve(JSON.parse(data)); }
+      catch { resolve({}); }
+    });
+    req.on('error', reject);
+  });
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Méthode non autorisée' });
 
@@ -27,7 +44,7 @@ module.exports = async function handler(req, res) {
     return res.status(403).json({ error: 'Accès réservé aux administrateurs' });
   }
 
-  const { action, userId, name, email, password, role, pid, telephone, fonction } = req.body || {};
+  const { action, userId, name, email, password, role, pid, telephone, fonction } = await parseBody(req);
 
   // ── APPROUVER ────────────────────────────────────────────────────────────────
   if (action === 'approve') {
