@@ -1,7 +1,5 @@
-// api/profile.js
 const { neon } = require('@neondatabase/serverless');
 const jwt = require('jsonwebtoken');
-
 const sql = neon(process.env.DATABASE_URL);
 
 async function parseBody(req) {
@@ -22,21 +20,28 @@ function getToken(req) {
   return raw || req.headers['x-admin-token'] || null;
 }
 
+function sendJSON(res, status, obj) {
+  const body = Buffer.from(JSON.stringify(obj), 'utf-8');
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Content-Length', body.length);
+  res.status(status).end(body);
+}
+
 async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-admin-token');
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const token = getToken(req);
-  if (!token) return res.status(401).json({ error: 'Non authentifié' });
+  if (!token) return sendJSON(res, 401, { error: 'Non authentifié' });
 
   let payload;
   try {
     payload = jwt.verify(token, process.env.JWT_SECRET);
   } catch {
-    return res.status(401).json({ error: 'Token invalide' });
+    return sendJSON(res, 401, { error: 'Token invalide' });
   }
 
   // GET — récupère le profil
@@ -46,10 +51,10 @@ async function handler(req, res) {
         SELECT id, name, email, role, pid, telephone
         FROM users WHERE id = ${payload.id}
       `;
-      if (rows.length === 0) return res.status(404).json({ error: 'Utilisateur introuvable' });
-      return res.status(200).json(rows[0]);
+      if (rows.length === 0) return sendJSON(res, 404, { error: 'Utilisateur introuvable' });
+      return sendJSON(res, 200, rows[0]);
     } catch (err) {
-      return res.status(500).json({ error: err.message });
+      return sendJSON(res, 500, { error: err.message });
     }
   }
 
@@ -59,18 +64,18 @@ async function handler(req, res) {
     const { name, telephone, pid, password, new_password } = body;
 
     if (pid && !/^\d{7}$/.test(pid)) {
-      return res.status(400).json({ error: 'Le PID doit contenir exactement 7 chiffres' });
+      return sendJSON(res, 400, { error: 'Le PID doit contenir exactement 7 chiffres' });
     }
 
     try {
       if (new_password) {
-        if (!password) return res.status(400).json({ error: 'Mot de passe actuel requis' });
+        if (!password) return sendJSON(res, 400, { error: 'Mot de passe actuel requis' });
         const check = await sql`
           SELECT id FROM users
           WHERE id = ${payload.id}
             AND password_hash = crypt(${password}, password_hash)
         `;
-        if (check.length === 0) return res.status(401).json({ error: 'Mot de passe actuel incorrect' });
+        if (check.length === 0) return sendJSON(res, 401, { error: 'Mot de passe actuel incorrect' });
         await sql`
           UPDATE users SET
             name          = COALESCE(${name || null}, name),
@@ -90,18 +95,17 @@ async function handler(req, res) {
           WHERE id = ${payload.id}
         `;
       }
-
       const rows = await sql`
         SELECT id, name, email, role, pid, telephone FROM users WHERE id = ${payload.id}
       `;
-      return res.status(200).json({ success: true, user: rows[0] });
+      return sendJSON(res, 200, { success: true, user: rows[0] });
     } catch (err) {
       console.error('Profile update error:', err);
-      return res.status(500).json({ error: err.message });
+      return sendJSON(res, 500, { error: err.message });
     }
   }
 
-  return res.status(405).json({ error: 'Méthode non autorisée' });
+  return sendJSON(res, 405, { error: 'Méthode non autorisée' });
 }
 
 handler.config = { api: { bodyParser: false } };
