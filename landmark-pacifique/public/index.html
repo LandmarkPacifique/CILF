@@ -1026,7 +1026,14 @@ async function publicFetch(path) {
 
 // ── JWT AUTH ──────────────────────────────────────────────────────────────────
 function jwtDecode(token){
-  try{ return JSON.parse(atob(token.split('.')[1])); }catch{ return null; }
+  try{
+    // Décodage UTF-8 correct pour les accents et caractères spéciaux (prénoms polynésiens, etc.)
+    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c){
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+  }catch{ return null; }
 }
 function getSession(){
   const token = sessionStorage.getItem('lm_jwt');
