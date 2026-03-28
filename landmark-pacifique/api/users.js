@@ -68,12 +68,16 @@ module.exports = async function handler(req, res) {
   // ── MODIFIER ─────────────────────────────────────────────────────────────────
   if (action === 'edit') {
     if (!userId) return res.status(400).json({ error: 'userId requis' });
+    if (!name || !email) return res.status(400).json({ error: 'Nom et email requis' });
+
     try {
       if (password) {
+        // ✅ CORRECTION : mise à jour directe sans COALESCE pour name et email
+        // COALESCE empêchait la mise à jour car les valeurs étaient interprétées comme null
         await sql`
           UPDATE users SET
-            name          = COALESCE(${name || null}, name),
-            email         = COALESCE(${email || null}, email),
+            name          = ${name},
+            email         = ${email},
             role          = COALESCE(${role || null}, role),
             pid           = ${pid || null},
             telephone     = ${telephone || null},
@@ -84,8 +88,8 @@ module.exports = async function handler(req, res) {
       } else {
         await sql`
           UPDATE users SET
-            name      = COALESCE(${name || null}, name),
-            email     = COALESCE(${email || null}, email),
+            name      = ${name},
+            email     = ${email},
             role      = COALESCE(${role || null}, role),
             pid       = ${pid || null},
             telephone = ${telephone || null},
@@ -96,6 +100,10 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ success: true });
     } catch (err) {
       console.error('Edit error:', err);
+      // Gestion de l'email déjà utilisé
+      if (err.message.includes('unique') || err.message.includes('duplicate')) {
+        return res.status(409).json({ error: 'Cet email est déjà utilisé par un autre compte' });
+      }
       return res.status(500).json({ error: 'Erreur serveur', detail: err.message });
     }
   }
@@ -117,7 +125,7 @@ module.exports = async function handler(req, res) {
     `;
     return res.status(201).json({ success: true });
   } catch (err) {
-    if (err.message.includes('unique')) {
+    if (err.message.includes('unique') || err.message.includes('duplicate')) {
       return res.status(409).json({ error: 'Cet email est déjà utilisé' });
     }
     console.error('Create user error:', err);
