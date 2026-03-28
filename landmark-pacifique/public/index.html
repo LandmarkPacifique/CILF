@@ -843,7 +843,6 @@ function makeAdminForm(intro, i) {
     <div class="admin-card-hdr">
       <div class="admin-num">${i+1}</div>
       <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--navy-deep);flex:1">CILF ${i+1}</span>
-      ${(intro.zoomIntro||intro.zoomCC) ? `<span style="font-size:11px;color:#0a9e6e;background:#e8f8f0;border:1px solid #b7e8d2;border-radius:20px;padding:3px 10px;margin-right:8px">🔗 Zoom configuré</span>` : `<span style="font-size:11px;color:#856404;background:#fff3cd;border:1px solid #ffc107;border-radius:20px;padding:3px 10px;margin-right:8px">⚠ Zoom manquant</span>`}
       <button class="remove-intro-btn" onclick="window._removeIntro(this)" title="Supprimer">✕ Supprimer</button>
     </div>
     ${intro.modified_by ? `<p style="font-size:11px;color:#9aabb8;margin:4px 0 12px">✎ Dernière modification : <strong style="color:#5a6a7a">${intro.modified_by}</strong>${intro.modified_at ? ' — ' + new Date(intro.modified_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : ''}</p>` : ''}
@@ -2506,7 +2505,6 @@ function makePilfForm(intro, i) {
     <div class="admin-card-hdr">
       <div class="admin-num">${i+1}</div>
       <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--navy-deep);flex:1">Introduction PILF/HILF ${i+1}</span>
-      ${(intro.zoomIntro||intro.zoomCC) ? `<span style="font-size:11px;color:#0a9e6e;background:#e8f8f0;border:1px solid #b7e8d2;border-radius:20px;padding:3px 10px;margin-right:8px">🔗 Zoom configuré</span>` : `<span style="font-size:11px;color:#856404;background:#fff3cd;border:1px solid #ffc107;border-radius:20px;padding:3px 10px;margin-right:8px">⚠ Zoom manquant</span>`}
       <button class="remove-intro-btn" onclick="window._removePilf(this)" title="Supprimer">✕ Supprimer</button>
     </div>
     ${intro.modified_by ? `<p style="font-size:11px;color:#9aabb8;margin:4px 0 12px">✎ Dernière modification : <strong style="color:#5a6a7a">${intro.modified_by}</strong>${intro.modified_at ? ' — ' + new Date(intro.modified_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : ''}</p>` : ''}
