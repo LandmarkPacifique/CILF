@@ -1,57 +1,75 @@
 // api/reset-password.js
 const { neon } = require('@neondatabase/serverless');
-const bcrypt = require('bcryptjs');
-
 const sql = neon(process.env.DATABASE_URL);
 
-module.exports = async function handler(req, res) {
+async function parseBody(req) {
+  return new Promise((resolve, reject) => {
+    let data = Buffer.alloc(0);
+    req.on('data', chunk => { data = Buffer.concat([data, chunk]); });
+    req.on('end', () => {
+      try { resolve(JSON.parse(data.toString('utf-8'))); }
+      catch { resolve({}); }
+    });
+    req.on('error', reject);
+  });
+}
+
+function sendJSON(res, status, obj) {
+  const body = Buffer.from(JSON.stringify(obj), 'utf-8');
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Content-Length', body.length);
+  res.status(status).end(body);
+}
+
+async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Méthode non autorisée' });
+    return sendJSON(res, 405, { error: 'Méthode non autorisée' });
   }
 
-  const { token, new_password } = req.body || {};
-  if (!token || !new_password) {
-    return res.status(400).json({ error: 'Token et nouveau mot de passe requis' });
+  const { token, password } = await parseBody(req);
+
+  if (!token || !password) {
+    return sendJSON(res, 400, { error: 'Token et nouveau mot de passe requis' });
   }
-  if (new_password.length < 6) {
-    return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 6 caractères' });
+  if (password.length < 6) {
+    return sendJSON(res, 400, { error: 'Le mot de passe doit contenir au moins 6 caractères' });
   }
 
   try {
-    // 1. Vérifie que le token existe et n'est pas expiré
     const rows = await sql`
-      SELECT id, name, email FROM users
+      SELECT id, name, email
+      FROM users
       WHERE reset_token = ${token}
         AND reset_token_expires_at > NOW()
     `;
 
     if (rows.length === 0) {
-      return res.status(400).json({ error: 'Lien invalide ou expiré' });
+      return sendJSON(res, 400, { error: 'Lien invalide ou expiré. Veuillez refaire une demande.' });
     }
 
     const user = rows[0];
 
-    // 2. Hash le nouveau mot de passe
-    const hashedPassword = await bcrypt.hash(new_password, 10);
-
-    // 3. Met à jour le mot de passe et supprime le token
     await sql`
       UPDATE users
-      SET password_hash = ${hashedPassword},
-          reset_token = NULL,
+      SET password_hash          = crypt(${password}, gen_salt('bf')),
+          reset_token            = NULL,
           reset_token_expires_at = NULL,
-          updated_at = NOW()
+          updated_at             = NOW()
       WHERE id = ${user.id}
     `;
 
-    return res.status(200).json({ success: true });
+    return sendJSON(res, 200, { success: true, message: 'Mot de passe mis à jour avec succès.' });
 
   } catch (err) {
     console.error('Reset password error:', err);
-    return res.status(500).json({ error: 'Erreur serveur', detail: err.message });
+    return sendJSON(res, 500, { error: 'Erreur serveur', detail: err.message });
   }
-};
+}
+
+handler.config = { api: { bodyParser: false } };
+module.exports = handler;
