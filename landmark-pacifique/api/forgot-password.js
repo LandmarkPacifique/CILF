@@ -39,20 +39,16 @@ async function handler(req, res) {
   if (!email) return sendJSON(res, 400, { error: 'Email requis' });
 
   try {
-    // 1. Vérifie que l'email existe en base
     const rows = await sql`
       SELECT id, name, role FROM users WHERE LOWER(email) = LOWER(${email})
     `;
-    // Toujours répondre success pour ne pas révéler si l'email existe
     if (rows.length === 0) return sendJSON(res, 200, { success: true });
 
     const user = rows[0];
 
-    // 2. Génère un token sécurisé valable 1 heure
     const resetToken = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 3600 * 1000);
 
-    // 3. Sauvegarde le token en base
     await sql`
       UPDATE users
       SET reset_token = ${resetToken},
@@ -61,10 +57,8 @@ async function handler(req, res) {
       WHERE id = ${user.id}
     `;
 
-    // 4. Construit le lien de reset
     const resetLink = `${APP_URL}?reset=${resetToken}`;
 
-    // 5. Appelle le webhook Make
     try {
       await fetch(MAKE_WEBHOOK_RESET, {
         method: 'POST',
