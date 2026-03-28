@@ -1,7 +1,5 @@
-// api/register.js
 const { neon } = require('@neondatabase/serverless');
 const bcrypt = require('bcryptjs');
-
 const sql = neon(process.env.DATABASE_URL);
 
 async function parseBody(req) {
@@ -16,32 +14,38 @@ async function parseBody(req) {
   });
 }
 
+function sendJSON(res, status, obj) {
+  const body = Buffer.from(JSON.stringify(obj), 'utf-8');
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Content-Length', body.length);
+  res.status(status).end(body);
+}
+
 async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Méthode non autorisée' });
+    return sendJSON(res, 405, { error: 'Méthode non autorisée' });
   }
 
   const { name, email, password, pid, telephone, fonction } = await parseBody(req);
 
   if (!name || !email || !password) {
-    return res.status(400).json({ error: 'Nom, email et mot de passe requis' });
+    return sendJSON(res, 400, { error: 'Nom, email et mot de passe requis' });
   }
 
   const userRole = 'utilisateur';
   const userFonction = ['leader_intro', 'gradue'].includes(fonction) ? fonction : null;
 
   if (pid && !/^\d{7}$/.test(pid)) {
-    return res.status(400).json({ error: 'Le PID doit contenir exactement 7 chiffres' });
+    return sendJSON(res, 400, { error: 'Le PID doit contenir exactement 7 chiffres' });
   }
 
   try {
     const passwordHash = await bcrypt.hash(password, 10);
-
     await sql`
       INSERT INTO users (email, password_hash, role, name, pid, telephone, fonction, approved)
       VALUES (
@@ -55,17 +59,15 @@ async function handler(req, res) {
         false
       )
     `;
-
-    return res.status(201).json({
+    return sendJSON(res, 201, {
       message: 'Compte créé, en attente de validation par un administrateur.'
     });
-
   } catch (err) {
     if (err.message.includes('unique') || err.message.includes('duplicate')) {
-      return res.status(409).json({ error: 'Cet email est déjà utilisé' });
+      return sendJSON(res, 409, { error: 'Cet email est déjà utilisé' });
     }
     console.error('Register error:', err);
-    return res.status(500).json({ error: 'Erreur serveur', detail: err.message });
+    return sendJSON(res, 500, { error: 'Erreur serveur', detail: err.message });
   }
 }
 
