@@ -3048,15 +3048,13 @@ async function addUser(){
 async function sendResetPassword(userId, userName){
   if(!confirm(`Envoyer un email de réinitialisation de mot de passe à ${userName} ?`)) return;
   try {
-    const res = await apiFetch('/api/users', {
+    await apiFetch('/api/users', {
       method: 'POST',
       body: JSON.stringify({ action: 'reset_password', userId })
     });
-    const data = await res.json();
-    if(!res.ok){ alert(data.error || 'Erreur lors de l\'envoi.'); return; }
     alert(`✅ Email de réinitialisation envoyé à ${userName}.`);
   } catch(e) {
-    alert('Erreur réseau, réessayez.');
+    alert('Erreur : ' + e.message);
   }
 }
 
