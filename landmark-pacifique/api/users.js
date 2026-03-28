@@ -51,7 +51,12 @@ async function handler(req, res) {
     return sendJSON(res, 403, { error: 'Accès réservé aux administrateurs' });
   }
 
-  const { action, userId, name, email, password, role, pid, telephone, fonction } = await parseBody(req);
+  const { action, userId, first_name, last_name, email, password, role, pid, telephone, fonction } = await parseBody(req);
+
+  // Nom complet reconstitué depuis prénom + nom
+  const fullName = (first_name && last_name)
+    ? `${first_name.trim()} ${last_name.trim()}`
+    : (first_name || last_name || '');
 
   // ── APPROUVER ────────────────────────────────────────────────────────────────
   if (action === 'approve') {
@@ -90,16 +95,13 @@ async function handler(req, res) {
   if (action === 'reset_password') {
     if (!userId) return sendJSON(res, 400, { error: 'userId requis' });
     try {
-      // Récupère l'utilisateur
       const rows = await sql`SELECT id, name, email FROM users WHERE id = ${userId}`;
       if (rows.length === 0) return sendJSON(res, 404, { error: 'Utilisateur introuvable' });
       const user = rows[0];
 
-      // Génère un token sécurisé valable 1 heure
       const resetToken = crypto.randomBytes(32).toString('hex');
       const expiresAt = new Date(Date.now() + 3600 * 1000);
 
-      // Sauvegarde le token en base
       await sql`
         UPDATE users
         SET reset_token = ${resetToken},
@@ -108,10 +110,8 @@ async function handler(req, res) {
         WHERE id = ${user.id}
       `;
 
-      // Construit le lien de reset
       const resetLink = `${APP_URL}?reset=${resetToken}`;
 
-      // Appelle le webhook Make
       try {
         await fetch(MAKE_WEBHOOK_RESET, {
           method: 'POST',
@@ -137,33 +137,23 @@ async function handler(req, res) {
   // ── MODIFIER ─────────────────────────────────────────────────────────────────
   if (action === 'edit') {
     if (!userId) return sendJSON(res, 400, { error: 'userId requis' });
-    if (!name || !email) return sendJSON(res, 400, { error: 'Nom et email requis' });
-
+    if (!first_name || !last_name || !email) {
+      return sendJSON(res, 400, { error: 'Prénom, nom et email requis' });
+    }
     try {
-      if (password) {
-        await sql`
-          UPDATE users SET
-            name          = ${name},
-            email         = ${email},
-            role          = COALESCE(${role || null}, role),
-            pid           = ${pid || null},
-            telephone     = ${telephone || null},
-            fonction      = ${fonction || null},
-            password_hash = crypt(${password}, gen_salt('bf'))
-          WHERE id = ${userId}
-        `;
-      } else {
-        await sql`
-          UPDATE users SET
-            name      = ${name},
-            email     = ${email},
-            role      = COALESCE(${role || null}, role),
-            pid       = ${pid || null},
-            telephone = ${telephone || null},
-            fonction  = ${fonction || null}
-          WHERE id = ${userId}
-        `;
-      }
+      await sql`
+        UPDATE users SET
+          first_name = ${first_name.trim()},
+          last_name  = ${last_name.trim()},
+          name       = ${fullName},
+          email      = ${email},
+          role       = COALESCE(${role || null}, role),
+          pid        = ${pid || null},
+          telephone  = ${telephone || null},
+          fonction   = ${fonction || null},
+          updated_at = NOW()
+        WHERE id = ${userId}
+      `;
       return sendJSON(res, 200, { success: true });
     } catch (err) {
       console.error('Edit error:', err);
@@ -175,8 +165,8 @@ async function handler(req, res) {
   }
 
   // ── CRÉER ─────────────────────────────────────────────────────────────────────
-  if (!name || !email || !password || !role) {
-    return sendJSON(res, 400, { error: 'Tous les champs sont requis' });
+  if (!first_name || !last_name || !email || !password || !role) {
+    return sendJSON(res, 400, { error: 'Prénom, nom, email, mot de passe et rôle requis' });
   }
   if (!['superadmin', 'utilisateur', 'gradue'].includes(role)) {
     return sendJSON(res, 400, { error: 'Rôle invalide' });
@@ -186,8 +176,17 @@ async function handler(req, res) {
   }
   try {
     await sql`
-      INSERT INTO users (email, password_hash, role, name, approved, fonction)
-      VALUES (${email}, crypt(${password}, gen_salt('bf')), ${role}, ${name}, true, ${fonction || null})
+      INSERT INTO users (email, password_hash, role, name, first_name, last_name, approved, fonction)
+      VALUES (
+        ${email},
+        crypt(${password}, gen_salt('bf')),
+        ${role},
+        ${fullName},
+        ${first_name.trim()},
+        ${last_name.trim()},
+        true,
+        ${fonction || null}
+      )
     `;
     return sendJSON(res, 201, { success: true });
   } catch (err) {
