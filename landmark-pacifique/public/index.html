@@ -1060,7 +1060,7 @@ async function doLogin(){
   try {
     const res = await fetch(API_BASE + '/api/login', {
       method: 'POST',
-      headers: {'Content-Type':'application/json'},
+      headers: {'Content-Type':'application/json; charset=utf-8'},
       body: JSON.stringify({ email, password })
     });
     const data = await res.json();
@@ -1129,7 +1129,7 @@ async function doRegister(){
   try {
     const res = await fetch(API_BASE + '/api/register', {
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json; charset=utf-8'},
       body: JSON.stringify({
           name, email, password:pwd, pid:pid||null, telephone:tel||null,
           role: 'utilisateur',
