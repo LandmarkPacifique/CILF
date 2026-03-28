@@ -265,9 +265,41 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
   font-size:15px; color:var(--text-muted-navy); line-height:1.8;
   max-width:380px; margin:0 auto 32px;
 }
+/* ── MODALE CONFIRM CUSTOM (remplace confirm() bloqué sur mobile) ── */
+#lm-confirm-overlay {
+  display:none; position:fixed; inset:0; background:rgba(10,20,40,.55);
+  z-index:9999; align-items:center; justify-content:center;
+}
+#lm-confirm-overlay.active { display:flex; }
+#lm-confirm-box {
+  background:#fff; border-radius:14px; padding:28px 24px 20px;
+  max-width:320px; width:90%; text-align:center;
+  box-shadow:0 8px 32px rgba(0,0,0,.18);
+}
+#lm-confirm-msg {
+  font-size:15px; color:var(--navy-deep); margin-bottom:22px; line-height:1.5;
+}
+#lm-confirm-btns { display:flex; gap:10px; justify-content:center; }
+#lm-confirm-btns button {
+  flex:1; padding:10px; border-radius:8px; border:none;
+  font-size:14px; font-family:'DM Sans',sans-serif; cursor:pointer; font-weight:500;
+}
+#lm-confirm-cancel { background:#f0f2f5; color:#4a5a6a; }
+#lm-confirm-ok { background:#e24b4a; color:#fff; }
 </style>
 </head>
 <body>
+
+<!-- Modale confirm custom (remplace confirm() bloqué sur mobile) -->
+<div id="lm-confirm-overlay">
+  <div id="lm-confirm-box">
+    <div id="lm-confirm-msg"></div>
+    <div id="lm-confirm-btns">
+      <button id="lm-confirm-cancel">Annuler</button>
+      <button id="lm-confirm-ok">Supprimer</button>
+    </div>
+  </div>
+</div>
 
 <div id="page-home" class="page active">
   <header>
@@ -2332,16 +2364,41 @@ function addIntro(){
   const wrap=document.getElementById("admin-forms");
   wrap.appendChild(makeAdminForm(draft[draft.length-1],draft.length-1));
 }
+/* ── Modale confirm custom ── */
+function lmConfirm(msg, okLabel) {
+  return new Promise(function(resolve) {
+    var overlay = document.getElementById('lm-confirm-overlay');
+    var msgEl   = document.getElementById('lm-confirm-msg');
+    var okBtn   = document.getElementById('lm-confirm-ok');
+    var cancelBtn = document.getElementById('lm-confirm-cancel');
+    msgEl.textContent = msg;
+    if(okLabel) okBtn.textContent = okLabel;
+    overlay.classList.add('active');
+    function done(result) {
+      overlay.classList.remove('active');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      resolve(result);
+    }
+    function onOk()     { done(true);  }
+    function onCancel() { done(false); }
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+  });
+}
+
 function removeIntro(btnEl){
   if(!draft){ console.warn("draft non initialisé"); return; }
   var card = btnEl.closest('.admin-card');
   var wrap = document.getElementById('admin-forms');
   var i = Array.from(wrap.children).indexOf(card);
   if(i === -1) return;
-  if(!confirm('Supprimer cette introduction ?')) return;
-  draft.splice(i, 1);
-  wrap.innerHTML = '';
-  draft.forEach(function(intro, j){ wrap.appendChild(makeAdminForm(intro, j)); });
+  lmConfirm('Supprimer cette introduction ?', 'Supprimer').then(function(ok){
+    if(!ok) return;
+    draft.splice(i, 1);
+    wrap.innerHTML = '';
+    draft.forEach(function(intro, j){ wrap.appendChild(makeAdminForm(intro, j)); });
+  });
 }
 window._removeIntro = function(btnEl){
   if(!draft){ console.warn("draft non initialisé"); return; }
@@ -2350,10 +2407,12 @@ window._removeIntro = function(btnEl){
   var cards = Array.from(wrap.children);
   var i = cards.indexOf(card);
   if(i === -1) return;
-  if(!confirm('Supprimer cette introduction ?')) return;
-  draft.splice(i, 1);
-  wrap.innerHTML = '';
-  draft.forEach(function(intro, j){ wrap.appendChild(makeAdminForm(intro, j)); });
+  lmConfirm('Supprimer cette introduction ?', 'Supprimer').then(function(ok){
+    if(!ok) return;
+    draft.splice(i, 1);
+    wrap.innerHTML = '';
+    draft.forEach(function(intro, j){ wrap.appendChild(makeAdminForm(intro, j)); });
+  });
 };
 async function saveAll(){
   if(!draft) return;
@@ -2628,15 +2687,17 @@ function addPilfIntro(){
 }
 
 window._removePilf = function(btnEl){
-  if(!pilfDraft) pilfDraft = getPilfIntros().map(o=>({...o}));
+  if(!pilfDraft){ console.warn("pilfDraft non initialisé"); return; }
   var card = btnEl.closest('.admin-card');
   var wrap = document.getElementById('pilf-forms');
   var i = Array.from(wrap.children).indexOf(card);
   if(i === -1) return;
-  if(!confirm('Supprimer cette introduction PILF/HILF ?')) return;
-  pilfDraft.splice(i, 1);
-  wrap.innerHTML = '';
-  pilfDraft.forEach(function(intro, j){ wrap.appendChild(makePilfForm(intro, j)); });
+  lmConfirm('Supprimer cette introduction PILF/HILF ?', 'Supprimer').then(function(ok){
+    if(!ok) return;
+    pilfDraft.splice(i, 1);
+    wrap.innerHTML = '';
+    pilfDraft.forEach(function(intro, j){ wrap.appendChild(makePilfForm(intro, j)); });
+  });
 };
 
 async function savePilfOne(i){
@@ -2837,7 +2898,8 @@ async function saveEditLeader(userId){
 }
 
 async function deleteLeaderConfirm(userId, userName){
-  if(!confirm('Supprimer le compte de ' + userName + ' ?')) return;
+  const ok = await lmConfirm('Supprimer le compte de ' + userName + ' ?', 'Supprimer');
+  if(!ok) return;
   try {
     await apiFetch('/api/users', { method:'POST', body: JSON.stringify({ action: 'delete', userId }) });
     loadLeadersList();
@@ -2968,7 +3030,8 @@ async function approveUser(userId, userEmail){
 
 // ── REJECT USER ───────────────────────────────────────────────────────────────
 async function rejectUser(userId, userEmail){
-  if(!confirm('Refuser et supprimer ce compte ?')) return;
+  const ok = await lmConfirm('Refuser et supprimer ce compte ?', 'Refuser');
+  if(!ok) return;
   try {
     await apiFetch('/api/users', { method:'POST', body: JSON.stringify({ action:'reject', userId }) });
     loadPendingUsers(); loadAllGradues(); loadPendingBadge();
@@ -2979,7 +3042,8 @@ async function rejectUser(userId, userEmail){
 
 // ── DELETE USER ───────────────────────────────────────────────────────────────
 async function deleteUserConfirm(userId, userName){
-  if(!confirm('Supprimer le compte de ' + userName + ' ?')) return;
+  const ok = await lmConfirm('Supprimer le compte de ' + userName + ' ?', 'Supprimer');
+  if(!ok) return;
   try {
     await apiFetch('/api/users', { method:'POST', body: JSON.stringify({ action:'reject', userId }) });
     loadAllGradues(); loadPendingUsers(); loadPendingBadge();
@@ -3091,7 +3155,8 @@ async function addUser(){
 
 // ── SEND RESET PASSWORD (admin) ───────────────────────────────────────────────
 async function sendResetPassword(userId, userName){
-  if(!confirm(`Envoyer un email de réinitialisation de mot de passe à ${userName} ?`)) return;
+  const ok = await lmConfirm(`Envoyer un email de réinitialisation de mot de passe à ${userName} ?`, 'Envoyer');
+  if(!ok) return;
   try {
     await apiFetch('/api/users', {
       method: 'POST',
