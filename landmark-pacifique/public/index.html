@@ -481,8 +481,10 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
 
       <!-- Panneau Inscription -->
       <div id="auth-panel-register" class="auth-panel">
-        <label class="fl" style="text-align:left;display:block;margin-top:0">Prénom et Nom</label>
-        <input type="text" id="reg-name" class="ai" placeholder="Prénom Nom">
+        <div style="display:flex;gap:10px">
+          <div style="flex:1"><label class="fl" style="text-align:left;display:block;margin-top:0">Prénom</label><input type="text" id="reg-first" class="ai" placeholder="Prénom"></div>
+          <div style="flex:1"><label class="fl" style="text-align:left;display:block;margin-top:0">Nom</label><input type="text" id="reg-last" class="ai" placeholder="Nom"></div>
+        </div>
         <label class="fl" style="text-align:left;display:block;margin-top:12px">Email</label>
         <input type="email" id="reg-email" class="ai" placeholder="votre@email.com">
         <label class="fl" style="text-align:left;display:block;margin-top:12px">PID (Votre référence chez Landmark - 7 chiffres)</label>
@@ -593,8 +595,10 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
 
       <!-- Infos personnelles -->
       <p style="font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);margin-bottom:14px">Informations personnelles</p>
-      <label class="fl">Prénom et Nom</label>
-      <input type="text" id="compte-name-input" class="form-input ai" placeholder="Prénom Nom">
+      <div style="display:flex;gap:10px">
+        <div style="flex:1"><label class="fl">Prénom</label><input type="text" id="compte-first-input" class="form-input ai" placeholder="Prénom"></div>
+        <div style="flex:1"><label class="fl">Nom</label><input type="text" id="compte-last-input" class="form-input ai" placeholder="Nom"></div>
+      </div>
       <label class="fl" style="margin-top:12px">Téléphone</label>
       <input type="tel" id="compte-tel-input" class="form-input ai" placeholder="+689 00 00 00 00">
       <label class="fl" style="margin-top:12px">PID (Votre référence chez Landmark - 7 chiffres)</label>
@@ -725,9 +729,15 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
           <p style="font-size:14px;font-weight:500;color:var(--navy-deep);margin-bottom:4px">Inscrire manuellement un gradué</p>
           <p style="font-size:12px;color:#7a8a9a;margin-bottom:18px">Créez un compte gradué directement. Le compte sera immédiatement actif (validé).</p>
           <div style="display:flex;flex-direction:column;gap:10px;max-width:420px">
-            <div>
-              <label class="fl" style="margin-top:0">Prénom et Nom</label>
-              <input type="text" class="ai" id="manual-name" placeholder="Prénom Nom">
+            <div style="display:flex;gap:10px">
+              <div style="flex:1">
+                <label class="fl" style="margin-top:0">Prénom</label>
+                <input type="text" class="ai" id="manual-first" placeholder="Prénom">
+              </div>
+              <div style="flex:1">
+                <label class="fl" style="margin-top:0">Nom</label>
+                <input type="text" class="ai" id="manual-last" placeholder="Nom">
+              </div>
             </div>
             <div>
               <label class="fl" style="margin-top:0">Email</label>
@@ -1090,7 +1100,9 @@ async function doLogin(){
 
 // ── REGISTER ──────────────────────────────────────────────────────────────────
 async function doRegister(){
-  const name = document.getElementById('reg-name').value.trim();
+  const firstName = document.getElementById('reg-first').value.trim();
+  const lastName  = document.getElementById('reg-last').value.trim();
+  const name = (firstName + ' ' + lastName).trim();
   const email = document.getElementById('reg-email').value.trim();
   const pid = document.getElementById('reg-pid').value.trim();
   const tel = document.getElementById('reg-tel').value.trim();
@@ -1098,7 +1110,7 @@ async function doRegister(){
   const pwd2 = document.getElementById('reg-password2').value;
   const err = document.getElementById('reg-error');
   err.style.display='none';
-  if(!name||!email||!pwd){ err.textContent='Nom, email et mot de passe requis.'; err.style.display='block'; return; }
+  if(!firstName||!lastName||!email||!pwd){ err.textContent='Prénom, nom, email et mot de passe requis.'; err.style.display='block'; return; }
   if(pwd !== pwd2){ err.textContent='Les mots de passe ne correspondent pas.'; err.style.display='block'; return; }
   if(pwd.length < 6){ err.textContent='Le mot de passe doit contenir au moins 6 caractères.'; err.style.display='block'; return; }
   if(pid && !/^\d{7}$/.test(pid)){ err.textContent='Le PID doit contenir exactement 7 chiffres.'; err.style.display='block'; return; }
@@ -1230,19 +1242,22 @@ async function openMonCompte(){
 
   // Si le cache est disponible, on l'utilise immédiatement (pas de délai ressenti)
   if(_profileCache){
-    document.getElementById('compte-name-input').value = _profileCache.name || '';
-    document.getElementById('compte-tel-input').value = _profileCache.telephone || '';
-    document.getElementById('compte-pid-input').value = _profileCache.pid || '';
+    document.getElementById('compte-first-input').value = _profileCache.first_name || '';
+    document.getElementById('compte-last-input').value  = _profileCache.last_name  || '';
+    document.getElementById('compte-tel-input').value   = _profileCache.telephone  || '';
+    document.getElementById('compte-pid-input').value   = _profileCache.pid        || '';
     return;
   }
 
   // Indicateur de chargement sur les champs
-  const nameInput = document.getElementById('compte-name-input');
-  const telInput  = document.getElementById('compte-tel-input');
-  const pidInput  = document.getElementById('compte-pid-input');
-  nameInput.placeholder = 'Chargement…';
-  telInput.placeholder  = 'Chargement…';
-  pidInput.placeholder  = 'Chargement…';
+  const firstInput = document.getElementById('compte-first-input');
+  const lastInput  = document.getElementById('compte-last-input');
+  const telInput   = document.getElementById('compte-tel-input');
+  const pidInput   = document.getElementById('compte-pid-input');
+  firstInput.placeholder = 'Chargement…';
+  lastInput.placeholder  = 'Chargement…';
+  telInput.placeholder   = 'Chargement…';
+  pidInput.placeholder   = 'Chargement…';
 
   // Pré-remplit depuis l'API
   try {
@@ -1252,31 +1267,35 @@ async function openMonCompte(){
     if(res.ok){
       const data = await res.json();
       _profileCache = data; // Mise en cache
-      nameInput.value = data.name || '';
-      telInput.value  = data.telephone || '';
-      pidInput.value  = data.pid || '';
+      firstInput.value = data.first_name || '';
+      lastInput.value  = data.last_name  || '';
+      telInput.value   = data.telephone  || '';
+      pidInput.value   = data.pid        || '';
     }
   } catch(e){ console.error('profile fetch:', e); }
   finally {
-    // Restore placeholders
-    nameInput.placeholder = 'Prénom Nom';
-    telInput.placeholder  = '+689 00 00 00 00';
-    pidInput.placeholder  = '1234567';
+    firstInput.placeholder = 'Prénom';
+    lastInput.placeholder  = 'Nom';
+    telInput.placeholder   = '+689 00 00 00 00';
+    pidInput.placeholder   = '1234567';
   }
 }
 async function saveProfile(){
-  const name = document.getElementById('compte-name-input').value.trim();
-  const telephone = document.getElementById('compte-tel-input').value.trim();
-  const pid = document.getElementById('compte-pid-input').value.trim();
+  const firstName  = document.getElementById('compte-first-input').value.trim();
+  const lastName   = document.getElementById('compte-last-input').value.trim();
+  const name       = (firstName + ' ' + lastName).trim();
+  const telephone  = document.getElementById('compte-tel-input').value.trim();
+  const pid        = document.getElementById('compte-pid-input').value.trim();
   const err = document.getElementById('compte-info-error');
   const suc = document.getElementById('compte-info-success');
   err.style.display='none'; suc.style.display='none';
+  if(!firstName || !lastName){ err.textContent='Prénom et nom requis.'; err.style.display='block'; return; }
   if(pid && !/^\d{7}$/.test(pid)){ err.textContent='Le PID doit contenir exactement 7 chiffres.'; err.style.display='block'; return; }
   try {
     const res = await fetch(API_BASE + '/api/profile', {
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+sessionStorage.getItem('lm_jwt')},
-      body: JSON.stringify({ name, telephone, pid })
+      body: JSON.stringify({ first_name: firstName, last_name: lastName, name, telephone, pid })
     });
     const data = await res.json();
     if(!res.ok){ err.textContent = data.error||'Erreur.'; err.style.display='block'; return; }
@@ -1287,6 +1306,7 @@ async function saveProfile(){
     window._graduePid = pid;
     window._gradueTelephone = telephone;
   } catch(e){ err.textContent='Erreur réseau.'; err.style.display='block'; }
+}
 }
 async function savePassword(){
   const password = document.getElementById('compte-pwd-old').value;
@@ -2731,8 +2751,12 @@ async function loadLeadersList(){
         <div id="leader-edit-${u.id||u.email}" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--cream-3)">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:560px">
             <div>
-              <label class="fl" style="margin-top:0;font-size:12px">Prénom et Nom</label>
-              <input type="text" class="ai" id="leader-name-${u.id||u.email}" value="${(u.name||'').replace(/"/g,'&quot;')}" style="font-size:13px;padding:7px 10px">
+              <label class="fl" style="margin-top:0;font-size:12px">Prénom</label>
+              <input type="text" class="ai" id="leader-first-${u.id||u.email}" value="${(u.first_name||'').replace(/"/g,'&quot;')}" style="font-size:13px;padding:7px 10px">
+            </div>
+            <div>
+              <label class="fl" style="margin-top:0;font-size:12px">Nom</label>
+              <input type="text" class="ai" id="leader-last-${u.id||u.email}" value="${(u.last_name||'').replace(/"/g,'&quot;')}" style="font-size:13px;padding:7px 10px">
             </div>
             <div>
               <label class="fl" style="margin-top:0;font-size:12px">Email</label>
@@ -2782,18 +2806,20 @@ function toggleEditLeader(userId){
 }
 
 async function saveEditLeader(userId){
-  const name  = document.getElementById('leader-name-'+userId)?.value.trim();
-  const email = document.getElementById('leader-email-'+userId)?.value.trim();
-  const pid   = document.getElementById('leader-pid-'+userId)?.value.trim();
-  const tel   = document.getElementById('leader-tel-'+userId)?.value.trim();
-  const pw    = document.getElementById('leader-pw-'+userId)?.value;
-  const role  = document.getElementById('leader-role-'+userId)?.value;
-  const fonction = document.getElementById('leader-fonction-'+userId)?.value;
-  const msg   = document.getElementById('leader-msg-'+userId);
-  if(!name || !email){ msg.textContent='Nom et email requis.'; msg.style.color='#c00'; msg.style.display='inline'; return; }
+  const firstName = document.getElementById('leader-first-'+userId)?.value.trim();
+  const lastName  = document.getElementById('leader-last-'+userId)?.value.trim();
+  const name      = (firstName + ' ' + lastName).trim();
+  const email     = document.getElementById('leader-email-'+userId)?.value.trim();
+  const pid       = document.getElementById('leader-pid-'+userId)?.value.trim();
+  const tel       = document.getElementById('leader-tel-'+userId)?.value.trim();
+  const pw        = document.getElementById('leader-pw-'+userId)?.value;
+  const role      = document.getElementById('leader-role-'+userId)?.value;
+  const fonction  = document.getElementById('leader-fonction-'+userId)?.value;
+  const msg       = document.getElementById('leader-msg-'+userId);
+  if(!firstName || !lastName || !email){ msg.textContent='Prénom, nom et email requis.'; msg.style.color='#c00'; msg.style.display='inline'; return; }
   if(pw && pw.length < 6){ msg.textContent='Mot de passe minimum 6 caractères.'; msg.style.color='#c00'; msg.style.display='inline'; return; }
   msg.textContent='Enregistrement…'; msg.style.color='#7a8a9a'; msg.style.display='inline';
-  const body = { name, email, role, pid: pid||null, telephone: tel||null, fonction: fonction||null };
+  const body = { first_name: firstName, last_name: lastName, name, email, role, pid: pid||null, telephone: tel||null, fonction: fonction||null };
   if(pw) body.password = pw;
   try {
     await apiFetch('/api/users', { method:'POST', body: JSON.stringify({ action:'edit', userId, ...body }) });
@@ -2876,8 +2902,12 @@ async function loadAllGradues(){
         <div id="edit-form-${u.id||u.email}" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--cream-3)">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:560px">
             <div>
-              <label class="fl" style="margin-top:0;font-size:12px">Prénom et Nom</label>
-              <input type="text" class="ai" id="edit-name-${u.id||u.email}" value="${(u.name||'').replace(/"/g,'&quot;')}" style="font-size:13px;padding:7px 10px">
+              <label class="fl" style="margin-top:0;font-size:12px">Prénom</label>
+              <input type="text" class="ai" id="edit-first-${u.id||u.email}" value="${(u.first_name||'').replace(/"/g,'&quot;')}" style="font-size:13px;padding:7px 10px">
+            </div>
+            <div>
+              <label class="fl" style="margin-top:0;font-size:12px">Nom</label>
+              <input type="text" class="ai" id="edit-last-${u.id||u.email}" value="${(u.last_name||'').replace(/"/g,'&quot;')}" style="font-size:13px;padding:7px 10px">
             </div>
             <div>
               <label class="fl" style="margin-top:0;font-size:12px">Email</label>
@@ -2960,18 +2990,20 @@ function toggleEditGradue(userId){
 }
 
 async function saveEditGradue(userId){
-  const name  = document.getElementById('edit-name-'+userId)?.value.trim();
-  const email = document.getElementById('edit-email-'+userId)?.value.trim();
-  const pid   = document.getElementById('edit-pid-'+userId)?.value.trim();
-  const tel   = document.getElementById('edit-tel-'+userId)?.value.trim();
-  const pw    = document.getElementById('edit-pw-'+userId)?.value;
-  const role  = document.getElementById('edit-role-'+userId)?.value;
-  const fonction = document.getElementById('edit-fonction-'+userId)?.value;
-  const msg   = document.getElementById('edit-msg-'+userId);
-  if(!name || !email){ msg.textContent='Nom et email requis.'; msg.style.color='#c00'; msg.style.display='inline'; return; }
+  const firstName = document.getElementById('edit-first-'+userId)?.value.trim();
+  const lastName  = document.getElementById('edit-last-'+userId)?.value.trim();
+  const name      = (firstName + ' ' + lastName).trim();
+  const email     = document.getElementById('edit-email-'+userId)?.value.trim();
+  const pid       = document.getElementById('edit-pid-'+userId)?.value.trim();
+  const tel       = document.getElementById('edit-tel-'+userId)?.value.trim();
+  const pw        = document.getElementById('edit-pw-'+userId)?.value;
+  const role      = document.getElementById('edit-role-'+userId)?.value;
+  const fonction  = document.getElementById('edit-fonction-'+userId)?.value;
+  const msg       = document.getElementById('edit-msg-'+userId);
+  if(!firstName || !lastName || !email){ msg.textContent='Prénom, nom et email requis.'; msg.style.color='#c00'; msg.style.display='inline'; return; }
   if(pw && pw.length < 6){ msg.textContent='Mot de passe minimum 6 caractères.'; msg.style.color='#c00'; msg.style.display='inline'; return; }
   msg.textContent='Enregistrement…'; msg.style.color='#7a8a9a'; msg.style.display='inline';
-  const body = { name, email, pid: pid||null, telephone: tel||null, role: role||'utilisateur', fonction: fonction||null };
+  const body = { first_name: firstName, last_name: lastName, name, email, pid: pid||null, telephone: tel||null, role: role||'utilisateur', fonction: fonction||null };
   if(pw) body.password = pw;
   try {
     await apiFetch('/api/users', { method:'POST', body: JSON.stringify({ action:'edit', userId, ...body }) });
@@ -2984,14 +3016,16 @@ async function saveEditGradue(userId){
 
 // ── MANUAL REGISTER (admin creates gradue) ────────────────────────────────────
 async function manualRegister(){
-  const name  = document.getElementById('manual-name').value.trim();
+  const firstName = document.getElementById('manual-first').value.trim();
+  const lastName  = document.getElementById('manual-last').value.trim();
+  const name      = (firstName + ' ' + lastName).trim();
   const email = document.getElementById('manual-email').value.trim();
   const pid   = document.getElementById('manual-pid').value.trim();
   const tel   = document.getElementById('manual-tel').value.trim();
   const pw    = document.getElementById('manual-pw').value;
   const msg   = document.getElementById('manual-reg-msg');
   msg.style.display='none';
-  if(!name||!email||!pw){ msg.style.display='block'; msg.style.color='#c00'; msg.textContent='Nom, email et mot de passe requis.'; return; }
+  if(!firstName||!lastName||!email||!pw){ msg.style.display='block'; msg.style.color='#c00'; msg.textContent='Prénom, nom, email et mot de passe requis.'; return; }
   if(pw.length < 6){ msg.style.display='block'; msg.style.color='#c00'; msg.textContent='Le mot de passe doit contenir au moins 6 caractères.'; return; }
   if(pid && !/^\d{7}$/.test(pid)){ msg.style.display='block'; msg.style.color='#c00'; msg.textContent='Le PID doit contenir exactement 7 chiffres.'; return; }
   const btn = document.querySelector('#stab-manual .save-btn');
@@ -3006,7 +3040,8 @@ async function manualRegister(){
     const data = await res.json();
     if(!res.ok){ msg.style.display='block'; msg.style.color='#c00'; msg.textContent = data.error || 'Erreur lors de la création.'; btn.disabled=false; btn.textContent='Créer le compte'; return; }
     msg.style.display='block'; msg.style.color='green'; msg.textContent='✓ Compte créé avec succès pour ' + name + ' !';
-    document.getElementById('manual-name').value='';
+    document.getElementById('manual-first').value='';
+    document.getElementById('manual-last').value='';
     document.getElementById('manual-email').value='';
     document.getElementById('manual-pid').value='';
     document.getElementById('manual-tel').value='';
@@ -3025,18 +3060,22 @@ async function addUser(){
     alert('Action réservée aux administrateurs.');
     return;
   }
-  const name  = document.getElementById('cfg-new-name').value.trim();
-  const email = document.getElementById('cfg-new-email').value.trim();
-  const pw    = document.getElementById('cfg-new-pw').value;
-  const role  = document.getElementById('cfg-new-role').value;
-  const fonction = document.getElementById('cfg-new-fonction').value;
-  const msg   = document.getElementById('cfg-user-msg');
+  const firstName = document.getElementById('cfg-new-first')?.value.trim() || document.getElementById('cfg-new-name')?.value.trim() || '';
+  const lastName  = document.getElementById('cfg-new-last')?.value.trim()  || '';
+  const name      = lastName ? (firstName + ' ' + lastName).trim() : firstName;
+  const email     = document.getElementById('cfg-new-email').value.trim();
+  const pw        = document.getElementById('cfg-new-pw').value;
+  const role      = document.getElementById('cfg-new-role').value;
+  const fonction  = document.getElementById('cfg-new-fonction').value;
+  const msg       = document.getElementById('cfg-user-msg');
   if(!name||!email||!pw){ msg.style.display='block'; msg.style.color='#c00'; msg.textContent='Veuillez remplir tous les champs.'; return; }
   if(!fonction){ msg.style.display='block'; msg.style.color='#c00'; msg.textContent='Veuillez sélectionner une fonction (Leader ou Gradué).'; return; }
   try {
-    await apiFetch('/api/users', { method:'POST', body: JSON.stringify({name, email, password: pw, role, fonction: fonction||null}) });
+    await apiFetch('/api/users', { method:'POST', body: JSON.stringify({ first_name: firstName, last_name: lastName, name, email, password: pw, role, fonction: fonction||null }) });
     msg.style.display='block'; msg.style.color='green'; msg.textContent='Utilisateur ajouté avec succès !';
-    document.getElementById('cfg-new-name').value='';
+    if(document.getElementById('cfg-new-first')) document.getElementById('cfg-new-first').value='';
+    if(document.getElementById('cfg-new-last'))  document.getElementById('cfg-new-last').value='';
+    if(document.getElementById('cfg-new-name'))  document.getElementById('cfg-new-name').value='';
     document.getElementById('cfg-new-email').value='';
     document.getElementById('cfg-new-pw').value='';
   } catch(e){
@@ -3097,14 +3136,16 @@ function switchLeaderTab(id, btn){
 }
 
 async function leaderManualRegister(){
-  const name  = document.getElementById('lmanual-name').value.trim();
+  const firstName = document.getElementById('lmanual-first')?.value.trim() || document.getElementById('lmanual-name')?.value.trim() || '';
+  const lastName  = document.getElementById('lmanual-last')?.value.trim()  || '';
+  const name      = lastName ? (firstName + ' ' + lastName).trim() : firstName;
   const email = document.getElementById('lmanual-email').value.trim();
   const pid   = document.getElementById('lmanual-pid').value.trim();
   const tel   = document.getElementById('lmanual-tel').value.trim();
   const pw    = document.getElementById('lmanual-pw').value;
   const msg   = document.getElementById('lmanual-msg');
   msg.style.display='none';
-  if(!name||!email||!pw){ msg.style.display='block'; msg.style.color='#c00'; msg.textContent='Nom, email et mot de passe requis.'; return; }
+  if(!name||!email||!pw){ msg.style.display='block'; msg.style.color='#c00'; msg.textContent='Prénom, nom, email et mot de passe requis.'; return; }
   if(pw.length < 6){ msg.style.display='block'; msg.style.color='#c00'; msg.textContent='Le mot de passe doit contenir au moins 6 caractères.'; return; }
   if(pid && !/^\d{7}$/.test(pid)){ msg.style.display='block'; msg.style.color='#c00'; msg.textContent='Le PID doit contenir exactement 7 chiffres.'; return; }
   const btn = document.querySelector('#ltab-manual .save-btn');
@@ -3118,7 +3159,9 @@ async function leaderManualRegister(){
     const data = await res.json();
     if(!res.ok){ msg.style.display='block'; msg.style.color='#c00'; msg.textContent = data.error || 'Erreur lors de la création.'; btn.disabled=false; btn.textContent='Créer le compte'; return; }
     msg.style.display='block'; msg.style.color='green'; msg.textContent='✓ Compte créé avec succès pour ' + name + ' !';
-    document.getElementById('lmanual-name').value='';
+    if(document.getElementById('lmanual-first')) document.getElementById('lmanual-first').value='';
+    if(document.getElementById('lmanual-last'))  document.getElementById('lmanual-last').value='';
+    if(document.getElementById('lmanual-name'))  document.getElementById('lmanual-name').value='';
     document.getElementById('lmanual-email').value='';
     document.getElementById('lmanual-pid').value='';
     document.getElementById('lmanual-tel').value='';
