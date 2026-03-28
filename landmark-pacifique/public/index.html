@@ -870,6 +870,7 @@ function makeAdminForm(intro, i) {
     <input class="ai" type="email" value="${intro.animateurEmail||''}" readonly style="background:#f0f4f8;color:#7a8a9a;cursor:not-allowed" id="email-cilf-${i}">
     <div class="ptz">
       <div class="ptz-title">Aperçu horaires calculés</div>
+      <div style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--navy-mid);margin:6px 0 6px">Introduction au Landmark Forum</div>
       <div class="ptz-grid">
         <div><div class="ptz-l">Tahiti</div><div class="ptz-v" id="ptz-tah-${i}">${tah}${endTAH ? ' → ' + endTAH : ''}</div></div>
         <div><div class="ptz-l">Nouvelle-Calédonie</div><div class="ptz-v" id="ptz-nc-${i}">${nc}${endNC ? ' → ' + endNC : ''}</div></div>
@@ -881,6 +882,10 @@ function makeAdminForm(intro, i) {
         <div><div class="ptz-l">Nouvelle-Calédonie</div><div class="ptz-v">${ccNC}${ccEndNC ? ' → ' + ccEndNC : ''}</div></div>
         <div><div class="ptz-l">France</div><div class="ptz-v">${ccFR}${ccEndFR ? ' → ' + ccEndFR : ''}</div></div>
       </div>` : ''}
+    </div>
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--cream-2);display:flex;align-items:center;gap:12px">
+      <button id="cilf-save-one-btn-${i}" class="save-btn" onclick="saveCilfOne(${i})" style="margin:0">Enregistrer et publier cette CILF</button>
+      <span id="cilf-save-one-msg-${i}" style="font-size:12px;display:none"></span>
     </div>`;
   // Populate autocomplete after insert
   setTimeout(() => {
@@ -930,7 +935,7 @@ function fmtTZ(d,h,from,to){
   let t=(hh-TZ[from])*60+mn+TZ[to]*60,o=0;
   while(t<0){t+=1440;o--;}while(t>=1440){t-=1440;o++;}
   const H=Math.floor(t/60),M=t%60,dt=new Date(y,m-1,dd+o);
-  return`${DAYS[dt.getDay()]} ${dt.getDate()} ${MTHS[dt.getMonth()]} · ${String(H).padStart(2,"0")}h${String(M).padStart(2,"0")}`;
+  return`${DAYS[dt.getDay()]} ${dt.getDate()} ${MTHS[dt.getMonth()]} · ${String(H).padStart(2,"0")}h${String(M).padStart(2,"0")||"00"}`;
 }
 function fmtEndTZ(d,h,hFin,from,to){
   if(!d||!h||!hFin)return"";
@@ -1711,18 +1716,21 @@ function filterGradueSuggestions(i, query){
   // Récupérer le leadeur actuellement sélectionné pour l'exclure
   const leaderName = (document.getElementById('leader-pilf-'+i)||{}).value || '';
   const all = (_leadersList || []);
-  // Filtrer : gradués et utilisateurs uniquement, exclure le leadeur
+  // Filtrer : gradués, utilisateurs, admins et super admins, exclure le leadeur
   const gradues = all.filter(u =>
-    (u.role === 'gradue' || u.role === 'utilisateur') &&
+    (u.role === 'gradue' || u.role === 'utilisateur' || u.role === 'admin' || u.role === 'superadmin') &&
     u.name !== leaderName
   );
   const filtered = query.trim() === '' ? gradues : gradues.filter(u => (u.name||'').toLowerCase().includes(query.toLowerCase()));
   if(filtered.length === 0){ suggestionsEl.style.display='none'; return; }
-  suggestionsEl.innerHTML = filtered.map(u => `
+  suggestionsEl.innerHTML = filtered.map(u => {
+    const roleLabel = u.role === 'superadmin' ? 'Super Admin' : u.role === 'admin' ? 'Admin' : '';
+    return `
     <div style="padding:9px 14px;cursor:pointer;font-size:13px;color:var(--navy-deep);border-bottom:1px solid var(--cream-2)"
       onmousedown="selectGradueSuggestion(${i},'${(u.name||'').replace(/'/g,"\\'")}')">
-      ${u.name||'—'} <span style="font-size:11px;color:#9aabb8">${u.pid ? '• PID: '+u.pid : ''}</span>
-    </div>`).join('');
+      ${u.name||'—'} <span style="font-size:11px;color:#9aabb8">${u.pid ? '• PID: '+u.pid : ''} ${roleLabel ? '• '+roleLabel : ''}</span>
+    </div>`;
+  }).join('');
   suggestionsEl.style.display = 'block';
 }
 
@@ -2341,6 +2349,36 @@ async function saveAll(){
   }
 }
 
+// ── CILF SAVE ONE ─────────────────────────────────────────────────────────────
+async function saveCilfOne(i){
+  if(!draft || !draft[i]) return;
+  const intro = draft[i];
+  if(!intro.animateur || !intro.animateur.trim()){
+    alert("Veuillez sélectionner un leadeur avant d'enregistrer.");
+    return;
+  }
+  const b = document.getElementById('cilf-save-one-btn-'+i);
+  const msg = document.getElementById('cilf-save-one-msg-'+i);
+  b.disabled=true; b.textContent='Enregistrement…';
+  msg.style.display='none';
+  try {
+    const session = getSession();
+    const modifiedBy = session ? session.name : null;
+    const modifiedById = session ? session.id : null;
+    const modifiedAt = new Date().toISOString();
+    const updatedIntros = draft.map((o, j) => j === i ? {...o, modified_by: modifiedBy, modified_by_id: modifiedById, modified_at: modifiedAt} : o);
+    await apiFetch('/api/intros',{method:'POST',body:JSON.stringify({slug:'cilf',intros:updatedIntros,modified_by:modifiedBy,modified_by_id:modifiedById,modified_at:modifiedAt})});
+    draft = updatedIntros;
+    b.textContent='✓ Enregistré et publié !'; b.classList.add('saved');
+    msg.textContent='✓ CILF '+(i+1)+' enregistrée'; msg.style.color='#0a9e6e'; msg.style.display='inline';
+    setTimeout(()=>{ b.textContent='Enregistrer et publier cette CILF'; b.classList.remove('saved'); b.disabled=false; },3000);
+  } catch(e){
+    b.textContent='⚠ Erreur'; b.disabled=false;
+    msg.textContent='Erreur : '+(e.message||e); msg.style.color='#c00'; msg.style.display='inline';
+    console.error('[saveCilfOne]', e);
+  }
+}
+
 // ── PILF ──────────────────────────────────────────────────────────────────────
 var pilfDraft = null;
 var DEF_PILF = [
@@ -2431,6 +2469,7 @@ function makePilfForm(intro, i) {
     <input class="ai" type="email" value="${intro.animateurEmail||''}" readonly style="background:#f0f4f8;color:#7a8a9a;cursor:not-allowed" id="email-pilf-${i}">
     <div class="ptz">
       <div class="ptz-title">Aperçu horaires calculés</div>
+      <div style="font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--navy-mid);margin:6px 0 6px">Introduction au Landmark Forum</div>
       <div class="ptz-grid">
         <div><div class="ptz-l">Tahiti</div><div class="ptz-v" id="pptz-tah-${i}">${tah}${endTAH ? ' → ' + endTAH : ''}</div></div>
         <div><div class="ptz-l">Nouvelle-Calédonie</div><div class="ptz-v" id="pptz-nc-${i}">${nc}${endNC ? ' → ' + endNC : ''}</div></div>
