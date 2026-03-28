@@ -1,36 +1,52 @@
 // api/forgot-password.js
 const { neon } = require('@neondatabase/serverless');
 const crypto = require('crypto');
-
 const sql = neon(process.env.DATABASE_URL);
+
 const MAKE_WEBHOOK_RESET = process.env.MAKE_WEBHOOK_RESET || 'https://hook.us2.make.com/hwd31jmdqvpo3eoq5u04rjigdm2s9nxu';
 const APP_URL = process.env.APP_URL || 'https://project-pajuk.vercel.app';
 
-module.exports = async function handler(req, res) {
+async function parseBody(req) {
+  return new Promise((resolve, reject) => {
+    let data = Buffer.alloc(0);
+    req.on('data', chunk => { data = Buffer.concat([data, chunk]); });
+    req.on('end', () => {
+      try { resolve(JSON.parse(data.toString('utf-8'))); }
+      catch { resolve({}); }
+    });
+    req.on('error', reject);
+  });
+}
+
+function sendJSON(res, status, obj) {
+  const body = Buffer.from(JSON.stringify(obj), 'utf-8');
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Content-Length', body.length);
+  res.status(status).end(body);
+}
+
+async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Méthode non autorisée' });
+    return sendJSON(res, 405, { error: 'Méthode non autorisée' });
   }
 
-  const { email } = req.body || {};
-  if (!email) return res.status(400).json({ error: 'Email requis' });
+  const { email } = await parseBody(req);
+  if (!email) return sendJSON(res, 400, { error: 'Email requis' });
 
   try {
     // 1. Vérifie que l'email existe en base
     const rows = await sql`
       SELECT id, name, role FROM users WHERE LOWER(email) = LOWER(${email})
     `;
-
-    if (rows.length === 0) {
-      console.log('Email non trouvé en base:', email);
-      return res.status(200).json({ success: true });
-    }
+    // Toujours répondre success pour ne pas révéler si l'email existe
+    if (rows.length === 0) return sendJSON(res, 200, { success: true });
 
     const user = rows[0];
-    console.log('Utilisateur trouvé:', user.name);
 
     // 2. Génère un token sécurisé valable 1 heure
     const resetToken = crypto.randomBytes(32).toString('hex');
@@ -44,16 +60,13 @@ module.exports = async function handler(req, res) {
           updated_at = NOW()
       WHERE id = ${user.id}
     `;
-    console.log('Token sauvegardé en base');
 
     // 4. Construit le lien de reset
     const resetLink = `${APP_URL}?reset=${resetToken}`;
-    console.log('Reset link généré');
 
     // 5. Appelle le webhook Make
-    console.log('Appel webhook Make:', MAKE_WEBHOOK_RESET);
     try {
-      const webhookRes = await fetch(MAKE_WEBHOOK_RESET, {
+      await fetch(MAKE_WEBHOOK_RESET, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -64,17 +77,17 @@ module.exports = async function handler(req, res) {
           reset_link: resetLink
         })
       });
-      const webhookBody = await webhookRes.text();
-      console.log('Make webhook status:', webhookRes.status);
-      console.log('Make webhook response:', webhookBody);
     } catch (webhookErr) {
-      console.error('Make webhook fetch error:', webhookErr.message);
+      console.error('Make webhook error:', webhookErr.message);
     }
 
-    return res.status(200).json({ success: true });
+    return sendJSON(res, 200, { success: true });
 
   } catch (err) {
     console.error('Forgot password error:', err);
-    return res.status(500).json({ error: 'Erreur serveur', detail: err.message });
+    return sendJSON(res, 500, { error: 'Erreur serveur', detail: err.message });
   }
-};
+}
+
+handler.config = { api: { bodyParser: false } };
+module.exports = handler;
