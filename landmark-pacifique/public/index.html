@@ -1460,7 +1460,7 @@ async function getCfg() {
 }
 
 const DEF = [
-  {id:1, animateur:"", titre:"", date:"", heure:"", heureFin:"", animateurEmail:"", ccDate:"", ccHeure:"", ccHeureFin:""},
+  {id:1, animateur:"", titre:"", date:"", heure:"", heureFin:"", animateurEmail:"", ccDate:"", ccHeure:"", ccHeureFin:"", zoomIntro:"https://landmark-pacifique-fr.zoom.us/j/88623167343", zoomCC:"https://landmarkworldwide.zoom.us/j/96759943131"},
 ];
 // ── NAVIGATION ────────────────────────────────────────────────────────────────
 function goPage(id){
@@ -2344,7 +2344,7 @@ function draftUpdate(i,k,v){
 function addIntro(){
   if(!draft){ alert("Veuillez patienter, chargement en cours."); return; }
   const newId=Date.now();
-  draft.push({id:newId,animateur:"",titre:"",date:"",heure:"",heureFin:"",animateurEmail:"",ccDate:"",ccHeure:"",ccHeureFin:""});
+  draft.push({id:newId,animateur:"",titre:"",date:"",heure:"",heureFin:"",animateurEmail:"",ccDate:"",ccHeure:"",ccHeureFin:"",zoomIntro:"https://landmark-pacifique-fr.zoom.us/j/88623167343",zoomCC:"https://landmarkworldwide.zoom.us/j/96759943131"});
   const wrap=document.getElementById("admin-forms");
   wrap.appendChild(makeAdminForm(draft[draft.length-1],draft.length-1));
 }
@@ -2460,7 +2460,7 @@ async function saveCilfOne(i){
 // ── PILF ──────────────────────────────────────────────────────────────────────
 var pilfDraft = null;
 var DEF_PILF = [
-  {id:1, animateur:"", titre:"", date:"", heure:"", heureFin:"", animateurEmail:"", ccDate:"", ccHeure:"", ccHeureFin:""},
+  {id:1, animateur:"", titre:"", date:"", heure:"", heureFin:"", animateurEmail:"", ccDate:"", ccHeure:"", ccHeureFin:"", zoomIntro:"https://landmark-pacifique-fr.zoom.us/j/88623167343", zoomCC:"https://landmarkworldwide.zoom.us/j/96759943131"},
 ];
 async function getPilfIntros() {
   try { return await publicFetch('/api/intros?slug=pilf'); }
@@ -2665,7 +2665,7 @@ function pilfUpdate(i, k, v){
 
 function addPilfIntro(){
   if(!pilfDraft) pilfDraft = getPilfIntros().map(o=>({...o}));
-  pilfDraft.push({id:Date.now(),animateur:"",titre:"",date:"",heure:"",heureFin:"",animateurEmail:""});
+  pilfDraft.push({id:Date.now(),animateur:"",titre:"",date:"",heure:"",heureFin:"",animateurEmail:"",zoomIntro:"https://landmark-pacifique-fr.zoom.us/j/88623167343",zoomCC:"https://landmarkworldwide.zoom.us/j/96759943131"});
   const wrap = document.getElementById('pilf-forms');
   wrap.appendChild(makePilfForm(pilfDraft[pilfDraft.length-1], pilfDraft.length-1));
 }
