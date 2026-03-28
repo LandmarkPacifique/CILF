@@ -31,7 +31,9 @@ module.exports = async function handler(req, res) {
         return res.status(401).json({ error: 'Token invalide' });
       }
 
-      if (payload.role !== 'admin' && payload.role !== 'leader') {
+      // ✅ CORRECTION : ajout de 'superadmin' dans les rôles autorisés
+      const allowedRoles = ['superadmin', 'admin', 'leader'];
+      if (!allowedRoles.includes(payload.role)) {
         return res.status(403).json({ error: 'Accès refusé' });
       }
 
