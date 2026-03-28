@@ -688,26 +688,6 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
 
       <!-- Panneau : Utilisateurs admin -->
       <div id="stab-users" class="stab-panel active-stab">
-        <div class="admin-card" id="add-user-block">
-          <label class="fl" style="margin-top:0">Ajouter un utilisateur <span style="font-size:11px;color:#7a8a9a;font-weight:400">(Super Admin uniquement)</span></label>
-          <div style="display:flex;flex-direction:column;gap:8px;max-width:400px">
-            <input type="text"  class="ai" id="cfg-new-name"  placeholder="Prénom Nom">
-            <input type="email" class="ai" id="cfg-new-email" placeholder="email@example.com">
-            <input type="password" class="ai" id="cfg-new-pw" placeholder="Mot de passe">
-            <select class="ai" id="cfg-new-role" style="padding:9px 12px;border-radius:8px;border:1px solid #ddd;font-family:inherit">
-              <option value="utilisateur">Utilisateur</option>
-              <option value="superadmin">Super Admin</option>
-            </select>
-            <select class="ai" id="cfg-new-fonction" style="padding:9px 12px;border-radius:8px;border:1px solid #ddd;font-family:inherit">
-              <option value="">— Fonction (obligatoire) —</option>
-              <option value="leader_intro">Leader d'introduction</option>
-              <option value="gradue">Gradué</option>
-            </select>
-            <button class="copy-btn" onclick="addUser()" style="padding:9px 18px;align-self:flex-start">Ajouter</button>
-          </div>
-          <p id="cfg-user-msg" style="margin-top:8px;font-size:13px;display:none"></p>
-        </div>
-
         <!-- Liste des leaders -->
         <div class="admin-card" style="margin-top:16px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
@@ -2766,10 +2746,6 @@ async function loadLeadersList(){
               <label class="fl" style="margin-top:0;font-size:12px">Téléphone (optionnel)</label>
               <input type="tel" class="ai" id="leader-tel-${u.id||u.email}" value="${u.telephone||''}" style="font-size:13px;padding:7px 10px">
             </div>
-            <div style="grid-column:1/-1">
-              <label class="fl" style="margin-top:0;font-size:12px">Nouveau mot de passe <span style="color:#9aabb8">(laisser vide pour ne pas changer)</span></label>
-              <input type="password" class="ai" id="leader-pw-${u.id||u.email}" placeholder="Minimum 6 caractères" style="font-size:13px;padding:7px 10px">
-            </div>
             <div>
               <label class="fl" style="margin-top:0;font-size:12px">Rôle</label>
               <select class="ai" id="leader-role-${u.id||u.email}" style="font-size:13px;padding:7px 10px;border-radius:8px;border:1px solid #ddd;font-family:inherit">
@@ -2914,10 +2890,6 @@ async function loadAllGradues(){
             <div>
               <label class="fl" style="margin-top:0;font-size:12px">Téléphone (optionnel)</label>
               <input type="tel" class="ai" id="edit-tel-${u.id||u.email}" value="${u.telephone||''}" style="font-size:13px;padding:7px 10px">
-            </div>
-            <div>
-              <label class="fl" style="margin-top:0;font-size:12px">Nouveau mot de passe</label>
-              <input type="password" class="ai" id="edit-pw-${u.id||u.email}" placeholder="Laisser vide = inchangé" style="font-size:13px;padding:7px 10px">
             </div>
             <div>
               <label class="fl" style="margin-top:0;font-size:12px">Rôle</label>
