@@ -2744,6 +2744,7 @@ async function loadLeadersList(){
           </div>
           <div class="user-row-actions">
             <button class="btn-edit-user" onclick="toggleEditLeader('${u.id||u.email}')">✎ Modifier</button>
+            <button class="btn-edit-user" style="background:#fff8e1;color:#b45309;border-color:#fcd34d" onclick="sendResetPassword('${u.id||u.email}','${(u.name||'').replace(/'/g,"\\'")}')">🔑 Reset MDP</button>
             ${delBtn}
           </div>
         </div>
@@ -2892,6 +2893,7 @@ async function loadAllGradues(){
           <div class="user-row-actions">
             ${(u.status==='pending'||u.approved===false||u.validated===false) ? `<button class="btn-approve" onclick="approveUser('${u.id||u.email}','${(u.email||'').replace(/'/g,"\\'")}')">✓ Approuver</button>` : ''}
             <button class="btn-edit-user" onclick="toggleEditGradue('${u.id||u.email}')">✎ Modifier</button>
+            <button class="btn-edit-user" style="background:#fff8e1;color:#b45309;border-color:#fcd34d" onclick="sendResetPassword('${u.id||u.email}','${(u.name||'').replace(/'/g,"\\'")}')">🔑 Reset MDP</button>
             <button class="btn-delete-user" onclick="deleteUserConfirm('${u.id||u.email}','${(u.name||'').replace(/'/g,"\\'")}')">Supprimer</button>
           </div>
         </div>
@@ -3070,6 +3072,22 @@ async function addUser(){
   }
 }
 
+// ── SEND RESET PASSWORD (admin) ───────────────────────────────────────────────
+async function sendResetPassword(userId, userName){
+  if(!confirm(`Envoyer un email de réinitialisation de mot de passe à ${userName} ?`)) return;
+  try {
+    const res = await apiFetch('/api/users', {
+      method: 'POST',
+      body: JSON.stringify({ action: 'reset_password', userId })
+    });
+    const data = await res.json();
+    if(!res.ok){ alert(data.error || 'Erreur lors de l\'envoi.'); return; }
+    alert(`✅ Email de réinitialisation envoyé à ${userName}.`);
+  } catch(e) {
+    alert('Erreur réseau, réessayez.');
+  }
+}
+
 // ── RESET PASSWORD ────────────────────────────────────────────────────────────
 async function doResetPassword(){
   const token = document.getElementById('reset-token-hidden').value;
@@ -3086,7 +3104,7 @@ async function doResetPassword(){
     const res = await fetch(API_BASE + '/api/reset-password', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ token, password: pwd })
+      body: JSON.stringify({ token, new_password: pwd })
     });
     const data = await res.json();
     if(!res.ok){ err.textContent = data.error||'Lien invalide ou expiré.'; err.style.display='block'; btn.disabled=false; btn.textContent='Enregistrer le nouveau mot de passe'; return; }
