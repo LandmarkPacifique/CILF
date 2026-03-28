@@ -23,7 +23,7 @@ module.exports = async function handler(req, res) {
     return res.status(401).json({ error: 'Token invalide ou expiré' });
   }
 
-  if (payload.role !== 'superadmin' && payload.role !== 'admin') {
+  if (payload.role !== 'superadmin') {
     return res.status(403).json({ error: 'Accès réservé aux administrateurs' });
   }
 
@@ -54,9 +54,6 @@ module.exports = async function handler(req, res) {
   // ── SUPPRIMER ────────────────────────────────────────────────────────────────
   if (action === 'delete') {
     if (!userId) return res.status(400).json({ error: 'userId requis' });
-    if (payload.role !== 'superadmin') {
-      return res.status(403).json({ error: 'Seul un super admin peut supprimer un utilisateur' });
-    }
     try {
       await sql`DELETE FROM users WHERE id = ${userId}`;
       return res.status(200).json({ success: true });
@@ -72,8 +69,6 @@ module.exports = async function handler(req, res) {
 
     try {
       if (password) {
-        // ✅ CORRECTION : mise à jour directe sans COALESCE pour name et email
-        // COALESCE empêchait la mise à jour car les valeurs étaient interprétées comme null
         await sql`
           UPDATE users SET
             name          = ${name},
@@ -100,7 +95,6 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ success: true });
     } catch (err) {
       console.error('Edit error:', err);
-      // Gestion de l'email déjà utilisé
       if (err.message.includes('unique') || err.message.includes('duplicate')) {
         return res.status(409).json({ error: 'Cet email est déjà utilisé par un autre compte' });
       }
@@ -112,7 +106,7 @@ module.exports = async function handler(req, res) {
   if (!name || !email || !password || !role) {
     return res.status(400).json({ error: 'Tous les champs sont requis' });
   }
-  if (!['superadmin', 'admin', 'utilisateur', 'gradue'].includes(role)) {
+  if (!['superadmin', 'utilisateur', 'gradue'].includes(role)) {
     return res.status(400).json({ error: 'Rôle invalide' });
   }
   if (role === 'superadmin' && payload.role !== 'superadmin') {
