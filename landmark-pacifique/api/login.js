@@ -31,14 +31,16 @@ module.exports = async function handler(req, res) {
 
     const user = result[0];
 
-    // ✅ Vérification du statut de validation
+    // Vérification du statut de validation
     if (user.approved === false || user.approved === null) {
       return res.status(403).json({ error: 'Votre compte est en attente de validation par un administrateur.' });
     }
 
+    // ✅ CORRECTION : ajout de expiresIn pour que le token ait une date d'expiration valide
     const token = jwt.sign(
       { id: user.id, role: user.role, name: user.name, email },
-      process.env.JWT_SECRET
+      process.env.JWT_SECRET,
+      { expiresIn: '30d' }
     );
 
     return res.status(200).json({
