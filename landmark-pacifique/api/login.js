@@ -1,7 +1,5 @@
-// api/login.js
 const { neon } = require('@neondatabase/serverless');
 const jwt = require('jsonwebtoken');
-
 const sql = neon(process.env.DATABASE_URL);
 
 async function parseBody(req) {
@@ -16,20 +14,26 @@ async function parseBody(req) {
   });
 }
 
+function sendJSON(res, status, obj) {
+  const body = Buffer.from(JSON.stringify(obj), 'utf-8');
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('Content-Length', body.length);
+  res.status(status).end(body);
+}
+
 async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Méthode non autorisée' });
+    return sendJSON(res, 405, { error: 'Méthode non autorisée' });
   }
 
   const { email, password } = await parseBody(req);
-
   if (!email || !password) {
-    return res.status(400).json({ error: 'Email et mot de passe requis' });
+    return sendJSON(res, 400, { error: 'Email et mot de passe requis' });
   }
 
   try {
@@ -41,13 +45,13 @@ async function handler(req, res) {
     `;
 
     if (result.length === 0) {
-      return res.status(401).json({ error: 'Identifiants incorrects' });
+      return sendJSON(res, 401, { error: 'Identifiants incorrects' });
     }
 
     const user = result[0];
 
     if (user.approved === false || user.approved === null) {
-      return res.status(403).json({
+      return sendJSON(res, 403, {
         error: 'Votre compte est en attente de validation par un administrateur.'
       });
     }
@@ -58,7 +62,7 @@ async function handler(req, res) {
       { expiresIn: '30d' }
     );
 
-    return res.status(200).json({
+    return sendJSON(res, 200, {
       token,
       role: user.role,
       name: user.name,
@@ -69,7 +73,7 @@ async function handler(req, res) {
 
   } catch (err) {
     console.error('Login error:', err);
-    return res.status(500).json({ error: 'Erreur serveur', detail: err.message });
+    return sendJSON(res, 500, { error: 'Erreur serveur', detail: err.message });
   }
 }
 
