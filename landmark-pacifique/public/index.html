@@ -1306,7 +1306,6 @@ function enterAdmin(role, name){
   const fonction = extra.fonction || null;
   const isLeader = (fonction === 'leader_intro');
   const isSuperAdmin = (role === 'superadmin');
-  const isAdmin = false; // rôle admin supprimé
 
   // Mémoriser pour usage dans les formulaires
   window._sessionFonction = fonction;
@@ -1352,14 +1351,6 @@ function enterAdmin(role, name){
 
   goPage('page-admin');
   renderAdmin();
-
-  // Admin pur (pas leader, pas superadmin) : aller directement sur Paramètres
-  if(isAdmin && !isLeader){
-    setTimeout(function(){
-      var settingsBtn = document.getElementById('tab-btn-settings');
-      if(settingsBtn) switchTab('settings', settingsBtn);
-    }, 50);
-  }
 
   if(role === 'superadmin') loadPendingBadge();
   else { const badge = document.getElementById('pending-badge'); if(badge) badge.style.display='none'; }
@@ -1648,7 +1639,7 @@ async function fillLeaderSelect(type, i, currentName){
   const users = await getLeadersList();
   const sel = document.getElementById(`leader-${type}-${i}`);
   if(!sel) return;
-  // Filtrer par fonction leader_intro ou role admin/superadmin sans fonction définie (rétrocompatibilité)
+  // Filtrer : seuls les utilisateurs ayant la fonction leader_intro
   const leaders = users.filter(u => u.fonction === 'leader_intro');
   leaders.forEach(u => {
     const opt = document.createElement('option');
@@ -1680,7 +1671,7 @@ function filterLeaderSuggestions(type, i, query){
   suggestionsEl.innerHTML = filtered.map(u => `
     <div style="padding:9px 14px;cursor:pointer;font-size:13px;color:var(--navy-deep);border-bottom:1px solid var(--cream-2)"
       onmousedown="selectLeaderSuggestion('${type}',${i},'${(u.name||'').replace(/'/g,"\\'")}','${(u.email||'').replace(/'/g,"\\'")}')">
-      ${u.name||'—'} <span style="font-size:11px;color:#9aabb8">${u.fonction ? '('+u.fonction === 'leader_intro' ? "Leader d'introduction" : u.fonction === 'gradue' ? 'Gradué' : u.fonction.replace('_',' ')+')' : u.role}</span>
+      ${u.name||'—'} <span style="font-size:11px;color:#9aabb8">${u.fonction ? '(' + (u.fonction === 'leader_intro' ? "Leader d'introduction" : u.fonction === 'gradue' ? 'Gradué' : u.fonction.replace('_',' ')) + ')' : u.role}</span>
     </div>`).join('');
   suggestionsEl.style.display = 'block';
 }
@@ -2695,7 +2686,7 @@ async function loadLeadersList(){
       if(role==='gradue') return {label:'Gradué', bg:'#f0fdf4', color:'#15803d', border:'#bbf7d0'};
       return {label:'Utilisateur', bg:'#e8f8f0', color:'#1a9e6e', border:'#b7e8d2'};
     }
-    const order = {superadmin:0, admin:1, leader:1, utilisateur:2, gradue:2};
+    const order = {superadmin:0, utilisateur:1, gradue:1};
     const sorted = [...list].sort((a,b) => (order[a.role]??3) - (order[b.role]??3));
     const curSession = getSession();
     const isSuperAdmin = curSession && curSession.role === 'superadmin';
