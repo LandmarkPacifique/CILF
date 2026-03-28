@@ -19,7 +19,7 @@ module.exports = async function handler(req, res) {
 
   try {
     const result = await sql`
-      SELECT id, role, name, pid, telephone, approved
+      SELECT id, role, name, pid, telephone, fonction, approved
       FROM users
       WHERE email = ${email}
         AND password_hash = crypt(${password}, password_hash)
@@ -31,12 +31,12 @@ module.exports = async function handler(req, res) {
 
     const user = result[0];
 
-    // Vérification du statut de validation
     if (user.approved === false || user.approved === null) {
-      return res.status(403).json({ error: 'Votre compte est en attente de validation par un administrateur.' });
+      return res.status(403).json({
+        error: 'Votre compte est en attente de validation par un administrateur.'
+      });
     }
 
-    // ✅ CORRECTION : ajout de expiresIn pour que le token ait une date d'expiration valide
     const token = jwt.sign(
       { id: user.id, role: user.role, name: user.name, email },
       process.env.JWT_SECRET,
@@ -48,7 +48,8 @@ module.exports = async function handler(req, res) {
       role: user.role,
       name: user.name,
       pid: user.pid || null,
-      telephone: user.telephone || null
+      telephone: user.telephone || null,
+      fonction: user.fonction || null
     });
 
   } catch (err) {
