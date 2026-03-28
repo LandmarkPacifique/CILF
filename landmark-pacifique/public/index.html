@@ -2417,7 +2417,7 @@ function makePilfForm(intro, i) {
       <label class="fl">Lien Zoom — Creation Call <span style="font-size:10px;color:#aab8c4">(URL complète)</span></label>
       <input class="ai" type="url" value="${intro.zoomCC||''}" placeholder="https://zoom.us/j/…" oninput="pilfUpdate(${i},'zoomCC',this.value)" id="zoom-cc-pilf-${i}">
     </div>
-    <label class="fl">Nom &amp; prénom du gradué <span style="font-size:10px;color:#aab8c4">(gradué responsable de cette PILF)</span></label>
+    <label class="fl">Prénom &amp; nom du gradué <span style="font-size:10px;color:#aab8c4">(gradué de cette PILF)</span></label>
     <div style="position:relative">
       <input class="ai" type="text" id="pilf-gradue-input-${i}" placeholder="Taper le prénom ou nom du gradué…" autocomplete="off"
         value="${intro.pilfGradueName||''}"
