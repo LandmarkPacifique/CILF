@@ -628,7 +628,6 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
       <p class="admin-desc">Modifiez, ajoutez ou supprimez des introductions au Landmark Forum. Les horaires calculés automatiquement. Vous pouvez ajouter autant d'introductions au Landmark Forum que nécessaire.</p>
       <div id="admin-forms"></div>
       <button class="add-intro-btn" onclick="addIntro()">+ Ajouter une introduction au Landmark Forum</button>
-      <button class="save-btn" id="save-btn" onclick="saveAll()">Enregistrer et publier</button>
       <div id="debug-panel" style="display:none;margin-top:16px;padding:12px 16px;background:#fff8e1;border:1px solid #ffc107;border-radius:8px;font-size:12px;font-family:monospace;color:#5a4000;white-space:pre-wrap;word-break:break-all;max-height:200px;overflow-y:auto"></div>
     </div>
 
@@ -842,9 +841,9 @@ function makeAdminForm(intro, i) {
       <div><label class="fl" style="margin-top:0">Date (TAH)</label>
         <input class="ai" type="date" value="${intro.date||''}" oninput="draftUpdate(${i},'date',this.value)"></div>
       <div><label class="fl" style="margin-top:0">Heure début (TAH)</label>
-        <input class="ai" type="time" value="${intro.heure||''}" oninput="draftUpdate(${i},'heure',this.value)" id="heure-cilf-${i}"></div>
+        <input class="ai" type="time" step="60" value="${intro.heure||''}" oninput="draftUpdate(${i},'heure',this.value)" id="heure-cilf-${i}"></div>
       <div><label class="fl" style="margin-top:0">Heure fin (TAH) <span style="font-size:10px;color:#aab8c4">(auto +2h30)</span></label>
-        <input class="ai" type="time" value="${hFinAuto}" readonly style="background:#f0f4f8;color:#7a8a9a;cursor:not-allowed" id="heureFin-cilf-${i}"></div>
+        <input class="ai" type="time" step="60" value="${hFinAuto}" readonly style="background:#f0f4f8;color:#7a8a9a;cursor:not-allowed" id="heureFin-cilf-${i}"></div>
       <div></div>
     </div>
     <div style="background:var(--cyan-pale);border:1px solid rgba(56,216,240,.2);border-radius:10px;padding:14px 16px;margin-top:14px">
@@ -853,9 +852,9 @@ function makeAdminForm(intro, i) {
         <div><label class="fl" style="margin-top:0">Date Creation Call (TAH)</label>
           <input class="ai" type="date" value="${intro.ccDate||''}" oninput="draftUpdate(${i},'ccDate',this.value)"></div>
         <div><label class="fl" style="margin-top:0">Heure début (TAH)</label>
-          <input class="ai" type="time" value="${intro.ccHeure||''}" oninput="draftUpdate(${i},'ccHeure',this.value)" id="ccHeure-cilf-${i}"></div>
+          <input class="ai" type="time" step="60" value="${intro.ccHeure||''}" oninput="draftUpdate(${i},'ccHeure',this.value)" id="ccHeure-cilf-${i}"></div>
         <div><label class="fl" style="margin-top:0">Heure fin (TAH) <span style="font-size:10px;color:#aab8c4">(auto +1h)</span></label>
-          <input class="ai" type="time" value="${ccHFinAuto}" readonly style="background:#f0f4f8;color:#7a8a9a;cursor:not-allowed" id="ccHeureFin-cilf-${i}"></div>
+          <input class="ai" type="time" step="60" value="${ccHFinAuto}" readonly style="background:#f0f4f8;color:#7a8a9a;cursor:not-allowed" id="ccHeureFin-cilf-${i}"></div>
         <div></div>
       </div>
     </div>
@@ -2431,9 +2430,9 @@ function makePilfForm(intro, i) {
       <div><label class="fl" style="margin-top:0">Date (TAH)</label>
         <input class="ai" type="date" value="${intro.date||''}" oninput="pilfUpdate(${i},'date',this.value)"></div>
       <div><label class="fl" style="margin-top:0">Heure début (TAH)</label>
-        <input class="ai" type="time" value="${intro.heure||''}" oninput="pilfUpdate(${i},'heure',this.value)" id="heure-pilf-${i}"></div>
+        <input class="ai" type="time" step="60" value="${intro.heure||''}" oninput="pilfUpdate(${i},'heure',this.value)" id="heure-pilf-${i}"></div>
       <div><label class="fl" style="margin-top:0">Heure fin (TAH) <span style="font-size:10px;color:#aab8c4">(auto +2h30)</span></label>
-        <input class="ai" type="time" value="${hFinAuto}" readonly style="background:#f0f4f8;color:#7a8a9a;cursor:not-allowed" id="heureFin-pilf-${i}"></div>
+        <input class="ai" type="time" step="60" value="${hFinAuto}" readonly style="background:#f0f4f8;color:#7a8a9a;cursor:not-allowed" id="heureFin-pilf-${i}"></div>
       <div></div>
     </div>
     <div style="background:var(--cyan-pale);border:1px solid rgba(56,216,240,.2);border-radius:10px;padding:14px 16px;margin-top:14px">
@@ -2442,9 +2441,9 @@ function makePilfForm(intro, i) {
         <div><label class="fl" style="margin-top:0">Date Creation Call (TAH)</label>
           <input class="ai" type="date" value="${intro.ccDate||''}" oninput="pilfUpdate(${i},'ccDate',this.value)"></div>
         <div><label class="fl" style="margin-top:0">Heure début (TAH)</label>
-          <input class="ai" type="time" value="${intro.ccHeure||''}" oninput="pilfUpdate(${i},'ccHeure',this.value)" id="ccHeure-pilf-${i}"></div>
+          <input class="ai" type="time" step="60" value="${intro.ccHeure||''}" oninput="pilfUpdate(${i},'ccHeure',this.value)" id="ccHeure-pilf-${i}"></div>
         <div><label class="fl" style="margin-top:0">Heure fin (TAH) <span style="font-size:10px;color:#aab8c4">(auto +1h)</span></label>
-          <input class="ai" type="time" value="${ccHFinAuto}" readonly style="background:#f0f4f8;color:#7a8a9a;cursor:not-allowed" id="ccHeureFin-pilf-${i}"></div>
+          <input class="ai" type="time" step="60" value="${ccHFinAuto}" readonly style="background:#f0f4f8;color:#7a8a9a;cursor:not-allowed" id="ccHeureFin-pilf-${i}"></div>
         <div></div>
       </div>
     </div>
