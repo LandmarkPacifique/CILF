@@ -4,15 +4,12 @@ const jwt = require('jsonwebtoken');
 
 const sql = neon(process.env.DATABASE_URL);
 
-export const config = { api: { bodyParser: false } };
-
 async function parseBody(req) {
   return new Promise((resolve, reject) => {
-    let data = '';
-    req.setEncoding('utf-8');
-    req.on('data', chunk => { data += chunk; });
+    let data = Buffer.alloc(0);
+    req.on('data', chunk => { data = Buffer.concat([data, chunk]); });
     req.on('end', () => {
-      try { resolve(JSON.parse(data)); }
+      try { resolve(JSON.parse(data.toString('utf-8'))); }
       catch { resolve({}); }
     });
     req.on('error', reject);
@@ -25,7 +22,7 @@ function getToken(req) {
   return raw || req.headers['x-admin-token'] || null;
 }
 
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-admin-token');
@@ -58,7 +55,8 @@ module.exports = async function handler(req, res) {
 
   // POST — met à jour le profil
   if (req.method === 'POST') {
-    const { name, telephone, pid, password, new_password } = await parseBody(req);
+    const body = await parseBody(req);
+    const { name, telephone, pid, password, new_password } = body;
 
     if (pid && !/^\d{7}$/.test(pid)) {
       return res.status(400).json({ error: 'Le PID doit contenir exactement 7 chiffres' });
@@ -104,4 +102,7 @@ module.exports = async function handler(req, res) {
   }
 
   return res.status(405).json({ error: 'Méthode non autorisée' });
-};
+}
+
+handler.config = { api: { bodyParser: false } };
+module.exports = handler;
