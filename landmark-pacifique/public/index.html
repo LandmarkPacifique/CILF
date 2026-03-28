@@ -1242,10 +1242,14 @@ async function openMonCompte(){
 
   // Si le cache est disponible, on l'utilise immédiatement (pas de délai ressenti)
   if(_profileCache){
-    document.getElementById('compte-first-input').value = _profileCache.first_name || '';
-    document.getElementById('compte-last-input').value  = _profileCache.last_name  || '';
-    document.getElementById('compte-tel-input').value   = _profileCache.telephone  || '';
-    document.getElementById('compte-pid-input').value   = _profileCache.pid        || '';
+    const _fi = document.getElementById('compte-first-input');
+    const _li = document.getElementById('compte-last-input');
+    const _ti = document.getElementById('compte-tel-input');
+    const _pi = document.getElementById('compte-pid-input');
+    if(_fi) _fi.value = _profileCache.first_name || '';
+    if(_li) _li.value = _profileCache.last_name  || '';
+    if(_ti) _ti.value = _profileCache.telephone  || '';
+    if(_pi) _pi.value = _profileCache.pid        || '';
     return;
   }
 
@@ -1307,7 +1311,6 @@ async function saveProfile(){
     window._graduePid = pid;
     window._gradueTelephone = telephone;
   } catch(e){ err.textContent='Erreur réseau.'; err.style.display='block'; }
-}
 }
 async function savePassword(){
   const password = document.getElementById('compte-pwd-old').value;
