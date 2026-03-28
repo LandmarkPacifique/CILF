@@ -4,6 +4,22 @@ const bcrypt = require('bcryptjs');
 
 const sql = neon(process.env.DATABASE_URL);
 
+// Désactiver le body parser automatique de Vercel
+export const config = { api: { bodyParser: false } };
+
+async function parseBody(req) {
+  return new Promise((resolve, reject) => {
+    let data = '';
+    req.setEncoding('utf-8');
+    req.on('data', chunk => { data += chunk; });
+    req.on('end', () => {
+      try { resolve(JSON.parse(data)); }
+      catch { resolve({}); }
+    });
+    req.on('error', reject);
+  });
+}
+
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -14,24 +30,15 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'Méthode non autorisée' });
   }
 
-  // Forcer le parsing UTF-8 si Vercel livre le body comme string brute
-  let body = req.body || {};
-  if (typeof body === 'string') {
-    try { body = JSON.parse(Buffer.from(body, 'utf-8').toString('utf-8')); }
-    catch { body = {}; }
-  }
-
-  const { name, email, password, pid, telephone, fonction } = body;
+  const { name, email, password, pid, telephone, fonction } = await parseBody(req);
 
   if (!name || !email || !password) {
     return res.status(400).json({ error: 'Nom, email et mot de passe requis' });
   }
 
-  // Tous les comptes publics sont créés en "utilisateur", en attente de validation
   const userRole = 'utilisateur';
   const userFonction = ['leader_intro', 'gradue'].includes(fonction) ? fonction : null;
 
-  // Validation PID (7 chiffres) si fourni
   if (pid && !/^\d{7}$/.test(pid)) {
     return res.status(400).json({ error: 'Le PID doit contenir exactement 7 chiffres' });
   }
