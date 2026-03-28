@@ -2371,6 +2371,21 @@ function lmConfirm(msg, okLabel) {
   });
 }
 
+async function _autoSaveCilf() {
+  try {
+    const session = getSession();
+    const modifiedBy = session ? session.name : null;
+    const modifiedById = session ? session.id : null;
+    const modifiedAt = new Date().toISOString();
+    await apiFetch('/api/intros', { method:'POST', body: JSON.stringify({ slug:'cilf', intros:draft, modified_by:modifiedBy, modified_by_id:modifiedById, modified_at:modifiedAt }) });
+    draft = null;
+    renderAdmin();
+  } catch(e) {
+    console.error('[autoSaveCilf]', e);
+    alert('Erreur lors de la sauvegarde : ' + (e.message || e));
+  }
+}
+
 function removeIntro(btnEl){
   if(!draft){ console.warn("draft non initialisé"); return; }
   var card = btnEl.closest('.admin-card');
@@ -2382,6 +2397,7 @@ function removeIntro(btnEl){
     draft.splice(i, 1);
     wrap.innerHTML = '';
     draft.forEach(function(intro, j){ wrap.appendChild(makeAdminForm(intro, j)); });
+    _autoSaveCilf();
   });
 }
 window._removeIntro = function(btnEl){
@@ -2396,6 +2412,7 @@ window._removeIntro = function(btnEl){
     draft.splice(i, 1);
     wrap.innerHTML = '';
     draft.forEach(function(intro, j){ wrap.appendChild(makeAdminForm(intro, j)); });
+    _autoSaveCilf();
   });
 };
 async function saveAll(){
@@ -2670,6 +2687,21 @@ function addPilfIntro(){
   wrap.appendChild(makePilfForm(pilfDraft[pilfDraft.length-1], pilfDraft.length-1));
 }
 
+async function _autoSavePilf() {
+  try {
+    const session = getSession();
+    const modifiedBy = session ? session.name : null;
+    const modifiedById = session ? session.id : null;
+    const modifiedAt = new Date().toISOString();
+    await apiFetch('/api/intros', { method:'POST', body: JSON.stringify({ slug:'pilf', intros:pilfDraft, modified_by:modifiedBy, modified_by_id:modifiedById, modified_at:modifiedAt }) });
+    pilfDraft = null;
+    renderPilf();
+  } catch(e) {
+    console.error('[autoSavePilf]', e);
+    alert('Erreur lors de la sauvegarde : ' + (e.message || e));
+  }
+}
+
 window._removePilf = function(btnEl){
   if(!pilfDraft){ console.warn("pilfDraft non initialisé"); return; }
   var card = btnEl.closest('.admin-card');
@@ -2681,6 +2713,7 @@ window._removePilf = function(btnEl){
     pilfDraft.splice(i, 1);
     wrap.innerHTML = '';
     pilfDraft.forEach(function(intro, j){ wrap.appendChild(makePilfForm(intro, j)); });
+    _autoSavePilf();
   });
 };
 
