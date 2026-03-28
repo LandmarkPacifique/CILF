@@ -519,31 +519,16 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
         </div>
         <label class="fl" style="text-align:left;display:block;margin-top:12px">Email</label>
         <input type="email" id="reg-email" class="ai" placeholder="votre@email.com">
-        <label class="fl" style="text-align:left;display:block;margin-top:12px">PID - OPTIONNEL (Votre référence chez Landmark - 7 chiffres)</label>
+        <label class="fl" style="text-align:left;display:block;margin-top:12px">PID (Votre référence chez Landmark - 7 chiffres)</label>
         <input type="text" id="reg-pid" class="ai" placeholder="1234567" maxlength="7">
+        <p style="font-size:11px;color:#9aabb8;margin-top:4px;margin-bottom:0">Optionnel</p>
         <label class="fl" style="text-align:left;display:block;margin-top:12px">Téléphone</label>
         <input type="tel" id="reg-tel" class="ai" placeholder="+689 00 00 00 00">
         <label class="fl" style="text-align:left;display:block;margin-top:12px">Mot de passe</label>
         <input type="password" id="reg-password" class="ai" placeholder="Minimum 6 caractères">
         <label class="fl" style="text-align:left;display:block;margin-top:12px">Confirmer le mot de passe</label>
         <input type="password" id="reg-password2" class="ai" placeholder="Répétez le mot de passe">
-        <label class="fl" style="text-align:left;display:block;margin-top:16px">Profil</label>
-        <div style="display:flex;gap:10px;margin-bottom:4px">
-          <label style="flex:1;display:flex;align-items:center;gap:8px;background:#f4f7fb;border:1.5px solid var(--cream-3);border-radius:10px;padding:10px 14px;cursor:pointer" id="reg-profile-gradue-lbl">
-            <input type="radio" name="reg-profile" id="reg-profile-gradue" value="gradue" checked style="accent-color:var(--cyan);width:16px;height:16px">
-            <div>
-              <div style="font-size:13px;font-weight:600;color:var(--navy-deep)">Gradué</div>
-              <div style="font-size:11px;color:#7a8a9a">Je souhaite m'inscrire aux introductions</div>
-            </div>
-          </label>
-          <label style="flex:1;display:flex;align-items:center;gap:8px;background:#f4f7fb;border:1.5px solid var(--cream-3);border-radius:10px;padding:10px 14px;cursor:pointer" id="reg-profile-leader-lbl">
-            <input type="radio" name="reg-profile" id="reg-profile-leader" value="leader" style="accent-color:var(--cyan);width:16px;height:16px">
-            <div>
-              <div style="font-size:13px;font-weight:600;color:var(--navy-deep)">Leader</div>
-              <div style="font-size:11px;color:#7a8a9a">Je suis leader d'introduction</div>
-            </div>
-          </label>
-        </div>
+
         <p class="pw-error" id="reg-error" style="display:none"></p>
         <button class="login-btn" id="reg-btn" onclick="doRegister()">Créer mon compte</button>
       </div>
@@ -633,7 +618,7 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
       </div>
       <label class="fl" style="margin-top:12px">Téléphone</label>
       <input type="tel" id="compte-tel-input" class="form-input ai" placeholder="+689 00 00 00 00">
-      <label class="fl" style="margin-top:12px">PID - OPTIONNEL (Votre référence chez Landmark - 7 chiffres)</label>
+      <label class="fl" style="margin-top:12px">PID (Votre référence chez Landmark - 7 chiffres)</label>
       <input type="text" id="compte-pid-input" class="form-input ai" placeholder="1234567" maxlength="7">
       <p class="form-error" id="compte-info-error" style="display:none"></p>
       <p class="success-msg" id="compte-info-success">Informations mises à jour !</p>
@@ -1146,8 +1131,8 @@ async function doRegister(){
   if(pwd !== pwd2){ err.textContent='Les mots de passe ne correspondent pas.'; err.style.display='block'; return; }
   if(pwd.length < 6){ err.textContent='Le mot de passe doit contenir au moins 6 caractères.'; err.style.display='block'; return; }
   if(pid && !/^\d{7}$/.test(pid)){ err.textContent='Le PID doit contenir exactement 7 chiffres.'; err.style.display='block'; return; }
-  const profileEl = document.querySelector('input[name="reg-profile"]:checked');
-  const profileVal = profileEl ? profileEl.value : 'gradue';
+  const profileEl = null;
+  const profileVal = 'gradue';
   const btn = document.getElementById('reg-btn');
   btn.disabled=true; btn.textContent='Création…';
   try {
