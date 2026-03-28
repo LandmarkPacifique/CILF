@@ -679,7 +679,6 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
             <input type="password" class="ai" id="cfg-new-pw" placeholder="Mot de passe">
             <select class="ai" id="cfg-new-role" style="padding:9px 12px;border-radius:8px;border:1px solid #ddd;font-family:inherit">
               <option value="utilisateur">Utilisateur</option>
-              <option value="admin">Admin</option>
               <option value="superadmin">Super Admin</option>
             </select>
             <select class="ai" id="cfg-new-fonction" style="padding:9px 12px;border-radius:8px;border:1px solid #ddd;font-family:inherit">
@@ -1210,10 +1209,10 @@ async function openMonCompte(){
   if(!session) return;
   document.getElementById('compte-name').textContent = session.name || '';
   document.getElementById('compte-email').textContent = session.email || '';
-  document.getElementById('compte-badge').textContent = (session.role === 'gradue' || session.role === 'utilisateur') ? 'Utilisateur' : (session.role === 'admin' ? 'Admin' : 'Super Admin');
+  document.getElementById('compte-badge').textContent = (session.role === 'gradue' || session.role === 'utilisateur') ? 'Utilisateur' : 'Super Admin';
   // Affiche le bouton "← Admin" si l'utilisateur est admin ou leader
   const btnRetourAdmin = document.getElementById('btn-retour-admin');
-  if(btnRetourAdmin) btnRetourAdmin.style.display = (session.role === 'superadmin' || session.role === 'admin') ? '' : 'none';
+  if(btnRetourAdmin) btnRetourAdmin.style.display = (session.role === 'superadmin') ? '' : 'none';
 
   // Si le cache est disponible, on l'utilise immédiatement (pas de délai ressenti)
   if(_profileCache){
@@ -1307,7 +1306,7 @@ function enterAdmin(role, name){
   const fonction = extra.fonction || null;
   const isLeader = (fonction === 'leader_intro');
   const isSuperAdmin = (role === 'superadmin');
-  const isAdmin = (role === 'admin');
+  const isAdmin = false; // rôle admin supprimé
 
   // Mémoriser pour usage dans les formulaires
   window._sessionFonction = fonction;
@@ -1362,7 +1361,7 @@ function enterAdmin(role, name){
     }, 50);
   }
 
-  if(role === 'admin' || role === 'superadmin') loadPendingBadge();
+  if(role === 'superadmin') loadPendingBadge();
   else { const badge = document.getElementById('pending-badge'); if(badge) badge.style.display='none'; }
 }
 
@@ -1650,7 +1649,7 @@ async function fillLeaderSelect(type, i, currentName){
   const sel = document.getElementById(`leader-${type}-${i}`);
   if(!sel) return;
   // Filtrer par fonction leader_intro ou role admin/superadmin sans fonction définie (rétrocompatibilité)
-  const leaders = users.filter(u => u.fonction === 'leader_intro' || ((!u.fonction) && (u.role === 'admin' || u.role === 'superadmin')));
+  const leaders = users.filter(u => u.fonction === 'leader_intro');
   leaders.forEach(u => {
     const opt = document.createElement('option');
     opt.value = u.name;
@@ -1672,7 +1671,7 @@ async function fillLeaderSelect(type, i, currentName){
 function filterLeaderSuggestions(type, i, query){
   const suggestionsEl = document.getElementById(`leader-suggestions-${type}-${i}`);
   if(!suggestionsEl) return;
-  const leaders = (_leadersList || []).filter(u => u.fonction === 'leader_intro' || ((!u.fonction) && (u.role === 'admin' || u.role === 'superadmin')));
+  const leaders = (_leadersList || []).filter(u => u.fonction === 'leader_intro');
   const filtered = query.trim() === '' ? leaders : leaders.filter(u => (u.name||'').toLowerCase().includes(query.toLowerCase()));
   if(filtered.length === 0){
     suggestionsEl.style.display = 'none';
@@ -1681,7 +1680,7 @@ function filterLeaderSuggestions(type, i, query){
   suggestionsEl.innerHTML = filtered.map(u => `
     <div style="padding:9px 14px;cursor:pointer;font-size:13px;color:var(--navy-deep);border-bottom:1px solid var(--cream-2)"
       onmousedown="selectLeaderSuggestion('${type}',${i},'${(u.name||'').replace(/'/g,"\\'")}','${(u.email||'').replace(/'/g,"\\'")}')">
-      ${u.name||'—'} <span style="font-size:11px;color:#9aabb8">${u.fonction ? '('+u.fonction === 'leader_intro' ? "Leader d'introduction" : u.fonction.replace('_',' ')+')' : u.role}</span>
+      ${u.name||'—'} <span style="font-size:11px;color:#9aabb8">${u.fonction ? '('+u.fonction === 'leader_intro' ? "Leader d'introduction" : u.fonction === 'gradue' ? 'Gradué' : u.fonction.replace('_',' ')+')' : u.role}</span>
     </div>`).join('');
   suggestionsEl.style.display = 'block';
 }
@@ -1717,13 +1716,13 @@ function filterGradueSuggestions(i, query){
   const all = (_leadersList || []);
   // Filtrer : gradués, utilisateurs, admins et super admins, exclure le leadeur
   const gradues = all.filter(u =>
-    (u.role === 'gradue' || u.role === 'utilisateur' || u.role === 'admin' || u.role === 'superadmin') &&
+    (u.role === 'gradue' || u.role === 'utilisateur' || u.role === 'superadmin') &&
     u.name !== leaderName
   );
   const filtered = query.trim() === '' ? gradues : gradues.filter(u => (u.name||'').toLowerCase().includes(query.toLowerCase()));
   if(filtered.length === 0){ suggestionsEl.style.display='none'; return; }
   suggestionsEl.innerHTML = filtered.map(u => {
-    const roleLabel = u.role === 'superadmin' ? 'Super Admin' : u.role === 'admin' ? 'Admin' : '';
+    const roleLabel = u.role === 'superadmin' ? 'Super Admin' : '';
     return `
     <div style="padding:9px 14px;cursor:pointer;font-size:13px;color:var(--navy-deep);border-bottom:1px solid var(--cream-2)"
       onmousedown="selectGradueSuggestion(${i},'${(u.name||'').replace(/'/g,"\\'")}')">
@@ -2693,7 +2692,6 @@ async function loadLeadersList(){
     }
     function getRoleInfo(role){
       if(role==='superadmin') return {label:'Super Admin', bg:'#fde8e8', color:'#b91c1c', border:'#f5b7b7'};
-      if(role==='admin') return {label:'Admin', bg:'#e0eaff', color:'#2563eb', border:'#bcd0f7'};
       if(role==='gradue') return {label:'Gradué', bg:'#f0fdf4', color:'#15803d', border:'#bbf7d0'};
       return {label:'Utilisateur', bg:'#e8f8f0', color:'#1a9e6e', border:'#b7e8d2'};
     }
@@ -2704,7 +2702,7 @@ async function loadLeadersList(){
     container.innerHTML = sorted.map(u => {
       const r = getRoleInfo(u.role);
       const badgeHtml = `<span style="background:${r.bg};color:${r.color};border:1px solid ${r.border};border-radius:20px;padding:3px 10px;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;display:inline-block;margin-left:6px">${r.label}</span>`;
-      const fonctionBadge = u.fonction ? `<span style="background:#f0f4ff;color:#5a6a9a;border:1px solid #c8d4f0;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:500;display:inline-block;margin-left:4px">${u.fonction === 'leader_intro' ? "Leader d'introduction" : u.fonction.replace('_',' ')}</span>` : '';
+      const fonctionBadge = u.fonction ? `<span style="background:#f0f4ff;color:#5a6a9a;border:1px solid #c8d4f0;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:500;display:inline-block;margin-left:4px">${u.fonction === 'leader_intro' ? "Leader d'introduction" : u.fonction === 'gradue' ? 'Gradué' : u.fonction.replace('_',' ')}</span>` : '';
       const delBtn = isSuperAdmin ? `<button class="btn-delete-user" onclick="deleteLeaderConfirm('${u.id||u.email}','${(u.name||'').replace(/'/g,"\\'")}')">Supprimer</button>` : '';
       return `
       <div class="user-row" id="leader-row-${u.id||u.email}" style="flex-direction:column;align-items:stretch">
@@ -2744,7 +2742,6 @@ async function loadLeadersList(){
               <label class="fl" style="margin-top:0;font-size:12px">Rôle</label>
               <select class="ai" id="leader-role-${u.id||u.email}" style="font-size:13px;padding:7px 10px;border-radius:8px;border:1px solid #ddd;font-family:inherit">
                 <option value="utilisateur" ${(u.role==='utilisateur'||u.role==='gradue') ? 'selected' : ''}>Utilisateur</option>
-                <option value="admin" ${u.role==='admin' ? 'selected' : ''}>Admin</option>
                 <option value="superadmin" ${u.role==='superadmin' ? 'selected' : ''}>Super Admin</option>
               </select>
             </div>
@@ -2753,7 +2750,7 @@ async function loadLeadersList(){
               <select class="ai" id="leader-fonction-${u.id||u.email}" style="font-size:13px;padding:7px 10px;border-radius:8px;border:1px solid #ddd;font-family:inherit">
                 <option value="">— Aucune —</option>
                 <option value="leader_intro" ${u.fonction==='leader_intro' ? 'selected' : ''}>Leader d'introduction</option>
-                
+                <option value="gradue" ${u.fonction==='gradue' ? 'selected' : ''}>Gradué</option>
               </select>
             </div>
           </div>
@@ -2893,7 +2890,6 @@ async function loadAllGradues(){
               <label class="fl" style="margin-top:0;font-size:12px">Rôle</label>
               <select class="ai" id="edit-role-${u.id||u.email}" style="font-size:13px;padding:7px 10px;border-radius:8px;border:1px solid #ddd;font-family:inherit">
                 <option value="utilisateur" ${(u.role==='utilisateur'||u.role==='gradue'||!u.role) ? 'selected' : ''}>Utilisateur</option>
-                <option value="admin" ${u.role==='admin' ? 'selected' : ''}>Admin</option>
                 <option value="superadmin" ${u.role==='superadmin' ? 'selected' : ''}>Super Admin</option>
               </select>
             </div>
@@ -2902,7 +2898,7 @@ async function loadAllGradues(){
               <select class="ai" id="edit-fonction-${u.id||u.email}" style="font-size:13px;padding:7px 10px;border-radius:8px;border:1px solid #ddd;font-family:inherit">
                 <option value="">— Aucune —</option>
                 <option value="leader_intro" ${u.fonction==='leader_intro' ? 'selected' : ''}>Leader d'introduction</option>
-                
+                <option value="gradue" ${u.fonction==='gradue' ? 'selected' : ''}>Gradué</option>
               </select>
             </div>
           </div>
@@ -3233,8 +3229,8 @@ async function loadMaintenanceState() {
       } else {
         goPage('page-home');
       }
-    } else if(session.role === 'admin') {
-      // Admin → jamais bloqué par la maintenance
+    } else if(session.role === 'superadmin') {
+      // Super Admin → jamais bloqué par la maintenance (déjà géré au-dessus, pas de doublon)
       enterAdmin(session.role, session.name);
     } else {
       // Leader → bloqué si maintenance active
