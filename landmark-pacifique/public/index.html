@@ -1254,6 +1254,7 @@ async function openMonCompte(){
   const lastInput  = document.getElementById('compte-last-input');
   const telInput   = document.getElementById('compte-tel-input');
   const pidInput   = document.getElementById('compte-pid-input');
+  if(!firstInput || !lastInput || !telInput || !pidInput) return;
   firstInput.placeholder = 'Chargement…';
   lastInput.placeholder  = 'Chargement…';
   telInput.placeholder   = 'Chargement…';
