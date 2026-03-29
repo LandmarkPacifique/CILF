@@ -2,8 +2,6 @@
 const { neon } = require('@neondatabase/serverless');
 const crypto = require('crypto');
 const sql = neon(process.env.DATABASE_URL);
-
-const MAKE_WEBHOOK_RESET = process.env.MAKE_WEBHOOK_RESET || 'https://hook.us2.make.com/hwd31jmdqvpo3eoq5u04rjigdm2s9nxu';
 const APP_URL = process.env.APP_URL || 'https://www.landmark-pacifique.fr';
 
 async function parseBody(req) {
@@ -29,7 +27,6 @@ async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') {
     return sendJSON(res, 405, { error: 'Méthode non autorisée' });
@@ -42,12 +39,13 @@ async function handler(req, res) {
     const rows = await sql`
       SELECT id, name, role FROM users WHERE LOWER(email) = LOWER(${email})
     `;
+
+    // Sécurité : ne pas révéler si l'email existe ou non
     if (rows.length === 0) return sendJSON(res, 200, { success: true });
 
     const user = rows[0];
-
     const resetToken = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 3600 * 1000);
+    const expiresAt = new Date(Date.now() + 3600 * 1000); // 1 heure
 
     await sql`
       UPDATE users
@@ -57,25 +55,14 @@ async function handler(req, res) {
       WHERE id = ${user.id}
     `;
 
-    const resetLink = `${APP_URL}?reset=${resetToken}`;
-
-    try {
-      await fetch(MAKE_WEBHOOK_RESET, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type:       'forgot_password',
-          name:       user.name,
-          email:      email,
-          role:       user.role,
-          reset_link: resetLink
-        })
-      });
-    } catch (webhookErr) {
-      console.error('Make webhook error:', webhookErr.message);
-    }
-
-    return sendJSON(res, 200, { success: true });
+    // Retourne le token et les infos utilisateur au frontend
+    // C'est le frontend qui appellera le webhook Make principal pour envoyer l'email
+    return sendJSON(res, 200, {
+      success: true,
+      token: resetToken,
+      name:  user.name,
+      role:  user.role
+    });
 
   } catch (err) {
     console.error('Forgot password error:', err);
