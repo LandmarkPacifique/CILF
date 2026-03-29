@@ -665,6 +665,14 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
 
       <hr class="section-sep">
       <button class="copy-btn" onclick="logoutGradue()" style="width:100%;text-align:center;color:#e24b4a">Se déconnecter</button>
+
+      <hr class="section-sep">
+
+      <!-- Mes introductions -->
+      <p style="font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);margin-bottom:14px">Mes introductions</p>
+      <div id="compte-intros-list">
+        <p style="font-size:13px;color:#7a8a9a;text-align:center;padding:10px 0">Chargement…</p>
+      </div>
     </div>
   </div>
 </div>
@@ -1347,51 +1355,119 @@ async function openMonCompte(){
   const btnRetourAdmin = document.getElementById('btn-retour-admin');
   if(btnRetourAdmin) btnRetourAdmin.style.display = (session.role === 'superadmin' || (session.role === 'utilisateur' && (getSessionExtra().fonction === 'leader_intro'))) ? '' : 'none';
 
-  // Si le cache est disponible, on l'utilise immédiatement (pas de délai ressenti)
-  if(_profileCache){
-    const _fi = document.getElementById('compte-first-input');
-    const _li = document.getElementById('compte-last-input');
-    const _ti = document.getElementById('compte-tel-input');
-    const _pi = document.getElementById('compte-pid-input');
-    if(_fi) _fi.value = _profileCache.first_name || '';
-    if(_li) _li.value = _profileCache.last_name  || '';
-    if(_ti) _ti.value = _profileCache.telephone  || '';
-    if(_pi) _pi.value = _profileCache.pid        || '';
-    return;
-  }
-
-  // Indicateur de chargement sur les champs
+  // Chargement du profil (avec cache)
   const firstInput = document.getElementById('compte-first-input');
   const lastInput  = document.getElementById('compte-last-input');
   const telInput   = document.getElementById('compte-tel-input');
   const pidInput   = document.getElementById('compte-pid-input');
-  if(!firstInput || !lastInput || !telInput || !pidInput) return;
-  firstInput.placeholder = 'Chargement…';
-  lastInput.placeholder  = 'Chargement…';
-  telInput.placeholder   = 'Chargement…';
-  pidInput.placeholder   = 'Chargement…';
 
-  // Pré-remplit depuis l'API
-  try {
-    const res = await fetch(API_BASE + '/api/profile', {
-      headers:{ 'Authorization':'Bearer '+sessionStorage.getItem('lm_jwt') }
-    });
-    if(res.ok){
-      const data = await res.json();
-      _profileCache = data; // Mise en cache
-      firstInput.value = data.first_name || '';
-      lastInput.value  = data.last_name  || '';
-      telInput.value   = data.telephone  || '';
-      pidInput.value   = data.pid        || '';
+  if(_profileCache){
+    if(firstInput) firstInput.value = _profileCache.first_name || '';
+    if(lastInput)  lastInput.value  = _profileCache.last_name  || '';
+    if(telInput)   telInput.value   = _profileCache.telephone  || '';
+    if(pidInput)   pidInput.value   = _profileCache.pid        || '';
+  } else {
+    if(!firstInput || !lastInput || !telInput || !pidInput) return;
+    firstInput.placeholder = 'Chargement…';
+    lastInput.placeholder  = 'Chargement…';
+    telInput.placeholder   = 'Chargement…';
+    pidInput.placeholder   = 'Chargement…';
+    // Pré-remplit depuis l'API
+    try {
+      const res = await fetch(API_BASE + '/api/profile', {
+        headers:{ 'Authorization':'Bearer '+sessionStorage.getItem('lm_jwt') }
+      });
+      if(res.ok){
+        const data = await res.json();
+        _profileCache = data;
+        firstInput.value = data.first_name || '';
+        lastInput.value  = data.last_name  || '';
+        telInput.value   = data.telephone  || '';
+        pidInput.value   = data.pid        || '';
+      }
+    } catch(e){ console.error('profile fetch:', e); }
+    finally {
+      firstInput.placeholder = 'Prénom';
+      lastInput.placeholder  = 'Nom';
+      telInput.placeholder   = '+689 00 00 00 00';
+      pidInput.placeholder   = '1234567';
     }
-  } catch(e){ console.error('profile fetch:', e); }
-  finally {
-    firstInput.placeholder = 'Prénom';
-    lastInput.placeholder  = 'Nom';
-    telInput.placeholder   = '+689 00 00 00 00';
-    pidInput.placeholder   = '1234567';
+  }
+
+  // Toujours charger les introductions du gradué
+  if(session.email) loadComptIntros(session.email);
+}
+async function loadComptIntros(gradEmail) {
+  const el = document.getElementById('compte-intros-list');
+  if(!el) return;
+  el.innerHTML = '<p style="font-size:13px;color:#7a8a9a;text-align:center;padding:10px 0">Chargement…</p>';
+  try {
+    // Charger toutes les entrées du gradué depuis /api/guests
+    const all = await getAllGuests();
+    const mine = all.filter(g =>
+      g.grad_email && g.grad_email.toLowerCase() === gradEmail.toLowerCase()
+    );
+
+    if(mine.length === 0){
+      el.innerHTML = '<p style="font-size:13px;color:#7a8a9a;text-align:center;padding:10px 0">Aucune inscription enregistrée.</p>';
+      return;
+    }
+
+    // Dédoublonner par introduction_id (garder la plus récente)
+    const byIntro = {};
+    mine.forEach(g => {
+      const key = String(g.introduction_id);
+      if(!byIntro[key] || (g.timestamp||'') > (byIntro[key].timestamp||'')) byIntro[key] = g;
+    });
+    const unique = Object.values(byIntro);
+
+    // Trier par date d'intro (la plus récente en tête)
+    unique.sort((a, b) => (b.date||b.timestamp||'').localeCompare(a.date||a.timestamp||''));
+
+    // Séparer à venir / passées
+    const today = new Date().toISOString().slice(0,10);
+    const upcoming = unique.filter(g => (g.date||'') >= today);
+    const past     = unique.filter(g => (g.date||'') < today);
+
+    function renderCard(g) {
+      const isUpcoming = (g.date||'') >= today;
+      const typeBadge = g.type === 'solo'
+        ? '<span style="background:#e8f8f0;color:#1a9e6e;border:1px solid #b7e8d2;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">Solo</span>'
+        : '<span style="background:#f0f4ff;color:#5a6a9a;border:1px solid #c8d4f0;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">Avec invité</span>';
+      const statusDot = isUpcoming
+        ? '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#1a9e6e;margin-right:6px;vertical-align:middle"></span>'
+        : '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#aaa;margin-right:6px;vertical-align:middle"></span>';
+      const guestHtml = (g.type !== 'solo' && g.guest_name)
+        ? `<div style="font-size:12px;color:#5a6a7a;margin-top:4px">👤 Invité(e) : <strong>${g.guest_name}</strong>${g.guest_email ? ' · '+g.guest_email : ''}</div>`
+        : '';
+      return `
+        <div style="padding:12px;border:1px solid ${isUpcoming ? '#b7e8d2' : '#e0e0e0'};border-radius:10px;margin-bottom:10px;background:${isUpcoming ? '#f4fdf8' : '#fafafa'}">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+            <div style="font-size:13px;font-weight:600;color:var(--navy-deep)">${statusDot}${g.animateur||'—'}</div>
+            <div style="display:flex;gap:6px;align-items:center">${typeBadge}</div>
+          </div>
+          ${g.titre ? `<div style="font-size:12px;color:#7a8a9a;margin-top:4px">Thème : <em>${g.titre}</em></div>` : ''}
+          <div style="font-size:12px;color:#5a6a7a;margin-top:4px">📅 ${g.date_tah || g.date || '—'}</div>
+          ${guestHtml}
+        </div>`;
+    }
+
+    let html = '';
+    if(upcoming.length > 0){
+      html += `<p style="font-size:11px;font-weight:700;color:#1a9e6e;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">À venir (${upcoming.length})</p>`;
+      html += upcoming.map(renderCard).join('');
+    }
+    if(past.length > 0){
+      html += `<p style="font-size:11px;font-weight:700;color:#7a8a9a;letter-spacing:.08em;text-transform:uppercase;margin:${upcoming.length > 0 ? '16px' : '0'} 0 8px">Passées (${past.length})</p>`;
+      html += past.map(renderCard).join('');
+    }
+    el.innerHTML = html;
+  } catch(e){
+    el.innerHTML = '<p style="font-size:13px;color:#c0392b;text-align:center;padding:10px 0">Impossible de charger les introductions.</p>';
+    console.error('loadComptIntros:', e);
   }
 }
+
 async function saveProfile(){
   const firstName  = document.getElementById('compte-first-input').value.trim();
   const lastName   = toTitleCase(document.getElementById('compte-last-input').value.trim());
@@ -1768,6 +1844,7 @@ async function selectPilfIntro(id){
     });
     logToSheets("graduate",{prenom:fn,nom:ln,email:window._graduEmail,telephone:window._gradueTelephone||"",pays:"",animateur:intro.animateur,titre:intro.titre,date_tah:tah,introduction_id:intro.id});
     markGradRegistered(intro.id, window._graduEmail);
+    saveGuestRecord({type:'solo', grad_name:window._gradueName, grad_email:window._graduEmail, animateur:intro.animateur, titre:intro.titre, date:intro.date, date_tah:tah, introduction_id:intro.id});
   } catch(e){ console.error("selectPilfIntro direct:", e); }
 
   if(btn){ btn.disabled=false; btn.textContent="Je m'inscris →"; }
@@ -2045,6 +2122,7 @@ async function selectIntro(id){
     });
     logToSheets("graduate",{prenom:fn,nom:ln,email:window._graduEmail,telephone:window._gradueTelephone||"",pays:"",animateur:intro.animateur,titre:intro.titre,date_tah:tah,introduction_id:intro.id});
     markGradRegistered(intro.id, window._graduEmail);
+    saveGuestRecord({type:'solo', grad_name:window._gradueName, grad_email:window._graduEmail, animateur:intro.animateur, titre:intro.titre, date:intro.date, date_tah:tah, introduction_id:intro.id});
   } catch(e){ console.error("selectIntro direct:", e); }
 
   if(btn){ btn.disabled=false; btn.textContent="Je m'inscris →"; }
@@ -2312,6 +2390,7 @@ async function submitSolo(){
   btn.disabled=false;btn.textContent="Confirmer ma participation";
   logToSheets("graduate",{prenom:fn,nom:ln,email:em,telephone:document.getElementById("s-phone").value.trim(),pays:"",animateur:intro.animateur,titre:intro.titre,date_tah:fmtTZ(intro.date,intro.heure,"TAH","TAH"),introduction_id:intro.id});
   markGradRegistered(intro.id, em);
+  saveGuestRecord({type:'solo', grad_name:fn+' '+ln, grad_email:em, animateur:intro.animateur, titre:intro.titre, date:intro.date, date_tah:fmtTZ(intro.date,intro.heure,"TAH","TAH"), introduction_id:intro.id});
   showConfirm("Inscription confirmée !",`\'Ia ora na ${fn} ! Un email de confirmation vous a été envoyé.`,null,null);
 }
 
@@ -2392,7 +2471,7 @@ async function submitWithGuest(){
   }
   logToSheets("guest",{prenom:ufn,nom:uln,email:uem,telephone:"",graduate:gfn+" "+gln,graduate_email:gem,animateur:intro.animateur,titre:intro.titre,date_tah:fmtTZ(intro.date,intro.heure,"TAH","TAH"),introduction_id:intro.id});
   // Stocker les infos invité dans la BDD pour affichage admin/leader
-  saveGuestRecord({guest_name:ufn+" "+uln, guest_email:uem, grad_name:gfn+" "+gln, grad_email:gem, animateur:intro.animateur, titre:intro.titre, date:intro.date, date_tah:fmtTZ(intro.date,intro.heure,"TAH","TAH"), introduction_id:intro.id});
+  saveGuestRecord({type:'guest', guest_name:ufn+" "+uln, guest_email:uem, grad_name:gfn+" "+gln, grad_email:gem, animateur:intro.animateur, titre:intro.titre, date:intro.date, date_tah:fmtTZ(intro.date,intro.heure,"TAH","TAH"), introduction_id:intro.id});
   ["g-first","g-last","g-email","g-phone","gu-first","gu-last","gu-email"].forEach(id=>document.getElementById(id).value="");
   showConfirm("Inscription confirmée !",`\u2019Ia ora na ! Un email de confirmation a \u00e9t\u00e9 envoy\u00e9 à ${ufn} ${uln} pour s'inscrire. `,tMatin,t40,false,intro);
 }
@@ -3840,8 +3919,9 @@ async function saveGuestRecord(data) {
       method: 'POST',
       body: JSON.stringify({
         action: 'add',
-        guest_name: data.guest_name,
-        guest_email: data.guest_email,
+        type: data.type || 'guest',
+        guest_name: data.guest_name || null,
+        guest_email: data.guest_email || null,
         grad_name: data.grad_name,
         grad_email: data.grad_email,
         animateur: data.animateur,
