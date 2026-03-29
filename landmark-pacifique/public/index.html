@@ -860,12 +860,21 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
 
 <script>
 
-function fmtIntroId(intro) {
-  if(intro.date) {
+function isRealDbId(id) {
+  // Les vrais IDs viennent d'une séquence SQL (petits entiers)
+  // Les IDs temporaires sont des timestamps JS (~13 chiffres)
+  return id && Number(id) < 1_000_000_000_000;
+}
+function fmtIntroId(intro, i) {
+  // Intro déjà sauvegardée en base ET date remplie → YY-MM #ID
+  if(isRealDbId(intro.id) && intro.date) {
     var p = intro.date.split('-');
     if(p.length === 3) return p[0].slice(2)+'-'+p[1]+' #'+intro.id;
   }
-  return '#'+intro.id;
+  // Intro déjà sauvegardée mais sans date → #ID
+  if(isRealDbId(intro.id)) return '#'+intro.id;
+  // Nouvelle intro non encore sauvegardée → numéro d'ordre
+  return 'Nouvelle';
 }
 function makeAdminForm(intro, i) {
   const tah = fmtTZ(intro.date, intro.heure, 'TAH', 'TAH');
@@ -887,8 +896,8 @@ function makeAdminForm(intro, i) {
   d.id = 'intro-form-' + i;
   d.innerHTML = `
     <div class="admin-card-hdr">
-      <div class="admin-num">${fmtIntroId(intro)}</div>
-      <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--navy-deep);flex:1">CILF ${fmtIntroId(intro)}</span>
+      <div class="admin-num">${isRealDbId(intro.id) ? fmtIntroId(intro,i) : (i+1)}</div>
+      <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--navy-deep);flex:1">${isRealDbId(intro.id) ? 'CILF '+fmtIntroId(intro,i) : 'Nouvelle CILF'}</span>
       <button class="remove-intro-btn" onclick="window._removeIntro(this)" title="Supprimer">✕ Supprimer</button>
     </div>
     ${intro.modified_by ? `<p style="font-size:11px;color:#9aabb8;margin:4px 0 12px">✎ Dernière modification : <strong style="color:#5a6a7a">${intro.modified_by}</strong>${intro.modified_at ? ' — ' + new Date(intro.modified_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : ''}</p>` : ''}
@@ -2674,8 +2683,8 @@ function makePilfForm(intro, i) {
   d.style.marginBottom = '16px';
   d.innerHTML = `
     <div class="admin-card-hdr">
-      <div class="admin-num">${fmtIntroId(intro)}</div>
-      <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--navy-deep);flex:1">Introduction PILF/HILF ${fmtIntroId(intro)}</span>
+      <div class="admin-num">${isRealDbId(intro.id) ? fmtIntroId(intro,i) : (i+1)}</div>
+      <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--navy-deep);flex:1">${isRealDbId(intro.id) ? 'PILF/HILF '+fmtIntroId(intro,i) : 'Nouvelle PILF/HILF'}</span>
       <button class="remove-intro-btn" onclick="window._removePilf(this)" title="Supprimer">✕ Supprimer</button>
     </div>
     ${intro.modified_by ? `<p style="font-size:11px;color:#9aabb8;margin:4px 0 12px">✎ Dernière modification : <strong style="color:#5a6a7a">${intro.modified_by}</strong>${intro.modified_at ? ' — ' + new Date(intro.modified_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : ''}</p>` : ''}
