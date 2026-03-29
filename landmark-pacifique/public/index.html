@@ -2445,6 +2445,11 @@ function removeIntro(btnEl){
   lmConfirm('Archiver cette introduction ? Elle sera conservée dans les archives et pourra être restaurée.', 'Archiver').then(async function(ok){
     if(!ok) return;
     try {
+      // Si l'id est un timestamp JS (intro pas encore sauvegardée en base), bloquer
+      if(!intro.id || Number(intro.id) >= 9999999999) {
+        alert('Veuillez d\'abord enregistrer cette introduction avant de l\'archiver.');
+        return;
+      }
       await apiFetch('/api/intros', { method:'POST', body: JSON.stringify({ slug:'cilf', action:'archive', intro_id: intro.id }) });
       draft.splice(i, 1);
       wrap.innerHTML = '';
@@ -2465,6 +2470,11 @@ window._removeIntro = function(btnEl){
   lmConfirm('Archiver cette introduction ? Elle sera conservée dans les archives et pourra être restaurée.', 'Archiver').then(async function(ok){
     if(!ok) return;
     try {
+      // Si l'id est un timestamp JS (intro pas encore sauvegardée en base), bloquer
+      if(!intro.id || Number(intro.id) >= 9999999999) {
+        alert('Veuillez d\'abord enregistrer cette introduction avant de l\'archiver.');
+        return;
+      }
       await apiFetch('/api/intros', { method:'POST', body: JSON.stringify({ slug:'cilf', action:'archive', intro_id: intro.id }) });
       draft.splice(i, 1);
       wrap.innerHTML = '';
@@ -2770,6 +2780,11 @@ window._removePilf = function(btnEl){
   lmConfirm('Archiver cette introduction PILF/HILF ? Elle sera conservée dans les archives et pourra être restaurée.', 'Archiver').then(async function(ok){
     if(!ok) return;
     try {
+      // Si l'id est un timestamp JS (intro pas encore sauvegardée en base), bloquer
+      if(!intro.id || Number(intro.id) >= 9999999999) {
+        alert('Veuillez d\'abord enregistrer cette introduction avant de l\'archiver.');
+        return;
+      }
       await apiFetch('/api/intros', { method:'POST', body: JSON.stringify({ slug:'pilf', action:'archive', intro_id: intro.id }) });
       pilfDraft.splice(i, 1);
       wrap.innerHTML = '';
@@ -3040,7 +3055,7 @@ async function loadPendingUsers(){
           <div class="user-row-email">${u.email||''} ${u.pid?'• PID: '+u.pid:''} ${u.telephone?'• '+u.telephone:''}</div>
         </div>
         <div class="user-row-actions">
-          <button class="btn-approve" onclick="approveUser('${u.id||u.email}','${(u.email||'').replace(/'/g,"\\'")}','${(u.first_name||u.name||'').replace(/'/g,"\\'")}')">✓ Approuver</button>
+          <button class="btn-approve" onclick="approveUser('${u.id||u.email}','${(u.email||'').replace(/'/g,"\\'")}')">✓ Approuver</button>
           <button class="btn-reject"  onclick="rejectUser('${u.id||u.email}','${(u.email||'').replace(/'/g,"\\'")}')">✕ Refuser</button>
         </div>
       </div>`).join('');
@@ -3106,7 +3121,7 @@ async function loadAllGradues(){
             ${guestHtml}
           </div>
           <div class="user-row-actions">
-            ${(u.status==='pending'||u.approved===false||u.validated===false) ? `<button class="btn-approve" onclick="approveUser('${u.id||u.email}','${(u.email||'').replace(/'/g,"\\'")}','${(u.first_name||u.name||'').replace(/'/g,"\\'")}')">✓ Approuver</button>` : ''}
+            ${(u.status==='pending'||u.approved===false||u.validated===false) ? `<button class="btn-approve" onclick="approveUser('${u.id||u.email}','${(u.email||'').replace(/'/g,"\\'")}')">✓ Approuver</button>` : ''}
             <button class="btn-edit-user" onclick="toggleEditGradue('${u.id||u.email}')">✎ Modifier</button>
             <button class="btn-edit-user" style="background:#fff8e1;color:#b45309;border-color:#fcd34d" onclick="sendResetPassword('${u.id||u.email}','${(u.name||'').replace(/'/g,"\\'")}')">🔑 Reset MDP</button>
             <button class="btn-delete-user" onclick="deleteUserConfirm('${u.id||u.email}','${(u.name||'').replace(/'/g,"\\'")}')">Supprimer</button>
@@ -3164,23 +3179,9 @@ async function loadAllGradues(){
 }
 
 // ── APPROVE USER ──────────────────────────────────────────────────────────────
-async function approveUser(userId, userEmail, userName){
+async function approveUser(userId, userEmail){
   try {
     await apiFetch('/api/users', { method:'POST', body: JSON.stringify({ action:'approve', userId }) });
-
-    // Email de validation via Make/Brevo
-    try {
-      await fetch("https://hook.us2.make.com/2njt9kkq4ovz75l0yg3otstsda4ug6ry", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "compte_valide",
-          email: userEmail,
-          name: userName || userEmail
-        })
-      });
-    } catch(we){ console.warn("Webhook compte_valide:", we); }
-
     loadPendingUsers(); loadAllGradues(); loadPendingBadge();
   } catch(e){
     alert('Erreur lors de l\'approbation : ' + e.message);
