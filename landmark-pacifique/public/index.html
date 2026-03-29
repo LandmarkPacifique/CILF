@@ -860,6 +860,15 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
 
 <script>
 
+// Normalise un nom de famille : si tout en majuscules → Première lettre en majuscule + reste en minuscules
+function toTitleCase(str) {
+  if (!str) return str;
+  var trimmed = str.trim();
+  if (trimmed === trimmed.toUpperCase()) {
+    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
+  }
+  return trimmed;
+}
 function isRealDbId(id) {
   // Les vrais IDs viennent d'une séquence SQL (petits entiers)
   // Les IDs temporaires sont des timestamps JS (~13 chiffres)
@@ -1170,7 +1179,7 @@ async function doLogin(){
 // ── REGISTER ──────────────────────────────────────────────────────────────────
 async function doRegister(){
   const firstName = document.getElementById('reg-first').value.trim();
-  const lastName  = document.getElementById('reg-last').value.trim();
+  const lastName  = toTitleCase(document.getElementById('reg-last').value.trim());
   const name = (firstName + ' ' + lastName).trim();
   const email = document.getElementById('reg-email').value.trim();
   const pid = document.getElementById('reg-pid').value.trim();
@@ -1385,7 +1394,7 @@ async function openMonCompte(){
 }
 async function saveProfile(){
   const firstName  = document.getElementById('compte-first-input').value.trim();
-  const lastName   = document.getElementById('compte-last-input').value.trim();
+  const lastName   = toTitleCase(document.getElementById('compte-last-input').value.trim());
   const name       = (firstName + ' ' + lastName).trim();
   const telephone  = document.getElementById('compte-tel-input').value.trim();
   const pid        = document.getElementById('compte-pid-input').value.trim();
@@ -2141,7 +2150,7 @@ async function submitInvite(){
 
   // Infos invité : depuis le token si disponibles, sinon depuis les champs
   const fn = (data.un ? data.un.split(' ')[0] : document.getElementById('inv-first').value.trim());
-  const ln = (data.un ? data.un.split(' ').slice(1).join(' ') : document.getElementById('inv-last').value.trim());
+  const ln = (data.un ? data.un.split(' ').slice(1).join(' ') : toTitleCase(document.getElementById('inv-last').value.trim()));
   const em = (data.ue || document.getElementById('inv-email').value.trim());
 
   // Validation seulement si les champs sont visibles (pas de token)
@@ -2226,7 +2235,7 @@ async function brevoSend(cfg, emailJobs){
 // ── SUBMIT SOLO ───────────────────────────────────────────────────────────────
 async function submitSolo(){
   const fn=document.getElementById("s-first").value.trim();
-  const ln=document.getElementById("s-last").value.trim();
+  const ln=toTitleCase(document.getElementById("s-last").value.trim());
   const em=document.getElementById("s-email").value.trim();
   const err=document.getElementById("solo-error");
   if(!fn||!ln||!em){err.textContent="Veuillez remplir tous les champs.";err.style.display="block";return;}
@@ -2288,7 +2297,7 @@ async function submitWithGuest(){
   const gem = window._graduEmail || document.getElementById("g-email").value.trim();
   // Infos invité (seuls champs visibles)
   const ufn=document.getElementById("gu-first").value.trim();
-  const uln=document.getElementById("gu-last").value.trim();
+  const uln=toTitleCase(document.getElementById("gu-last").value.trim());
   const uem=document.getElementById("gu-email").value.trim();
   const err=document.getElementById("guest-error");
   if(!ufn||!uln||!uem){err.textContent="Veuillez remplir tous les champs de votre invité(e).";err.style.display="block";return;}
@@ -3198,7 +3207,7 @@ function toggleEditLeader(userId){
 
 async function saveEditLeader(userId){
   const firstName = document.getElementById('leader-first-'+userId)?.value.trim();
-  const lastName  = document.getElementById('leader-last-'+userId)?.value.trim();
+  const lastName  = toTitleCase(document.getElementById('leader-last-'+userId)?.value.trim());
   const name      = (firstName + ' ' + lastName).trim();
   const email     = document.getElementById('leader-email-'+userId)?.value.trim();
   const pid       = document.getElementById('leader-pid-'+userId)?.value.trim();
@@ -3418,7 +3427,7 @@ function toggleEditGradue(userId){
 
 async function saveEditGradue(userId){
   const firstName = document.getElementById('edit-first-'+userId)?.value.trim();
-  const lastName  = document.getElementById('edit-last-'+userId)?.value.trim();
+  const lastName  = toTitleCase(document.getElementById('edit-last-'+userId)?.value.trim());
   const name      = (firstName + ' ' + lastName).trim();
   const email     = document.getElementById('edit-email-'+userId)?.value.trim();
   const pid       = document.getElementById('edit-pid-'+userId)?.value.trim();
@@ -3444,7 +3453,7 @@ async function saveEditGradue(userId){
 // ── MANUAL REGISTER (admin creates gradue) ────────────────────────────────────
 async function manualRegister(){
   const firstName = document.getElementById('manual-first').value.trim();
-  const lastName  = document.getElementById('manual-last').value.trim();
+  const lastName  = toTitleCase(document.getElementById('manual-last').value.trim());
   const name      = (firstName + ' ' + lastName).trim();
   const email = document.getElementById('manual-email').value.trim();
   const pid   = document.getElementById('manual-pid').value.trim();
@@ -3488,7 +3497,7 @@ async function addUser(){
     return;
   }
   const firstName = document.getElementById('cfg-new-first')?.value.trim() || document.getElementById('cfg-new-name')?.value.trim() || '';
-  const lastName  = document.getElementById('cfg-new-last')?.value.trim()  || '';
+  const lastName  = toTitleCase(document.getElementById('cfg-new-last')?.value.trim()  || '');
   const name      = lastName ? (firstName + ' ' + lastName).trim() : firstName;
   const email     = document.getElementById('cfg-new-email').value.trim();
   const pw        = document.getElementById('cfg-new-pw').value;
@@ -3565,7 +3574,7 @@ function switchLeaderTab(id, btn){
 
 async function leaderManualRegister(){
   const firstName = document.getElementById('lmanual-first')?.value.trim() || document.getElementById('lmanual-name')?.value.trim() || '';
-  const lastName  = document.getElementById('lmanual-last')?.value.trim()  || '';
+  const lastName  = toTitleCase(document.getElementById('lmanual-last')?.value.trim()  || '');
   const name      = lastName ? (firstName + ' ' + lastName).trim() : firstName;
   const email = document.getElementById('lmanual-email').value.trim();
   const pid   = document.getElementById('lmanual-pid').value.trim();
@@ -3868,7 +3877,7 @@ async function loadArchives(slug){
       return '<div class="admin-card" style="margin-bottom:16px;border-left:3px solid #f0a500">'
         + '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">'
         + '<div style="flex:1">'
-        + '<p style="font-size:11px;font-weight:700;color:#f0a500;margin:0 0 4px;letter-spacing:.06em;text-transform:uppercase">'+slug.toUpperCase()+' #'+intro.id+'</p>'
+        + '<p style="font-size:11px;font-weight:700;color:#f0a500;margin:0 0 4px;letter-spacing:.06em;text-transform:uppercase">'+slug.toUpperCase()+' '+fmtIntroId(intro, idx)+'</p>'
         + '<p style="font-size:14px;font-weight:600;color:var(--navy-deep);margin:0">'
           + '📅 '+introDate+' &nbsp;·&nbsp; 👤 '+intro.animateur
         + '</p>'
