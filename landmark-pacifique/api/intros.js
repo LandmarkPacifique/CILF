@@ -40,7 +40,7 @@ module.exports = async function handler(req, res) {
         const result = [];
         for (const r of rows) {
           const guests = await sql`
-            SELECT id, prenom, nom, email, telephone
+            SELECT id, first_name, last_name, email, telephone
             FROM guests WHERE introduction_id = ${r.id}
           `;
           result.push({
@@ -58,7 +58,13 @@ module.exports = async function handler(req, res) {
             zoomCC:         r.zoom_cc     || null,
             archivedAt:     r.archived_at || null,
             modified_by:    r.modified_by || null,
-            guests:         guests,
+            guests:         guests.map(g => ({
+              id:        g.id,
+              prenom:    g.first_name,
+              nom:       g.last_name,
+              email:     g.email,
+              telephone: g.telephone,
+            })),
           });
         }
         return res.status(200).json(result);
@@ -155,7 +161,6 @@ module.exports = async function handler(req, res) {
 
       // ── ACTION : SUPPRIMER DÉFINITIVEMENT une intro ───────────────────────
       if (action === 'delete_permanent' && intro_id) {
-        // D'abord supprimer les guests liés, puis l'intro
         await sql`DELETE FROM guests WHERE introduction_id = ${intro_id}`;
         await sql`DELETE FROM introductions WHERE id = ${intro_id} AND slug = ${slug}`;
         return res.status(200).json({ status: 'deleted' });
