@@ -273,11 +273,11 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
 #lm-confirm-overlay.active { display:flex; }
 #lm-confirm-box {
   background:#fff; border-radius:14px; padding:28px 24px 20px;
-  max-width:320px; width:90%; text-align:center;
+  max-width:400px; width:92%; text-align:center;
   box-shadow:0 8px 32px rgba(0,0,0,.18);
 }
 #lm-confirm-msg {
-  font-size:15px; color:var(--navy-deep); margin-bottom:22px; line-height:1.5;
+  font-size:15px; color:var(--navy-deep); margin-bottom:16px; line-height:1.5;
 }
 #lm-confirm-btns { display:flex; gap:10px; justify-content:center; }
 #lm-confirm-btns button {
@@ -286,6 +286,21 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
 }
 #lm-confirm-cancel { background:#f0f2f5; color:#4a5a6a; }
 #lm-confirm-ok { background:#e24b4a; color:#fff; }
+/* Modale archivage raison */
+#lm-archive-reason-wrap { display:none; text-align:left; margin-bottom:16px; }
+#lm-archive-reason-wrap.visible { display:block; }
+#lm-archive-reason-wrap label { font-size:13px; color:#4a5a6a; font-weight:500; display:block; margin-bottom:6px; }
+#lm-archive-reason-select {
+  width:100%; padding:9px 10px; border-radius:8px; border:1.5px solid #d0d8e4;
+  font-size:13px; font-family:'DM Sans',sans-serif; color:var(--navy-deep);
+  background:#fff; margin-bottom:8px; box-sizing:border-box;
+}
+#lm-archive-reason-other {
+  width:100%; padding:9px 10px; border-radius:8px; border:1.5px solid #d0d8e4;
+  font-size:13px; font-family:'DM Sans',sans-serif; color:var(--navy-deep);
+  display:none; box-sizing:border-box; resize:vertical; min-height:60px;
+}
+#lm-archive-reason-other.visible { display:block; }
 </style>
 </head>
 <body>
@@ -294,6 +309,17 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
 <div id="lm-confirm-overlay">
   <div id="lm-confirm-box">
     <div id="lm-confirm-msg"></div>
+    <div id="lm-archive-reason-wrap">
+      <label>Raison de l'archivage</label>
+      <select id="lm-archive-reason-select">
+        <option value="">-- Choisir une raison --</option>
+        <option value="pas_invite">Pas d'invité</option>
+        <option value="pas_rc">Pas de RC</option>
+        <option value="pas_opm">Pas d'OPM</option>
+        <option value="autre">Autre</option>
+      </select>
+      <textarea id="lm-archive-reason-other" placeholder="Précisez la raison…"></textarea>
+    </div>
     <div id="lm-confirm-btns">
       <button id="lm-confirm-cancel">Annuler</button>
       <button id="lm-confirm-ok">Supprimer</button>
@@ -2404,6 +2430,12 @@ function lmConfirm(msg, okLabel) {
     var msgEl   = document.getElementById('lm-confirm-msg');
     var okBtn   = document.getElementById('lm-confirm-ok');
     var cancelBtn = document.getElementById('lm-confirm-cancel');
+    var reasonWrap = document.getElementById('lm-archive-reason-wrap');
+    // Cacher le bloc raison pour les confirms normaux
+    reasonWrap.classList.remove('visible');
+    document.getElementById('lm-archive-reason-select').value = '';
+    document.getElementById('lm-archive-reason-other').classList.remove('visible');
+    document.getElementById('lm-archive-reason-other').value = '';
     msgEl.textContent = msg;
     if(okLabel) okBtn.textContent = okLabel;
     overlay.classList.add('active');
@@ -2415,6 +2447,70 @@ function lmConfirm(msg, okLabel) {
     }
     function onOk()     { done(true);  }
     function onCancel() { done(false); }
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+  });
+}
+
+// Modale archivage avec choix de raison — retourne { ok, reason, reasonText }
+function lmArchiveConfirm(msg) {
+  return new Promise(function(resolve) {
+    var overlay   = document.getElementById('lm-confirm-overlay');
+    var msgEl     = document.getElementById('lm-confirm-msg');
+    var okBtn     = document.getElementById('lm-confirm-ok');
+    var cancelBtn = document.getElementById('lm-confirm-cancel');
+    var reasonWrap   = document.getElementById('lm-archive-reason-wrap');
+    var reasonSelect = document.getElementById('lm-archive-reason-select');
+    var reasonOther  = document.getElementById('lm-archive-reason-other');
+
+    msgEl.textContent = msg;
+    okBtn.textContent = 'Archiver';
+    okBtn.style.background = '#f0a500';
+    reasonWrap.classList.add('visible');
+    reasonSelect.value = '';
+    reasonOther.classList.remove('visible');
+    reasonOther.value = '';
+
+    reasonSelect.onchange = function() {
+      if(reasonSelect.value === 'autre') {
+        reasonOther.classList.add('visible');
+      } else {
+        reasonOther.classList.remove('visible');
+        reasonOther.value = '';
+      }
+    };
+
+    overlay.classList.add('active');
+
+    function cleanup() {
+      overlay.classList.remove('active');
+      okBtn.style.background = '';
+      reasonWrap.classList.remove('visible');
+      reasonOther.classList.remove('visible');
+      reasonSelect.onchange = null;
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+    }
+    function onOk() {
+      var reason = reasonSelect.value;
+      if(!reason) {
+        reasonSelect.style.borderColor = '#e24b4a';
+        setTimeout(function(){ reasonSelect.style.borderColor = ''; }, 1500);
+        return; // bloquer si pas de raison
+      }
+      var reasonText = reason === 'autre' ? (reasonOther.value.trim() || '') : '';
+      if(reason === 'autre' && !reasonText) {
+        reasonOther.style.borderColor = '#e24b4a';
+        setTimeout(function(){ reasonOther.style.borderColor = ''; }, 1500);
+        return;
+      }
+      cleanup();
+      resolve({ ok: true, reason, reasonText });
+    }
+    function onCancel() {
+      cleanup();
+      resolve({ ok: false, reason: '', reasonText: '' });
+    }
     okBtn.addEventListener('click', onOk);
     cancelBtn.addEventListener('click', onCancel);
   });
@@ -2442,15 +2538,14 @@ function removeIntro(btnEl){
   var i = Array.from(wrap.children).indexOf(card);
   if(i === -1) return;
   var intro = draft[i];
-  lmConfirm('Archiver cette introduction ? Elle sera conservée dans les archives et pourra être restaurée.', 'Archiver').then(async function(ok){
-    if(!ok) return;
+  lmArchiveConfirm('Archiver cette introduction CILF ?').then(async function(res){
+    if(!res.ok) return;
     try {
-      // Si l'id est un timestamp JS (intro pas encore sauvegardée en base), bloquer
       if(!intro.id || Number(intro.id) >= 9999999999) {
         alert('Veuillez d\'abord enregistrer cette introduction avant de l\'archiver.');
         return;
       }
-      await apiFetch('/api/intros', { method:'POST', body: JSON.stringify({ slug:'cilf', action:'archive', intro_id: intro.id }) });
+      await apiFetch('/api/intros', { method:'POST', body: JSON.stringify({ slug:'cilf', action:'archive', intro_id: intro.id, reason: res.reason, reason_text: res.reasonText }) });
       draft.splice(i, 1);
       wrap.innerHTML = '';
       draft.forEach(function(intr, j){ wrap.appendChild(makeAdminForm(intr, j)); });
@@ -2467,15 +2562,14 @@ window._removeIntro = function(btnEl){
   var i = cards.indexOf(card);
   if(i === -1) return;
   var intro = draft[i];
-  lmConfirm('Archiver cette introduction ? Elle sera conservée dans les archives et pourra être restaurée.', 'Archiver').then(async function(ok){
-    if(!ok) return;
+  lmArchiveConfirm('Archiver cette introduction CILF ?').then(async function(res){
+    if(!res.ok) return;
     try {
-      // Si l'id est un timestamp JS (intro pas encore sauvegardée en base), bloquer
       if(!intro.id || Number(intro.id) >= 9999999999) {
         alert('Veuillez d\'abord enregistrer cette introduction avant de l\'archiver.');
         return;
       }
-      await apiFetch('/api/intros', { method:'POST', body: JSON.stringify({ slug:'cilf', action:'archive', intro_id: intro.id }) });
+      await apiFetch('/api/intros', { method:'POST', body: JSON.stringify({ slug:'cilf', action:'archive', intro_id: intro.id, reason: res.reason, reason_text: res.reasonText }) });
       draft.splice(i, 1);
       wrap.innerHTML = '';
       draft.forEach(function(intr, j){ wrap.appendChild(makeAdminForm(intr, j)); });
@@ -2777,15 +2871,14 @@ window._removePilf = function(btnEl){
   var i = Array.from(wrap.children).indexOf(card);
   if(i === -1) return;
   var intro = pilfDraft[i];
-  lmConfirm('Archiver cette introduction PILF/HILF ? Elle sera conservée dans les archives et pourra être restaurée.', 'Archiver').then(async function(ok){
-    if(!ok) return;
+  lmArchiveConfirm('Archiver cette introduction PILF/HILF ?').then(async function(res){
+    if(!res.ok) return;
     try {
-      // Si l'id est un timestamp JS (intro pas encore sauvegardée en base), bloquer
       if(!intro.id || Number(intro.id) >= 9999999999) {
         alert('Veuillez d\'abord enregistrer cette introduction avant de l\'archiver.');
         return;
       }
-      await apiFetch('/api/intros', { method:'POST', body: JSON.stringify({ slug:'pilf', action:'archive', intro_id: intro.id }) });
+      await apiFetch('/api/intros', { method:'POST', body: JSON.stringify({ slug:'pilf', action:'archive', intro_id: intro.id, reason: res.reason, reason_text: res.reasonText }) });
       pilfDraft.splice(i, 1);
       wrap.innerHTML = '';
       pilfDraft.forEach(function(intr, j){ wrap.appendChild(makePilfForm(intr, j)); });
@@ -3645,26 +3738,46 @@ async function loadArchives(slug){
       el.innerHTML = '<p style="color:#7a8a9a;font-size:13px;text-align:center;padding:20px">Aucune archive pour le moment.</p>';
       return;
     }
-    el.innerHTML = rows.map(function(intro){
+    // Numéroter les intros (la plus ancienne = #1, ordre décroissant affiché)
+    const total = rows.length;
+    el.innerHTML = rows.map(function(intro, idx){
+      const num = total - idx;
       const archivedAt = intro.archivedAt ? new Date(intro.archivedAt).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'}) : '—';
+      // Date intro en DD-MM-YYYY
+      const introDate = intro.date
+        ? (function(d){ var p=d.split('-'); return p.length===3?p[2]+'-'+p[1]+'-'+p[0]:d; })(intro.date)
+        : '—';
+      // Raison archivage
+      const reasonLabels = { pas_invite:"Pas d'invité", pas_rc:"Pas de RC", pas_opm:"Pas d'OPM", autre:"Autre" };
+      const reasonLabel = intro.archive_reason ? (reasonLabels[intro.archive_reason] || intro.archive_reason) : null;
+      const reasonHtml = reasonLabel
+        ? '<span style="display:inline-block;background:#fff3cd;color:#856404;border:1px solid #ffc107;border-radius:12px;padding:2px 10px;font-size:11px;font-weight:600;margin-top:6px">'
+          + '⚠ ' + reasonLabel + (intro.archive_reason_text ? ' — '+intro.archive_reason_text : '')
+          + '</span>'
+        : '';
       const guests = (intro.guests && intro.guests.length > 0)
         ? '<div style="margin-top:10px;padding:10px;background:#f8f9fa;border-radius:6px">'
           + '<p style="font-size:11px;font-weight:600;color:#7a8a9a;margin:0 0 6px;text-transform:uppercase;letter-spacing:.08em">'+intro.guests.length+' invité(s)</p>'
-          + intro.guests.map(function(g){ return '<p style="font-size:12px;color:#2d3a4a;margin:2px 0">'+g.prenom+' '+g.nom+' — '+g.email+'</p>'; }).join('')
+          + intro.guests.map(function(g){ return '<p style="font-size:12px;color:#2d3a4a;margin:2px 0">'+(g.nom||g.email||'')+'</p>'; }).join('')
           + '</div>'
-        : '<p style="font-size:12px;color:#7a8a9a;margin-top:8px">Aucun invité</p>';
+        : '<p style="font-size:12px;color:#7a8a9a;margin-top:6px">Aucun invité</p>';
       return '<div class="admin-card" style="margin-bottom:16px;border-left:3px solid #f0a500">'
         + '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">'
-        + '<div>'
-        + '<p style="font-size:15px;font-weight:600;color:var(--navy-deep);margin:0">'+intro.titre+'</p>'
-        + '<p style="font-size:13px;color:#7a8a9a;margin:4px 0 0">'+intro.animateur+' · '+(intro.date||'—')+' · Archivé le '+archivedAt+'</p>'
-        + '</div>'
-        + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
-        + '<button class="copy-btn" style="background:#0a9e6e;color:#fff;border:none" onclick="restoreArchive('+intro.id+',\''+slug+'\')">↩ Restaurer</button>'
-        + (window._sessionRole === 'superadmin' ? '<button class=\"copy-btn\" style=\"background:#c0392b;color:#fff;border:none\" onclick=\"deleteArchivePermanent('+intro.id+',\''+slug+'\')\">🗑 Supprimer définitivement</button>' : '')
-        + '</div>'
-        + '</div>'
+        + '<div style="flex:1">'
+        + '<p style="font-size:11px;font-weight:700;color:#f0a500;margin:0 0 4px;letter-spacing:.06em;text-transform:uppercase">Introduction #'+num+'</p>'
+        + '<p style="font-size:14px;font-weight:600;color:var(--navy-deep);margin:0">'
+          + '📅 '+introDate+' &nbsp;·&nbsp; 👤 '+intro.animateur
+        + '</p>'
+        + '<p style="font-size:12px;color:#7a8a9a;margin:4px 0 0">Archivé le '+archivedAt+'</p>'
+        + reasonHtml
         + guests
+        + '<p style="font-size:11px;color:#aab4be;margin:8px 0 0;font-style:italic">'+intro.titre+'</p>'
+        + '</div>'
+        + '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start">'
+        + '<button class="copy-btn" style="background:#0a9e6e;color:#fff;border:none" onclick="restoreArchive('+intro.id+",'"+slug+"'"+')">↩ Restaurer</button>'
+        + (window._sessionRole === 'superadmin' ? '<button class="copy-btn" style="background:#c0392b;color:#fff;border:none" onclick="deleteArchivePermanent('+intro.id+",'"+slug+"'"+')">🗑 Supprimer définitivement</button>' : '')
+        + '</div>'
+        + '</div>'
         + '</div>';
     }).join('');
   } catch(e) {
