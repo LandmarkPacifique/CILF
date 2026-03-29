@@ -176,8 +176,8 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: 'intros doit être un tableau' });
 
       // Un id "réel" en base est généré par SERIAL/séquence → petit entier
-      // Les ids temporaires du frontend sont des timestamps JS (> 9_999_999_999)
-      const isRealId = (id) => id && Number(id) < 9_999_999_999;
+      // Les ids temporaires du frontend sont des timestamps JS (~13 chiffres, > 1_000_000_000_000)
+      const isRealId = (id) => id && Number(id) < 1_000_000_000_000;
 
       // IDs réels envoyés par le frontend (intros actives après modif)
       const incomingIds = intros.filter(i => isRealId(i.id)).map(i => i.id);
