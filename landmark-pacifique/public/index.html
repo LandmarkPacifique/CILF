@@ -896,8 +896,7 @@ function makeAdminForm(intro, i) {
   d.id = 'intro-form-' + i;
   d.innerHTML = `
     <div class="admin-card-hdr">
-      <div class="admin-num">${isRealDbId(intro.id) ? fmtIntroId(intro,i) : (i+1)}</div>
-      <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--navy-deep);flex:1">${isRealDbId(intro.id) ? 'CILF '+fmtIntroId(intro,i) : 'Nouvelle CILF'}</span>
+      <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--navy-deep);flex:1">${isRealDbId(intro.id) ? fmtIntroId(intro,i) : 'Nouvelle CILF'}</span>
       <button class="remove-intro-btn" onclick="window._removeIntro(this)" title="Supprimer">✕ Supprimer</button>
     </div>
     ${intro.modified_by ? `<p style="font-size:11px;color:#9aabb8;margin:4px 0 12px">✎ Dernière modification : <strong style="color:#5a6a7a">${intro.modified_by}</strong>${intro.modified_at ? ' — ' + new Date(intro.modified_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : ''}</p>` : ''}
@@ -2468,6 +2467,34 @@ function lmConfirm(msg, okLabel) {
   });
 }
 
+// Modale alerte (message d'erreur) — même style que lmConfirm mais juste un bouton OK
+function lmAlert(msg) {
+  return new Promise(function(resolve) {
+    var overlay   = document.getElementById('lm-confirm-overlay');
+    var msgEl     = document.getElementById('lm-confirm-msg');
+    var okBtn     = document.getElementById('lm-confirm-ok');
+    var cancelBtn = document.getElementById('lm-confirm-cancel');
+    var reasonWrap = document.getElementById('lm-archive-reason-wrap');
+    reasonWrap.classList.remove('visible');
+    document.getElementById('lm-archive-reason-select').value = '';
+    document.getElementById('lm-archive-reason-other').classList.remove('visible');
+    document.getElementById('lm-archive-reason-other').value = '';
+    msgEl.innerHTML = msg;
+    okBtn.textContent = 'OK';
+    okBtn.style.background = '#e24b4a';
+    cancelBtn.style.display = 'none';
+    overlay.classList.add('active');
+    function done() {
+      overlay.classList.remove('active');
+      okBtn.style.background = '';
+      cancelBtn.style.display = '';
+      okBtn.removeEventListener('click', done);
+      resolve();
+    }
+    okBtn.addEventListener('click', done);
+  });
+}
+
 // Modale archivage avec choix de raison — retourne { ok, reason, reasonText }
 function lmArchiveConfirm(msg) {
   return new Promise(function(resolve) {
@@ -2632,7 +2659,7 @@ async function saveAll(){
       return;
     }
     const _err = validateCilfIntro(draft[_i], _i+1);
-    if(_err){ alert(_err); return; }
+    if(_err){ lmAlert(_err); return; }
   }
   const b=document.getElementById('save-btn');
   b.disabled=true; b.textContent='Enregistrement…';
@@ -2664,7 +2691,7 @@ async function saveCilfOne(i){
     return;
   }
   const _cilfErr = validateCilfIntro(intro, i+1);
-  if(_cilfErr){ alert(_cilfErr); return; }
+  if(_cilfErr){ lmAlert(_cilfErr); return; }
   const b = document.getElementById('cilf-save-one-btn-'+i);
   const msg = document.getElementById('cilf-save-one-msg-'+i);
   b.disabled=true; b.textContent='Enregistrement…';
@@ -2717,8 +2744,7 @@ function makePilfForm(intro, i) {
   d.style.marginBottom = '16px';
   d.innerHTML = `
     <div class="admin-card-hdr">
-      <div class="admin-num">${isRealDbId(intro.id) ? fmtIntroId(intro,i) : (i+1)}</div>
-      <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--navy-deep);flex:1">${isRealDbId(intro.id) ? 'PILF/HILF '+fmtIntroId(intro,i) : 'Nouvelle PILF/HILF'}</span>
+      <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--navy-deep);flex:1">${isRealDbId(intro.id) ? fmtIntroId(intro,i) : 'Nouvelle PILF/HILF'}</span>
       <button class="remove-intro-btn" onclick="window._removePilf(this)" title="Supprimer">✕ Supprimer</button>
     </div>
     ${intro.modified_by ? `<p style="font-size:11px;color:#9aabb8;margin:4px 0 12px">✎ Dernière modification : <strong style="color:#5a6a7a">${intro.modified_by}</strong>${intro.modified_at ? ' — ' + new Date(intro.modified_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : ''}</p>` : ''}
@@ -2970,7 +2996,7 @@ async function savePilfOne(i){
     return;
   }
   const _pilfErr = validatePilfIntro(intro, i+1);
-  if(_pilfErr){ alert(_pilfErr); return; }
+  if(_pilfErr){ lmAlert(_pilfErr); return; }
   const b = document.getElementById('pilf-save-one-btn-'+i);
   const msg = document.getElementById('pilf-save-one-msg-'+i);
   b.disabled=true; b.textContent='Enregistrement…';
@@ -3002,7 +3028,7 @@ async function savePilf(){
       return;
     }
     const _pe = validatePilfIntro(pilfDraft[_j], _j+1);
-    if(_pe){ alert(_pe); return; }
+    if(_pe){ lmAlert(_pe); return; }
   }
   const b=document.getElementById('pilf-save-btn');
   b.disabled=true; b.textContent='Enregistrement…';
@@ -3842,7 +3868,7 @@ async function loadArchives(slug){
       return '<div class="admin-card" style="margin-bottom:16px;border-left:3px solid #f0a500">'
         + '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">'
         + '<div style="flex:1">'
-        + '<p style="font-size:11px;font-weight:700;color:#f0a500;margin:0 0 4px;letter-spacing:.06em;text-transform:uppercase">Introduction #'+num+'</p>'
+        + '<p style="font-size:11px;font-weight:700;color:#f0a500;margin:0 0 4px;letter-spacing:.06em;text-transform:uppercase">'+slug.toUpperCase()+' #'+intro.id+'</p>'
         + '<p style="font-size:14px;font-weight:600;color:var(--navy-deep);margin:0">'
           + '📅 '+introDate+' &nbsp;·&nbsp; 👤 '+intro.animateur
         + '</p>'
