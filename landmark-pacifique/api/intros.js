@@ -125,11 +125,11 @@ module.exports = async function handler(req, res) {
         modified_by    = null,
         modified_by_id = null,
         modified_at    = null,
-        action,        // 'archive' | 'restore' | 'delete_permanent'
-        intro_id,      // pour archive / restore / delete_permanent
+        action,
+        intro_id,
       } = req.body;
 
-      // ── ACTION : ARCHIVER une intro (avec ses guests) ──────────────────────
+      // ── ACTION : ARCHIVER ─────────────────────────────────────────────────
       if (action === 'archive' && intro_id) {
         await sql`
           UPDATE introductions
@@ -143,7 +143,7 @@ module.exports = async function handler(req, res) {
         return res.status(200).json({ status: 'archived' });
       }
 
-      // ── ACTION : RESTAURER une intro (avec ses guests) ────────────────────
+      // ── ACTION : RESTAURER ────────────────────────────────────────────────
       if (action === 'restore' && intro_id) {
         await sql`
           UPDATE introductions
@@ -157,19 +157,23 @@ module.exports = async function handler(req, res) {
         return res.status(200).json({ status: 'restored' });
       }
 
-      // ── ACTION : SUPPRIMER DÉFINITIVEMENT une intro ───────────────────────
+      // ── ACTION : SUPPRIMER DÉFINITIVEMENT ────────────────────────────────
       if (action === 'delete_permanent' && intro_id) {
         await sql`DELETE FROM guests WHERE introduction_id = ${intro_id}`;
         await sql`DELETE FROM introductions WHERE id = ${intro_id} AND slug = ${slug}`;
         return res.status(200).json({ status: 'deleted' });
       }
 
-      // ── SAUVEGARDE NORMALE (upsert) ────────────────────────────────────────
+      // ── SAUVEGARDE NORMALE (upsert) ───────────────────────────────────────
       if (!Array.isArray(intros))
         return res.status(400).json({ error: 'intros doit être un tableau' });
 
-      // IDs envoyés par le frontend (intros actives après modif)
-      const incomingIds = intros.filter(i => i.id).map(i => i.id);
+      // Un id "réel" en base est généré par SERIAL/séquence → petit entier
+      // Les ids temporaires du frontend sont des timestamps JS (> 9_999_999_999)
+      const isRealId = (id) => id && Number(id) < 9_999_999_999;
+
+      // IDs réels envoyés par le frontend (intros actives après modif)
+      const incomingIds = intros.filter(i => isRealId(i.id)).map(i => i.id);
 
       // Intros actives actuellement en BDD pour ce slug
       const existing = await sql`
@@ -177,10 +181,9 @@ module.exports = async function handler(req, res) {
       `;
       const existingIds = existing.map(r => r.id);
 
-      // IDs à archiver = ceux qui étaient actifs mais ne sont plus dans le tableau envoyé
+      // IDs à archiver = ceux qui étaient actifs mais absents du tableau envoyé
       const toArchive = existingIds.filter(id => !incomingIds.includes(id));
 
-      // Archiver les intros supprimées (avec leurs guests)
       for (const id of toArchive) {
         await sql`
           UPDATE introductions
@@ -193,10 +196,10 @@ module.exports = async function handler(req, res) {
         `;
       }
 
-      // Upsert chaque intro du tableau
+      // Upsert chaque intro
       for (const intro of intros) {
-        if (intro.id) {
-          // Mise à jour d'une intro existante
+        if (isRealId(intro.id)) {
+          // Mise à jour d'une intro existante en base
           await sql`
             UPDATE introductions SET
               animateur       = ${intro.animateur      || ''},
@@ -217,7 +220,8 @@ module.exports = async function handler(req, res) {
             WHERE id = ${intro.id} AND slug = ${slug}
           `;
         } else {
-          // Nouvelle intro
+          // Nouvelle intro — id temporaire frontend ou pas d'id → INSERT
+          // Neon génère un vrai id via la séquence BIGINT
           await sql`
             INSERT INTO introductions
               (slug, animateur, titre, date, heure, heure_fin,
