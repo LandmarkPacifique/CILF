@@ -1405,6 +1405,7 @@ function enterAdmin(role, name){
   // Mémoriser pour usage dans les formulaires
   window._sessionFonction = fonction;
   window._sessionName = name;
+  window._sessionRole = role;
 
   // Remplir les infos de session pour permettre l'inscription aux introductions
   const session = getSession();
@@ -1427,6 +1428,10 @@ function enterAdmin(role, name){
   var pilfTabEl = document.getElementById('tab-btn-pilf');
   if(cilfTabEl) cilfTabEl.style.display = (isLeader || isSuperAdmin) ? '' : 'none';
   if(pilfTabEl) pilfTabEl.style.display = (isLeader || isSuperAdmin) ? '' : 'none';
+
+  // Onglet Archives : visible pour leaders et superadmins
+  var archivesTabEl = document.getElementById('tab-btn-archives');
+  if(archivesTabEl) archivesTabEl.style.display = (isLeader || isSuperAdmin) ? '' : 'none';
 
   // Bloc leader-tools séparé : plus utilisé, toujours caché
   const leaderTools = document.getElementById('leader-tools');
@@ -3504,7 +3509,7 @@ async function loadArchives(slug){
         + '</div>'
         + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
         + '<button class="copy-btn" style="background:#0a9e6e;color:#fff;border:none" onclick="restoreArchive('+intro.id+',\''+slug+'\')">↩ Restaurer</button>'
-        + '<button class="copy-btn" style="background:#c0392b;color:#fff;border:none" onclick="deleteArchivePermanent('+intro.id+',\''+slug+'\')">🗑 Supprimer définitivement</button>'
+        + (window._sessionRole === 'superadmin' ? '<button class=\"copy-btn\" style=\"background:#c0392b;color:#fff;border:none\" onclick=\"deleteArchivePermanent('+intro.id+',\''+slug+'\')\">🗑 Supprimer définitivement</button>' : '')
         + '</div>'
         + '</div>'
         + guests
@@ -3527,6 +3532,10 @@ async function restoreArchive(introId, slug){
 }
 
 async function deleteArchivePermanent(introId, slug){
+  if(window._sessionRole !== 'superadmin'){
+    alert('Action réservée au super administrateur.');
+    return;
+  }
   const ok = await lmConfirm('⚠ Supprimer DÉFINITIVEMENT cette introduction et tous ses invités ? Cette action est irréversible.', 'Supprimer définitivement');
   if(!ok) return;
   try {
