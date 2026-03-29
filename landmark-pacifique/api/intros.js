@@ -32,6 +32,7 @@ module.exports = async function handler(req, res) {
           SELECT i.id, i.animateur, i.titre, i.date, i.heure, i.heure_fin,
                  i.animateur_email, i.cc_date, i.cc_heure, i.cc_heure_fin,
                  i.zoom_intro, i.zoom_cc, i.archived_at,
+                 i.archive_reason, i.archive_reason_text,
                  i.modified_by, i.modified_by_id, i.modified_at
           FROM introductions i
           WHERE i.slug = ${slug} AND i.archived = true
@@ -56,8 +57,10 @@ module.exports = async function handler(req, res) {
             ccHeureFin:     r.cc_heure_fin,
             zoomIntro:      r.zoom_intro  || null,
             zoomCC:         r.zoom_cc     || null,
-            archivedAt:     r.archived_at || null,
-            modified_by:    r.modified_by || null,
+            archivedAt:          r.archived_at || null,
+            archive_reason:      r.archive_reason || null,
+            archive_reason_text: r.archive_reason_text || null,
+            modified_by:         r.modified_by || null,
             guests:         guests.map(g => ({
               id:    g.id,
               nom:   g.nom,
@@ -131,9 +134,13 @@ module.exports = async function handler(req, res) {
 
       // ── ACTION : ARCHIVER ─────────────────────────────────────────────────
       if (action === 'archive' && intro_id) {
+        const archiveReason = req.body.reason || null;
+        const archiveReasonText = req.body.reason_text || null;
         await sql`
           UPDATE introductions
-          SET archived = true, archived_at = NOW()
+          SET archived = true, archived_at = NOW(),
+              archive_reason = ${archiveReason},
+              archive_reason_text = ${archiveReasonText}
           WHERE id = ${intro_id} AND slug = ${slug}
         `;
         await sql`
