@@ -1701,7 +1701,7 @@ async function renderPublic(){
   window._cachedIntros = intros;
   grid.innerHTML="";
   intros.forEach((intro, i)=>{
-    grid.appendChild(buildPublicCard(intro, "Proposition "+(i+1), 'cilf'));
+    grid.appendChild(buildPublicCard(intro, "Introduction "+fmtIntroId(intro, i), 'cilf'));
   });
   if(intros.length === 0){
     grid.innerHTML="<p style='text-align:center;padding:20px;color:#7a8a9a'>Aucune introduction disponible pour le moment.</p>";
