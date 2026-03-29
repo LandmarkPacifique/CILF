@@ -1,4 +1,3 @@
-// /api/guests.js
 import { neon } from '@neondatabase/serverless';
 import jwt from 'jsonwebtoken';
 
@@ -19,9 +18,9 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // S'assurer que la table existe
+  // S'assurer que la table existe (nom distinct de l'ancienne table "guests")
   await sql`
-    CREATE TABLE IF NOT EXISTS guests (
+    CREATE TABLE IF NOT EXISTS grad_guests (
       id SERIAL PRIMARY KEY,
       guest_name TEXT,
       guest_email TEXT,
@@ -32,26 +31,25 @@ export default async function handler(req, res) {
       date TEXT,
       date_tah TEXT,
       introduction_id TEXT,
-      timestamp TIMESTAMPTZ DEFAULT NOW()
+      created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `;
 
-  // ── GET : récupérer tous les invités ──────────────────────────────────────
+  // ── GET : récupérer les invités ───────────────────────────────────────────
   if (req.method === 'GET') {
     const user = getUser(req);
     if (!user) return res.status(401).json({ error: 'Non autorisé' });
 
     try {
       let rows;
-      // Un gradué ne voit que ses propres invités
       if (user.role === 'utilisateur') {
         rows = await sql`
-          SELECT * FROM guests WHERE grad_email = ${user.email}
-          ORDER BY timestamp DESC
+          SELECT * FROM grad_guests
+          WHERE grad_email = ${user.email}
+          ORDER BY created_at DESC
         `;
       } else {
-        // admin/superadmin voient tout
-        rows = await sql`SELECT * FROM guests ORDER BY timestamp DESC`;
+        rows = await sql`SELECT * FROM grad_guests ORDER BY created_at DESC`;
       }
       return res.status(200).json(rows);
     } catch (e) {
@@ -59,7 +57,7 @@ export default async function handler(req, res) {
     }
   }
 
-  // ── POST : ajouter un invité ───────────────────────────────────────────────
+  // ── POST : ajouter un invité ──────────────────────────────────────────────
   if (req.method === 'POST') {
     const body = req.body || {};
     const { action } = body;
@@ -70,8 +68,9 @@ export default async function handler(req, res) {
                 animateur, titre, date, date_tah, introduction_id, timestamp } = body;
 
         await sql`
-          INSERT INTO guests
-            (guest_name, guest_email, grad_name, grad_email, animateur, titre, date, date_tah, introduction_id, timestamp)
+          INSERT INTO grad_guests
+            (guest_name, guest_email, grad_name, grad_email, animateur,
+             titre, date, date_tah, introduction_id, created_at)
           VALUES
             (${guest_name||null}, ${guest_email||null}, ${grad_name||null}, ${grad_email||null},
              ${animateur||null}, ${titre||null}, ${date||null}, ${date_tah||null},
@@ -83,7 +82,6 @@ export default async function handler(req, res) {
       }
     }
 
-    // Action inconnue
     return res.status(400).json({ error: 'Action inconnue' });
   }
 
