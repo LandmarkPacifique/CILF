@@ -860,6 +860,13 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
 
 <script>
 
+function fmtIntroId(intro) {
+  if(intro.date) {
+    var p = intro.date.split('-');
+    if(p.length === 3) return p[0].slice(2)+'-'+p[1]+' #'+intro.id;
+  }
+  return '#'+intro.id;
+}
 function makeAdminForm(intro, i) {
   const tah = fmtTZ(intro.date, intro.heure, 'TAH', 'TAH');
   const nc  = fmtTZ(intro.date, intro.heure, 'TAH', 'NC');
@@ -880,8 +887,8 @@ function makeAdminForm(intro, i) {
   d.id = 'intro-form-' + i;
   d.innerHTML = `
     <div class="admin-card-hdr">
-      <div class="admin-num">${i+1}</div>
-      <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--navy-deep);flex:1">CILF ${i+1}</span>
+      <div class="admin-num">${fmtIntroId(intro)}</div>
+      <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--navy-deep);flex:1">CILF ${fmtIntroId(intro)}</span>
       <button class="remove-intro-btn" onclick="window._removeIntro(this)" title="Supprimer">✕ Supprimer</button>
     </div>
     ${intro.modified_by ? `<p style="font-size:11px;color:#9aabb8;margin:4px 0 12px">✎ Dernière modification : <strong style="color:#5a6a7a">${intro.modified_by}</strong>${intro.modified_at ? ' — ' + new Date(intro.modified_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : ''}</p>` : ''}
@@ -2541,7 +2548,7 @@ function removeIntro(btnEl){
   lmArchiveConfirm('Archiver cette introduction CILF ?').then(async function(res){
     if(!res.ok) return;
     try {
-      if(!intro.id || Number(intro.id) >= 9999999999) {
+      if(!intro.id || (typeof intro.id === 'number' && intro.id > Date.now() - 5000)) {
         alert('Veuillez d\'abord enregistrer cette introduction avant de l\'archiver.');
         return;
       }
@@ -2565,7 +2572,7 @@ window._removeIntro = function(btnEl){
   lmArchiveConfirm('Archiver cette introduction CILF ?').then(async function(res){
     if(!res.ok) return;
     try {
-      if(!intro.id || Number(intro.id) >= 9999999999) {
+      if(!intro.id || (typeof intro.id === 'number' && intro.id > Date.now() - 5000)) {
         alert('Veuillez d\'abord enregistrer cette introduction avant de l\'archiver.');
         return;
       }
@@ -2667,8 +2674,8 @@ function makePilfForm(intro, i) {
   d.style.marginBottom = '16px';
   d.innerHTML = `
     <div class="admin-card-hdr">
-      <div class="admin-num">${i+1}</div>
-      <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--navy-deep);flex:1">Introduction PILF/HILF ${i+1}</span>
+      <div class="admin-num">${fmtIntroId(intro)}</div>
+      <span style="font-family:'Cormorant Garamond',serif;font-size:18px;color:var(--navy-deep);flex:1">Introduction PILF/HILF ${fmtIntroId(intro)}</span>
       <button class="remove-intro-btn" onclick="window._removePilf(this)" title="Supprimer">✕ Supprimer</button>
     </div>
     ${intro.modified_by ? `<p style="font-size:11px;color:#9aabb8;margin:4px 0 12px">✎ Dernière modification : <strong style="color:#5a6a7a">${intro.modified_by}</strong>${intro.modified_at ? ' — ' + new Date(intro.modified_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : ''}</p>` : ''}
@@ -2874,7 +2881,7 @@ window._removePilf = function(btnEl){
   lmArchiveConfirm('Archiver cette introduction PILF/HILF ?').then(async function(res){
     if(!res.ok) return;
     try {
-      if(!intro.id || Number(intro.id) >= 9999999999) {
+      if(!intro.id || (typeof intro.id === 'number' && intro.id > Date.now() - 5000)) {
         alert('Veuillez d\'abord enregistrer cette introduction avant de l\'archiver.');
         return;
       }
@@ -3768,10 +3775,10 @@ async function loadArchives(slug){
         + '<p style="font-size:14px;font-weight:600;color:var(--navy-deep);margin:0">'
           + '📅 '+introDate+' &nbsp;·&nbsp; 👤 '+intro.animateur
         + '</p>'
+        + (intro.titre ? '<p style="font-size:12px;color:var(--navy-mid);margin:4px 0 2px"><strong>Titre/thème :</strong> '+intro.titre+'</p>' : '')
         + '<p style="font-size:12px;color:#7a8a9a;margin:4px 0 0">Archivé le '+archivedAt+'</p>'
         + reasonHtml
         + guests
-        + '<p style="font-size:11px;color:#aab4be;margin:8px 0 0;font-style:italic">'+intro.titre+'</p>'
         + '</div>'
         + '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start">'
         + '<button class="copy-btn" style="background:#0a9e6e;color:#fff;border:none" onclick="restoreArchive('+intro.id+",'"+slug+"'"+')">↩ Restaurer</button>'
