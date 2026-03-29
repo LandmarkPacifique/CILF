@@ -869,7 +869,7 @@ function fmtIntroId(intro, i) {
   // Intro déjà sauvegardée en base ET date remplie → YY-MM #ID
   if(isRealDbId(intro.id) && intro.date) {
     var p = intro.date.split('-');
-    if(p.length === 3) return p[0].slice(2)+'-'+p[1]+' #'+intro.id;
+    if(p.length === 3) return p[0]+'-'+p[1]+' #'+intro.id;
   }
   // Intro déjà sauvegardée mais sans date → #ID
   if(isRealDbId(intro.id)) return '#'+intro.id;
