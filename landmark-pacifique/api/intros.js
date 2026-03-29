@@ -31,7 +31,7 @@ module.exports = async function handler(req, res) {
         const rows = await sql`
           SELECT i.id, i.animateur, i.titre, i.date, i.heure, i.heure_fin,
                  i.animateur_email, i.cc_date, i.cc_heure, i.cc_heure_fin,
-                 i.zoom_intro, i.zoom_cc, i.archived_at,
+                 i.zoom_intro, i.zoom_cc, i.archived_at, i.archived_by,
                  i.archive_reason, i.archive_reason_text,
                  i.modified_by, i.modified_by_id, i.modified_at
           FROM introductions i
@@ -58,6 +58,7 @@ module.exports = async function handler(req, res) {
             zoomIntro:      r.zoom_intro  || null,
             zoomCC:         r.zoom_cc     || null,
             archivedAt:          r.archived_at || null,
+            archivedBy:          r.archived_by || null,
             archive_reason:      r.archive_reason || null,
             archive_reason_text: r.archive_reason_text || null,
             modified_by:         r.modified_by || null,
@@ -136,11 +137,13 @@ module.exports = async function handler(req, res) {
       if (action === 'archive' && intro_id) {
         const archiveReason = req.body.reason || null;
         const archiveReasonText = req.body.reason_text || null;
+        const archivedBy = payload.name || payload.email || null;
         await sql`
           UPDATE introductions
           SET archived = true, archived_at = NOW(),
               archive_reason = ${archiveReason},
-              archive_reason_text = ${archiveReasonText}
+              archive_reason_text = ${archiveReasonText},
+              archived_by = ${archivedBy}
           WHERE id = ${intro_id} AND slug = ${slug}
         `;
         await sql`
