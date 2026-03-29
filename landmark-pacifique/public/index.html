@@ -1188,6 +1188,14 @@ async function doForgotPassword(){
     });
     const data = await res.json();
 
+    // Email non trouvé en BDD
+    if(data.not_found){
+      err.textContent='Aucun compte trouvé avec cet email.';
+      err.style.display='block';
+      btn.disabled=false; btn.textContent='Envoyer le lien de réinitialisation';
+      return;
+    }
+
     // 2. Si un token est retourné, envoie l'email via le webhook Make principal
     if(data.token){
       const resetLink = window.location.origin + window.location.pathname + '?reset=' + data.token;
