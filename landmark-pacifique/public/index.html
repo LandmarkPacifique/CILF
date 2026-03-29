@@ -2594,6 +2594,36 @@ window._removeIntro = function(btnEl){
     }
   });
 };
+// ── VALIDATION CILF ───────────────────────────────────────────────────────────
+function validateCilfIntro(intro, num) {
+  // Vérif date CILF
+  if (!intro.date || !intro.date.trim()) {
+    return "CILF " + num + " : La date de l'introduction est obligatoire.";
+  }
+  // Vérif heure CILF
+  if (!intro.heure || !intro.heure.trim()) {
+    return "CILF " + num + " : L'heure de début est obligatoire.";
+  }
+  // Vérif date Creation Call
+  if (!intro.ccDate || !intro.ccDate.trim()) {
+    return "CILF " + num + " : La date du Creation Call est obligatoire.";
+  }
+  // Vérif heure Creation Call
+  if (!intro.ccHeure || !intro.ccHeure.trim()) {
+    return "CILF " + num + " : L'heure du Creation Call est obligatoire.";
+  }
+  // Vérif que le CC est AVANT la CILF
+  // Comparaison ISO : "YYYY-MM-DD HH:MM"
+  const cilfDT = intro.date + ' ' + intro.heure;
+  const ccDT   = intro.ccDate + ' ' + intro.ccHeure;
+  if (ccDT >= cilfDT) {
+    return "CILF " + num + " : Le Creation Call doit avoir lieu avant l'introduction (actuellement "
+      + intro.ccDate + " à " + intro.ccHeure
+      + " ≥ introduction le " + intro.date + " à " + intro.heure + ").";
+  }
+  return null; // OK
+}
+
 async function saveAll(){
   if(!draft) return;
   for(var _i=0; _i<draft.length; _i++){
@@ -2601,6 +2631,8 @@ async function saveAll(){
       alert("L'introduction "+(_i+1)+" n'a pas de leadeur. Veuillez sélectionner un leadeur avant d'enregistrer.");
       return;
     }
+    const _err = validateCilfIntro(draft[_i], _i+1);
+    if(_err){ alert(_err); return; }
   }
   const b=document.getElementById('save-btn');
   b.disabled=true; b.textContent='Enregistrement…';
@@ -2631,6 +2663,8 @@ async function saveCilfOne(i){
     alert("Veuillez sélectionner un leadeur avant d'enregistrer.");
     return;
   }
+  const _cilfErr = validateCilfIntro(intro, i+1);
+  if(_cilfErr){ alert(_cilfErr); return; }
   const b = document.getElementById('cilf-save-one-btn-'+i);
   const msg = document.getElementById('cilf-save-one-msg-'+i);
   b.disabled=true; b.textContent='Enregistrement…';
@@ -2904,6 +2938,30 @@ window._removePilf = function(btnEl){
   });
 };
 
+// ── VALIDATION PILF ───────────────────────────────────────────────────────────
+function validatePilfIntro(intro, num) {
+  if (!intro.date || !intro.date.trim()) {
+    return "PILF/HILF " + num + " : La date de l'introduction est obligatoire.";
+  }
+  if (!intro.heure || !intro.heure.trim()) {
+    return "PILF/HILF " + num + " : L'heure de début est obligatoire.";
+  }
+  if (!intro.ccDate || !intro.ccDate.trim()) {
+    return "PILF/HILF " + num + " : La date du Creation Call est obligatoire.";
+  }
+  if (!intro.ccHeure || !intro.ccHeure.trim()) {
+    return "PILF/HILF " + num + " : L'heure du Creation Call est obligatoire.";
+  }
+  const pilfDT = intro.date + ' ' + intro.heure;
+  const ccDT   = intro.ccDate + ' ' + intro.ccHeure;
+  if (ccDT >= pilfDT) {
+    return "PILF/HILF " + num + " : Le Creation Call doit avoir lieu avant l'introduction (actuellement "
+      + intro.ccDate + " à " + intro.ccHeure
+      + " ≥ introduction le " + intro.date + " à " + intro.heure + ").";
+  }
+  return null;
+}
+
 async function savePilfOne(i){
   if(!pilfDraft || !pilfDraft[i]) return;
   const intro = pilfDraft[i];
@@ -2911,6 +2969,8 @@ async function savePilfOne(i){
     alert("Veuillez sélectionner un leadeur avant d'enregistrer.");
     return;
   }
+  const _pilfErr = validatePilfIntro(intro, i+1);
+  if(_pilfErr){ alert(_pilfErr); return; }
   const b = document.getElementById('pilf-save-one-btn-'+i);
   const msg = document.getElementById('pilf-save-one-msg-'+i);
   b.disabled=true; b.textContent='Enregistrement…';
@@ -2941,6 +3001,8 @@ async function savePilf(){
       alert("La PILF/HILF "+(_j+1)+" n'a pas de leadeur. Veuillez sélectionner un leadeur avant d'enregistrer.");
       return;
     }
+    const _pe = validatePilfIntro(pilfDraft[_j], _j+1);
+    if(_pe){ alert(_pe); return; }
   }
   const b=document.getElementById('pilf-save-btn');
   b.disabled=true; b.textContent='Enregistrement…';
