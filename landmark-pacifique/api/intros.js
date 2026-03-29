@@ -40,7 +40,7 @@ module.exports = async function handler(req, res) {
         const result = [];
         for (const r of rows) {
           const guests = await sql`
-            SELECT id, first_name, last_name, email, telephone
+            SELECT id, nom, email
             FROM guests WHERE introduction_id = ${r.id}
           `;
           result.push({
@@ -59,11 +59,9 @@ module.exports = async function handler(req, res) {
             archivedAt:     r.archived_at || null,
             modified_by:    r.modified_by || null,
             guests:         guests.map(g => ({
-              id:        g.id,
-              prenom:    g.first_name,
-              nom:       g.last_name,
-              email:     g.email,
-              telephone: g.telephone,
+              id:    g.id,
+              nom:   g.nom,
+              email: g.email,
             })),
           });
         }
