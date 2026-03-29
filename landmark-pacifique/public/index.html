@@ -3776,7 +3776,7 @@ async function loadArchives(slug){
           + '📅 '+introDate+' &nbsp;·&nbsp; 👤 '+intro.animateur
         + '</p>'
         + (intro.titre ? '<p style="font-size:12px;color:var(--navy-mid);margin:4px 0 2px"><strong>Titre/thème :</strong> '+intro.titre+'</p>' : '')
-        + '<p style="font-size:12px;color:#7a8a9a;margin:4px 0 0">Archivé le '+archivedAt+'</p>'
+        + '<p style="font-size:12px;color:#7a8a9a;margin:4px 0 0">Archivé par <strong style=\"color:#5a6a7a\">'+(intro.archivedBy||'—')+'</strong> le '+archivedAt+'</p>'
         + reasonHtml
         + guests
         + '</div>'
