@@ -1180,16 +1180,35 @@ async function doForgotPassword(){
   const btn = document.getElementById('forgot-btn');
   btn.disabled=true; btn.textContent='Envoi…';
   try {
-    await fetch(API_BASE + '/api/forgot-password', {
+    // 1. Génère le token côté backend
+    const res = await fetch(API_BASE + '/api/forgot-password', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ email })
     });
+    const data = await res.json();
+
+    // 2. Si un token est retourné, envoie l'email via le webhook Make principal
+    if(data.token){
+      const resetLink = window.location.origin + window.location.pathname + '?reset=' + data.token;
+      await fetch("https://hook.us2.make.com/2njt9kkq4ovz75l0yg3otstsda4ug6ry", {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          type:       'forgot_password',
+          name:       data.name || '',
+          email:      email,
+          role:       data.role || '',
+          reset_link: resetLink
+        })
+      });
+    }
+
     suc.style.display='block';
-    btn.disabled=false; btn.textContent='Envoyer le mot de passe provisoire';
+    btn.disabled=false; btn.textContent='Envoyer le lien de réinitialisation';
   } catch(e){
     err.textContent='Erreur, réessayez.'; err.style.display='block';
-    btn.disabled=false; btn.textContent='Envoyer le mot de passe provisoire';
+    btn.disabled=false; btn.textContent='Envoyer le lien de réinitialisation';
   }
 }
 
