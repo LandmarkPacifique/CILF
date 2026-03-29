@@ -1,105 +1,148 @@
+// /api/reminders.js
 import { neon } from '@neondatabase/serverless';
 
 const sql = neon(process.env.DATABASE_URL);
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-secret');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'Méthode non autorisée' });
 
-  // Clé secrète pour sécuriser l'endpoint (appelé par Make)
+  // Sécurité : vérifier le secret
   const secret = req.headers['x-secret'] || req.query.secret;
   if (secret !== process.env.REMINDERS_SECRET) {
     return res.status(401).json({ error: 'Non autorisé' });
   }
 
   try {
-    const now = new Date(); // UTC
-    const nowUTC = now.getTime();
+    const nowUTC = Date.now();
 
     // Heure actuelle en TAH (UTC-10)
-    const tahOffset = -10 * 60; // minutes
-    const tahNow = new Date(nowUTC + tahOffset * 60000);
+    const tahOffset = -10 * 60 * 60000; // -10h en ms
+    const tahNow = new Date(nowUTC + tahOffset);
     const tahHour = tahNow.getUTCHours();
-    const tahMin = tahNow.getUTCMinutes();
+    const tahMin  = tahNow.getUTCMinutes();
     const todayTAH = tahNow.toISOString().slice(0, 10); // YYYY-MM-DD
 
-    const matinResults = [];
+    const matinResults  = [];
     const preIntroResults = [];
 
-    // ── RAPPEL MATIN : 7h00 TAH (fenêtre 6h50 → 7h10 TAH) ──────────────────
-    const isMatinWindow = (tahHour === 6 && tahMin >= 50) || (tahHour === 7 && tahMin <= 10);
+    // ── RAPPEL MATIN : 7h00 TAH ──────────────────────────────────────────────
+    // Fenêtre large : 6h50 → 7h10 TAH (pour couvrir les 15min de Make)
+    const isMatinWindow =
+      (tahHour === 6 && tahMin >= 50) ||
+      (tahHour === 7 && tahMin <= 10);
 
     if (isMatinWindow) {
-      const guests = await sql`
-        SELECT g.id, g.email, g.nom,
-               i.date, i.heure, i.titre, i.animateur,
-               i.zoom_intro, i.zoom_cc, i.cc_date, i.cc_heure
+      const rows = await sql`
+        SELECT
+          g.id        AS guest_id,
+          g.email,
+          g.nom,
+          i.data      AS intro_data,
+          i.slug
         FROM guests g
-        JOIN introductions i ON g.introduction_id = i.id
+        JOIN intros i ON CAST(g.introduction_id AS TEXT) = CAST(i.id AS TEXT)
         WHERE g.rappel_matin_envoye = false
           AND g.archived = false
-          AND i.date = ${todayTAH}
       `;
-      matinResults.push(...guests);
-    }
 
-    // ── RAPPEL 40 MIN AVANT : fenêtre intro_heure - 45min → intro_heure - 35min ──
-    const guests40 = await sql`
-      SELECT g.id, g.email, g.nom,
-             i.date, i.heure, i.titre, i.animateur,
-             i.zoom_intro, i.zoom_cc, i.cc_date, i.cc_heure
-      FROM guests g
-      JOIN introductions i ON g.introduction_id = i.id
-      WHERE g.rappel_40min_envoye = false
-        AND g.archived = false
-        AND i.date = ${todayTAH}
-    `;
+      for (const row of rows) {
+        // Les intros sont stockées en JSON dans la colonne data
+        let intros = [];
+        try { intros = typeof row.intro_data === 'string' ? JSON.parse(row.intro_data) : row.intro_data; }
+        catch { continue; }
 
-    for (const guest of guests40) {
-      if (!guest.heure) continue;
+        const intro = Array.isArray(intros)
+          ? intros.find(i => String(i.id) === String(row.guest_id)) || intros[0]
+          : intros;
 
-      // Construire datetime de l'intro en UTC (heure stockée en TAH)
-      const [hh, mm] = guest.heure.split(':').map(Number);
-      const introTAH = new Date(`${guest.date}T${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:00.000Z`);
-      // Convertir TAH → UTC : ajouter 10h
-      const introUTC = new Date(introTAH.getTime() + 10 * 3600000);
+        if (!intro || intro.date !== todayTAH) continue;
 
-      const diffMin = (introUTC.getTime() - nowUTC) / 60000;
-
-      // Fenêtre : entre 35 et 45 minutes avant l'intro
-      if (diffMin >= 35 && diffMin <= 45) {
-        preIntroResults.push(guest);
+        matinResults.push({
+          type:       'rappel_matin',
+          guest_id:   row.guest_id,
+          email:      row.email,
+          nom:        row.nom,
+          titre:      intro.titre       || '',
+          date:       intro.date        || '',
+          heure:      intro.heure       || '',
+          animateur:  intro.animateur   || '',
+          zoom_intro: intro.zoomIntro   || '',
+          zoom_cc:    intro.zoomCC      || '',
+          cc_date:    intro.ccDate      || '',
+          cc_heure:   intro.ccHeure     || '',
+          slug:       row.slug          || ''
+        });
       }
     }
 
-    // Formater les données pour Make
-    const formatGuest = (g, type) => ({
-      type,
-      guest_id: g.id,
-      email: g.email,
-      nom: g.nom,
-      titre: g.titre,
-      date: g.date,
-      heure: g.heure,
-      animateur: g.animateur,
-      zoom_intro: g.zoom_intro || '',
-      zoom_cc: g.zoom_cc || '',
-      cc_date: g.cc_date || '',
-      cc_heure: g.cc_heure || ''
-    });
+    // ── RAPPEL 40 MIN AVANT ───────────────────────────────────────────────────
+    // On récupère tous les guests non encore notifiés avec intro aujourd'hui
+    const rows40 = await sql`
+      SELECT
+        g.id        AS guest_id,
+        g.email,
+        g.nom,
+        i.data      AS intro_data,
+        i.slug
+      FROM guests g
+      JOIN intros i ON CAST(g.introduction_id AS TEXT) = CAST(i.id AS TEXT)
+      WHERE g.rappel_40min_envoye = false
+        AND g.archived = false
+    `;
 
-    const toSend = [
-      ...matinResults.map(g => formatGuest(g, 'rappel_matin')),
-      ...preIntroResults.map(g => formatGuest(g, 'rappel_40min'))
-    ];
+    for (const row of rows40) {
+      let intros = [];
+      try { intros = typeof row.intro_data === 'string' ? JSON.parse(row.intro_data) : row.intro_data; }
+      catch { continue; }
+
+      const intro = Array.isArray(intros)
+        ? intros.find(i => String(i.id) === String(row.guest_id)) || intros[0]
+        : intros;
+
+      if (!intro || !intro.date || !intro.heure) continue;
+      if (intro.date !== todayTAH) continue;
+
+      // Convertir heure TAH → UTC pour comparer avec nowUTC
+      const [hh, mm] = intro.heure.split(':').map(Number);
+      // intro.heure est en TAH → UTC = TAH + 10h
+      const introUTC = new Date(`${intro.date}T${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:00Z`).getTime()
+                       + 10 * 3600000;
+
+      const diffMin = (introUTC - nowUTC) / 60000;
+
+      // Fenêtre : 35 → 45 minutes avant l'intro
+      if (diffMin < 35 || diffMin > 45) continue;
+
+      preIntroResults.push({
+        type:       'rappel_40min',
+        guest_id:   row.guest_id,
+        email:      row.email,
+        nom:        row.nom,
+        titre:      intro.titre       || '',
+        date:       intro.date        || '',
+        heure:      intro.heure       || '',
+        animateur:  intro.animateur   || '',
+        zoom_intro: intro.zoomIntro   || '',
+        zoom_cc:    intro.zoomCC      || '',
+        cc_date:    intro.ccDate      || '',
+        cc_heure:   intro.ccHeure     || '',
+        slug:       row.slug          || ''
+      });
+    }
+
+    const toSend = [...matinResults, ...preIntroResults];
 
     return res.status(200).json({
-      count: toSend.length,
+      count:  toSend.length,
       guests: toSend
     });
 
   } catch (e) {
+    console.error('[reminders]', e);
     return res.status(500).json({ error: e.message });
   }
 }
