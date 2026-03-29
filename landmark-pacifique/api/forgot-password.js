@@ -40,8 +40,7 @@ async function handler(req, res) {
       SELECT id, name, role FROM users WHERE LOWER(email) = LOWER(${email})
     `;
 
-    // Sécurité : ne pas révéler si l'email existe ou non
-    if (rows.length === 0) return sendJSON(res, 200, { success: true });
+    if (rows.length === 0) return sendJSON(res, 200, { success: false, not_found: true });
 
     const user = rows[0];
     const resetToken = crypto.randomBytes(32).toString('hex');
