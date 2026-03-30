@@ -1464,8 +1464,8 @@ async function loadComptIntros(gradEmail) {
       return;
     }
 
-    // Comparaison de date robuste (YYYY-MM-DD uniquement, sans heure)
-    const todayStr = new Date().toISOString().slice(0,10);
+    // Date du jour dans le fuseau horaire local du navigateur du gradué
+    const todayStr = new Date().toLocaleDateString('en-CA'); // "YYYY-MM-DD" dans le TZ local
     function isUpcomingDate(dateStr) {
       if (!dateStr) return true; // pas de date → à venir par précaution
       return dateStr >= todayStr;
