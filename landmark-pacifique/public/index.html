@@ -1464,35 +1464,46 @@ async function loadComptIntros(gradEmail) {
       return;
     }
 
-    // Dédoublonner par introduction_id (garder la plus récente)
+    // Comparaison de date robuste (YYYY-MM-DD uniquement, sans heure)
+    const todayStr = new Date().toISOString().slice(0,10);
+    function isUpcomingDate(dateStr) {
+      if (!dateStr) return true; // pas de date → à venir par précaution
+      return dateStr >= todayStr;
+    }
+
+    // Grouper TOUS les enregistrements par introduction_id
+    // → une entrée par intro, avec la liste complète des invités
     const byIntro = {};
     allMine.forEach(g => {
       const key = String(g.introduction_id);
-      if(!byIntro[key] || (g.timestamp||'') > (byIntro[key].timestamp||'')) byIntro[key] = g;
+      if (!byIntro[key]) {
+        // Première occurrence : initialiser avec les infos de l'intro
+        byIntro[key] = {
+          introduction_id: g.introduction_id,
+          animateur: g.animateur,
+          titre: g.titre,
+          date: g.date,
+          date_tah: g.date_tah,
+          created_at: g.created_at,
+          guests: []
+        };
+      }
+      // Ajouter l'invité s'il existe et n'est pas déjà dans la liste
+      if (g.guest_name) {
+        const alreadyAdded = byIntro[key].guests.some(gu => gu.name === g.guest_name && gu.email === g.guest_email);
+        if (!alreadyAdded) {
+          byIntro[key].guests.push({ name: g.guest_name, email: g.guest_email });
+        }
+      }
     });
-    const unique = Object.values(byIntro);
 
-    // Trier par date d'intro (la plus récente en tête)
-    unique.sort((a, b) => (b.date||b.created_at||'').localeCompare(a.date||a.created_at||''));
+    const grouped = Object.values(byIntro);
 
-    // Séparer à venir / passées
-    // Comparaison robuste : utiliser la date en UTC à minuit pour éviter les décalages horaires
-    const todayStr = new Date().toISOString().slice(0,10); // "YYYY-MM-DD"
-    function isUpcomingDate(dateStr) {
-      if (!dateStr) return true; // Si pas de date, on met en "à venir" par précaution
-      // dateStr est au format "YYYY-MM-DD" — on compare uniquement les dates sans heure
-      return dateStr >= todayStr;
-    }
-    const upcoming = unique.filter(g => isUpcomingDate(g.date));
-    const past     = unique.filter(g => !isUpcomingDate(g.date));
+    // Trier par date (plus récente en tête)
+    grouped.sort((a, b) => (b.date||b.created_at||'').localeCompare(a.date||a.created_at||''));
 
-    // Regrouper tous les enregistrements par introduction_id pour lister les invités
-    const guestsByIntro = {};
-    allMine.forEach(g => {
-      const key = String(g.introduction_id);
-      if (!guestsByIntro[key]) guestsByIntro[key] = [];
-      if (g.guest_name) guestsByIntro[key].push({ name: g.guest_name, email: g.guest_email });
-    });
+    const upcoming = grouped.filter(g => isUpcomingDate(g.date));
+    const past     = grouped.filter(g => !isUpcomingDate(g.date));
 
     function renderCard(g) {
       const isUp = isUpcomingDate(g.date);
@@ -1500,16 +1511,18 @@ async function loadComptIntros(gradEmail) {
         ? '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#1a9e6e;margin-right:6px;vertical-align:middle"></span>'
         : '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#aaa;margin-right:6px;vertical-align:middle"></span>';
 
-      // Liste des invités pour cette intro
-      const guests = guestsByIntro[String(g.introduction_id)] || [];
-      const guestHtml = guests.length > 0
-        ? `<div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">` +
-          guests.map(gu => `
-            <div style="padding:5px 10px;background:#f0f4ff;border:1px solid #c8d4f0;border-radius:8px;font-size:12px;color:#3a4a7a;display:flex;align-items:center;gap:6px">
-              <span>👤</span>
-              <span><strong>${gu.name}</strong>${gu.email ? ' <span style="color:#7a8a9a;font-size:11px">· '+gu.email+'</span>' : ''}</span>
-            </div>`).join('') +
-          `</div>`
+      // Liste des invités avec titre "Mes invités"
+      const guestHtml = g.guests.length > 0
+        ? `<div style="margin-top:10px">
+             <div style="font-size:11px;font-weight:700;color:#5a6a9a;letter-spacing:.06em;text-transform:uppercase;margin-bottom:5px">Mes invité(e)s</div>
+             <div style="display:flex;flex-direction:column;gap:4px">` +
+          g.guests.map(gu => `
+               <div style="padding:5px 10px;background:#f0f4ff;border:1px solid #c8d4f0;border-radius:8px;font-size:12px;color:#3a4a7a;display:flex;align-items:center;gap:6px">
+                 <span>👤</span>
+                 <span><strong>${gu.name}</strong>${gu.email ? ' <span style="color:#7a8a9a;font-size:11px">· '+gu.email+'</span>' : ''}</span>
+               </div>`).join('') +
+          `</div>
+           </div>`
         : '';
 
       return `
@@ -1531,6 +1544,9 @@ async function loadComptIntros(gradEmail) {
     if(past.length > 0){
       html += `<p style="font-size:11px;font-weight:700;color:#7a8a9a;letter-spacing:.08em;text-transform:uppercase;margin:${upcoming.length > 0 ? '16px' : '0'} 0 8px">Passées (${past.length})</p>`;
       html += past.map(renderCard).join('');
+    }
+    if(upcoming.length === 0 && past.length === 0){
+      html = '<p style="font-size:13px;color:#7a8a9a;text-align:center;padding:10px 0">Aucune inscription enregistrée.</p>';
     }
     el.innerHTML = html;
   } catch(e){
