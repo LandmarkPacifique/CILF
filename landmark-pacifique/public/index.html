@@ -911,13 +911,13 @@ function isRealDbId(id) {
   return id && Number(id) < 1_000_000_000_000;
 }
 function fmtIntroId(intro, i) {
-  // Intro déjà sauvegardée en base ET date remplie → YY-MM #ID
+  // Intro déjà sauvegardée en base ET date remplie → Introduction YYYY-MM #ID
   if(isRealDbId(intro.id) && intro.date) {
     var p = intro.date.split('-');
-    if(p.length === 3) return p[0]+'-'+p[1]+' #'+intro.id;
+    if(p.length === 3) return 'Introduction '+p[0]+'-'+p[1]+' #'+intro.id;
   }
-  // Intro déjà sauvegardée mais sans date → #ID
-  if(isRealDbId(intro.id)) return '#'+intro.id;
+  // Intro déjà sauvegardée mais sans date → Introduction #ID
+  if(isRealDbId(intro.id)) return 'Introduction #'+intro.id;
   // Nouvelle intro non encore sauvegardée → numéro d'ordre
   return 'Nouvelle';
 }
