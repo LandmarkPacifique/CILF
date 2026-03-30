@@ -6,12 +6,10 @@ const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'https://www.landmark-pacif
 
 // Clés autorisées en écriture (whitelist stricte)
 const WRITABLE_KEYS = [
-  'maintenance',
   'apps-script',
-  'zoom-cilf',
-  'zoom-pilf',
-  'message-accueil',
-  // Ajoute ici les clés légitimes de ta table config
+  'brevo-key',
+  'maintenance',
+  'make-webhook',
 ];
 
 function getToken(req) {
