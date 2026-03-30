@@ -719,6 +719,7 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
     <div class="cfg-tabs">
       <button id="tab-btn-cilf" class="cfg-tab active" onclick="switchTab('introductions',this)">CILF</button>
       <button id="tab-btn-pilf" class="cfg-tab" onclick="switchTab('pilf',this)">PILF / HILF</button>
+      <button id="tab-btn-mes-intros" class="cfg-tab" onclick="switchTab('mes-intros',this)">Mes introductions</button>
       <button id="tab-btn-archives" class="cfg-tab" onclick="switchTab('archives',this)">🗄 Archives</button>
       <button id="tab-btn-settings" class="cfg-tab" onclick="switchTab('settings',this)">Paramètres <span id="pending-badge" style="display:none;background:#dc3545;color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;font-weight:700;align-items:center;justify-content:center;margin-left:4px;vertical-align:middle"></span></button>
     </div>
@@ -740,6 +741,18 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
     </div>
 
 
+
+    <div id="tab-mes-intros" class="cfg-panel">
+      <h2 class="admin-h2">Mes introductions</h2>
+      <p class="admin-desc">Liste de vos introductions avec les gradués et invités inscrits.</p>
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+        <button class="cfg-tab active" id="mes-intros-btn-avenir" onclick="switchMesIntrosTab('avenir',this)">À venir</button>
+        <button class="cfg-tab" id="mes-intros-btn-passees" onclick="switchMesIntrosTab('passees',this)">Passées</button>
+      </div>
+      <div id="mes-intros-list">
+        <p style="color:#7a8a9a;font-size:13px;text-align:center;padding:20px">Chargement…</p>
+      </div>
+    </div>
 
     <div id="tab-archives" class="cfg-panel">
       <h2 class="admin-h2">🗄 Archives</h2>
@@ -1667,10 +1680,14 @@ function enterAdmin(role, name){
   const settingsTab = document.getElementById('tab-btn-settings');
   if(settingsTab) settingsTab.style.display = isSuperAdmin ? '' : 'none';
 
-  // Leader : activer CILF par défaut (pas accès aux paramètres)
+  // Onglet "Mes introductions" : leaders uniquement (pas superadmin)
+  const mesIntrosTab = document.getElementById('tab-btn-mes-intros');
+  if(mesIntrosTab) mesIntrosTab.style.display = isLeader ? '' : 'none';
+
+  // Leader : activer "Mes introductions" par défaut
   if(isLeader){
-    const cilfBtn = document.getElementById('tab-btn-cilf');
-    if(cilfBtn) switchTab('introductions', cilfBtn);
+    const mesIntrosBtn = document.getElementById('tab-btn-mes-intros');
+    if(mesIntrosBtn) switchTab('mes-intros', mesIntrosBtn);
   }
 
   // Onglets CILF et PILF : visibles pour leaders et superadmins uniquement
@@ -1801,6 +1818,7 @@ function switchTab(id,btn){
   document.getElementById("tab-"+id).classList.add("active");
   if(id==='pilf') renderPilf();
   if(id==='archives') loadArchives(_currentArchiveSlug);
+  if(id==='mes-intros') loadMesIntros();
   if(id==='settings') {
     loadMaintenanceState();
     loadLeadersList();
@@ -3991,6 +4009,118 @@ async function loadMaintenanceState() {
   renderPublic();
   goPage('page-login');
 })();
+
+// ── MES INTRODUCTIONS (leader) ────────────────────────────────────────────────
+let _mesIntrosCurrentTab = 'avenir';
+
+function switchMesIntrosTab(tab, btn) {
+  _mesIntrosCurrentTab = tab;
+  document.querySelectorAll('#tab-mes-intros .cfg-tab').forEach(b => b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  loadMesIntros();
+}
+
+async function loadMesIntros() {
+  const el = document.getElementById('mes-intros-list');
+  if(!el) return;
+  el.innerHTML = '<p style="color:#7a8a9a;font-size:13px;text-align:center;padding:20px">Chargement…</p>';
+
+  const session = getSession();
+  if(!session) return;
+  const leaderName = session.name;
+
+  try {
+    // Récupérer toutes les intros (CILF + PILF)
+    const [intros, pilfIntros, allGuests] = await Promise.all([
+      getIntros(),
+      getPilfIntros(),
+      apiFetch('/api/guests')
+    ]);
+
+    // Filtrer les intros de ce leader
+    const allIntros = [...intros, ...pilfIntros].filter(i =>
+      (i.animateur || '').toLowerCase() === leaderName.toLowerCase()
+    );
+
+    const todayStr = new Date().toLocaleDateString('en-CA');
+
+    function isUpcoming(intro) {
+      if(intro.archived) return false;
+      if(!intro.date) return true;
+      return intro.date >= todayStr;
+    }
+
+    const filtered = allIntros.filter(i =>
+      _mesIntrosCurrentTab === 'avenir' ? isUpcoming(i) : !isUpcoming(i)
+    );
+
+    if(filtered.length === 0) {
+      el.innerHTML = `<p style="color:#7a8a9a;font-size:13px;text-align:center;padding:20px">Aucune introduction ${_mesIntrosCurrentTab === 'avenir' ? 'à venir' : 'passée'}.</p>`;
+      return;
+    }
+
+    // Grouper les inscrits par introduction_id
+    const guestsByIntro = {};
+    (Array.isArray(allGuests) ? allGuests : (allGuests.guests || [])).forEach(g => {
+      const key = String(g.introduction_id);
+      if(!guestsByIntro[key]) guestsByIntro[key] = [];
+      guestsByIntro[key].push(g);
+    });
+
+    // Trier : à venir → croissant, passées → décroissant
+    filtered.sort((a, b) =>
+      _mesIntrosCurrentTab === 'avenir'
+        ? (a.date||'').localeCompare(b.date||'')
+        : (b.date||'').localeCompare(a.date||'')
+    );
+
+    el.innerHTML = filtered.map(intro => {
+      const tah = fmtTZ(intro.date, intro.heure, 'TAH', 'TAH');
+      const inscrits = guestsByIntro[String(intro.id)] || [];
+
+      // Grouper par gradué
+      const byGrad = {};
+      inscrits.forEach(g => {
+        const key = (g.grad_email||'').toLowerCase();
+        if(!byGrad[key]) byGrad[key] = { name: g.grad_name, email: g.grad_email, guests: [] };
+        if(g.guest_name) byGrad[key].guests.push({ name: g.guest_name, email: g.guest_email });
+      });
+      const grads = Object.values(byGrad);
+
+      const inscritsHtml = grads.length > 0
+        ? `<div style="margin-top:12px">
+             <div style="font-size:11px;font-weight:700;color:#5a6a9a;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">Inscrits (${grads.length})</div>
+             ${grads.map(grad => `
+               <div style="padding:8px 10px;background:#f8f9fb;border:1px solid #e0e6ef;border-radius:8px;margin-bottom:6px">
+                 <div style="font-size:13px;font-weight:600;color:var(--navy-deep)">🎓 ${grad.name||'—'} <span style="font-size:11px;color:#7a8a9a;font-weight:400">${grad.email||''}</span></div>
+                 ${grad.guests.length > 0
+                   ? `<div style="margin-top:5px;display:flex;flex-direction:column;gap:3px">
+                        <div style="font-size:11px;color:#7a8a9a;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Invité(e)s</div>
+                        ${grad.guests.map(gu => `
+                          <div style="padding:3px 8px;background:#f0f4ff;border:1px solid #c8d4f0;border-radius:6px;font-size:12px;color:#3a4a7a">
+                            👤 <strong>${gu.name}</strong>${gu.email ? ' · <span style="color:#7a8a9a">' + gu.email + '</span>' : ''}
+                          </div>`).join('')}
+                      </div>`
+                   : ''}
+               </div>`).join('')}
+           </div>`
+        : `<p style="font-size:12px;color:#9aabb8;margin-top:8px">Aucun inscrit pour le moment.</p>`;
+
+      return `
+        <div style="padding:16px;border:1px solid ${isUpcoming(intro) ? '#b7e8d2' : '#e0e0e0'};border-radius:12px;margin-bottom:12px;background:${isUpcoming(intro) ? '#f4fdf8' : '#fafafa'}">
+          <div style="font-size:14px;font-weight:600;color:var(--navy-deep)">${intro.animateur||'—'}</div>
+          ${intro.titre ? `<div style="font-size:12px;color:#7a8a9a;margin-top:2px"><em>« ${intro.titre} »</em></div>` : ''}
+          <div style="font-size:12px;color:#5a6a7a;margin-top:4px">📅 ${tah||intro.date||'—'}</div>
+          <div style="font-size:11px;color:#9aabb8;margin-top:2px">${intro.date ? intro.date.slice(0,7) : '—'} #${intro.id}</div>
+          ${inscritsHtml}
+        </div>`;
+    }).join('');
+
+  } catch(e) {
+    el.innerHTML = '<p style="color:#c0392b;font-size:13px;text-align:center;padding:20px">Impossible de charger les introductions.</p>';
+    console.error('loadMesIntros:', e);
+  }
+}
 
 async function logToSheets(type, data) {
   const url = getCfg().appsScriptUrl || "";
