@@ -419,7 +419,7 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
       <div class="form-recap" id="solo-recap"></div>
       <div class="form-group"><label class="form-label">Prénom</label><input type="text" class="form-input" id="s-first" placeholder="Prénom"></div>
       <div class="form-group"><label class="form-label">Nom</label><input type="text" class="form-input" id="s-last" placeholder="Nom"></div>
-      <div class="form-group"><label class="form-label">Numéro de téléphone</label><div id="s-phone-wrap" class="phone-picker-wrap"></div></div>
+      <div class="form-group"><label class="form-label">Numéro de téléphone <span style="color:#c00">*</span></label><div id="s-phone-wrap" class="phone-picker-wrap"></div></div>
       <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" id="s-email" placeholder="votre@email.com"></div>
       <p class="form-error" id="solo-error"></p>
       <button class="submit-btn" id="solo-submit" onclick="submitSolo()">Confirmer ma participation</button>
@@ -547,7 +547,7 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
         <input type="email" id="reg-email" class="ai" placeholder="votre@email.com">
         <label class="fl" style="text-align:left;display:block;margin-top:12px">PID (Votre référence chez Landmark - 7 chiffres)</label>
         <input type="text" id="reg-pid" class="ai" placeholder="1234567 (optionnel)" maxlength="7">
-        <label class="fl" style="text-align:left;display:block;margin-top:12px">Téléphone</label>
+        <label class="fl" style="text-align:left;display:block;margin-top:12px">Téléphone <span style="color:#c00">*</span></label>
         <div id="reg-tel-wrap" class="phone-picker-wrap ai"></div>
         <label class="fl" style="text-align:left;display:block;margin-top:12px">Mot de passe</label>
         <input type="password" id="reg-password" class="ai" placeholder="Minimum 6 caractères">
@@ -832,27 +832,25 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
         <div class="admin-card">
           <p style="font-size:14px;font-weight:500;color:var(--navy-deep);margin-bottom:4px">Inscrire manuellement un gradué</p>
           <p style="font-size:12px;color:#7a8a9a;margin-bottom:18px">Créez un compte gradué directement. Un email avec un lien de définition du mot de passe sera envoyé automatiquement.</p>
-          <div style="display:flex;flex-direction:column;gap:10px;max-width:420px">
-            <div style="display:flex;gap:10px">
-              <div style="flex:1">
-                <label class="fl" style="margin-top:0">Prénom</label>
-                <input type="text" class="ai" id="manual-first" placeholder="Prénom">
-              </div>
-              <div style="flex:1">
-                <label class="fl" style="margin-top:0">Nom</label>
-                <input type="text" class="ai" id="manual-last" placeholder="Nom">
-              </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:560px">
+            <div>
+              <label class="fl" style="margin-top:0;font-size:12px">Prénom</label>
+              <input type="text" class="ai" id="manual-first" placeholder="Prénom" style="font-size:13px;padding:7px 10px;width:100%;box-sizing:border-box">
             </div>
             <div>
-              <label class="fl" style="margin-top:0">Email</label>
-              <input type="email" class="ai" id="manual-email" placeholder="email@example.com">
+              <label class="fl" style="margin-top:0;font-size:12px">Nom</label>
+              <input type="text" class="ai" id="manual-last" placeholder="Nom" style="font-size:13px;padding:7px 10px;width:100%;box-sizing:border-box">
             </div>
             <div>
-              <label class="fl" style="margin-top:0">PID (Votre référence chez Landmark - 7 chiffres, optionnel)</label>
-              <input type="text" class="ai" id="manual-pid" placeholder="1234567" maxlength="7">
+              <label class="fl" style="margin-top:0;font-size:12px">Email</label>
+              <input type="email" class="ai" id="manual-email" placeholder="email@example.com" style="font-size:13px;padding:7px 10px;width:100%;box-sizing:border-box">
             </div>
             <div>
-              <label class="fl" style="margin-top:0">Téléphone (optionnel)</label>
+              <label class="fl" style="margin-top:0;font-size:12px">PID <span style="font-weight:400;color:#aab8c4">(7 chiffres, optionnel)</span></label>
+              <input type="text" class="ai" id="manual-pid" placeholder="1234567" maxlength="7" style="font-size:13px;padding:7px 10px;width:100%;box-sizing:border-box">
+            </div>
+            <div style="grid-column:span 2">
+              <label class="fl" style="margin-top:0;font-size:12px">Téléphone <span style="color:#c00">*</span></label>
               <div id="manual-tel-wrap" class="phone-picker-wrap ai"></div>
             </div>
           </div>
@@ -1360,6 +1358,7 @@ async function doRegister(){
   const err = document.getElementById('reg-error');
   err.style.display='none';
   if(!firstName||!lastName||!email||!pwd){ err.textContent='Prénom, nom, email et mot de passe requis.'; err.style.display='block'; return; }
+  if(!tel){ err.textContent='Le numéro de téléphone est obligatoire.'; err.style.display='block'; return; }
   if(pwd !== pwd2){ err.textContent='Les mots de passe ne correspondent pas.'; err.style.display='block'; return; }
   if(pwd.length < 6){ err.textContent='Le mot de passe doit contenir au moins 6 caractères.'; err.style.display='block'; return; }
   if(pid && !/^\d{7}$/.test(pid)){ err.textContent='Le PID doit contenir exactement 7 chiffres.'; err.style.display='block'; return; }
@@ -2599,8 +2598,10 @@ async function submitSolo(){
   const fn=document.getElementById("s-first").value.trim();
   const ln=toTitleCase(document.getElementById("s-last").value.trim());
   const em=document.getElementById("s-email").value.trim();
+  const ph=document.getElementById("s-phone")?.value.trim()||'';
   const err=document.getElementById("solo-error");
   if(!fn||!ln||!em){err.textContent="Veuillez remplir tous les champs.";err.style.display="block";return;}
+  if(!ph){err.textContent="Le numéro de téléphone est obligatoire.";err.style.display="block";return;}
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){err.textContent="Email invalide.";err.style.display="block";return;}
   err.style.display="none";
   let intro;
@@ -3834,6 +3835,7 @@ async function manualRegister(){
   const msg   = document.getElementById('manual-reg-msg');
   msg.style.display='none';
   if(!firstName||!lastName||!email){ msg.style.display='block'; msg.style.color='#c00'; msg.textContent='Prénom, nom et email requis.'; return; }
+  if(!tel){ msg.style.display='block'; msg.style.color='#c00'; msg.textContent='Le numéro de téléphone est obligatoire.'; return; }
   if(pid && !/^\d{7}$/.test(pid)){ msg.style.display='block'; msg.style.color='#c00'; msg.textContent='Le PID doit contenir exactement 7 chiffres.'; return; }
   const btn = document.querySelector('#stab-manual .save-btn');
   btn.disabled=true; btn.textContent='Création…';
