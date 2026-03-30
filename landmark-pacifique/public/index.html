@@ -968,6 +968,15 @@ function formatPhoneNumber(value, fmt){
   return result;
 }
 
+function formatPhoneDisplay(tel){
+  if(!tel) return '';
+  const country = PHONE_COUNTRIES.find(c => tel.startsWith(c.dial));
+  if(!country) return tel;
+  const local = tel.slice(country.dial.length).trim();
+  const formatted = formatPhoneNumber(local, country.fmt);
+  return country.flag + ' ' + country.dial + ' ' + formatted;
+}
+
 function buildPhonePicker(wrapperId, inputId, opts={}){
   const wrap = document.getElementById(wrapperId);
   if(!wrap) return;
@@ -3482,7 +3491,7 @@ async function loadLeadersList(){
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
           <div class="user-row-info">
             <div class="user-row-name">${u.name||'—'} ${u.role !== 'utilisateur' ? badgeHtml : ''}${fonctionBadge}</div>
-            <div class="user-row-email">${u.email||''} ${u.pid?'• PID: '+u.pid:''} ${u.telephone?'• '+u.telephone:''}</div>
+            <div class="user-row-email">${u.email||''} ${u.pid?'• PID: '+u.pid:''} ${u.telephone?'• '+formatPhoneDisplay(u.telephone):''}</div>
           </div>
           <div class="user-row-actions">
             <button class="btn-edit-user" onclick="toggleEditLeader('${u.id||u.email}')">✎ Modifier</button>
@@ -3611,7 +3620,7 @@ async function loadPendingUsers(){
       <div class="user-row" id="pending-row-${u.id||u.email}">
         <div class="user-row-info">
           <div class="user-row-name">${u.name||'—'} <span class="badge-pending">En attente</span></div>
-          <div class="user-row-email">${u.email||''} ${u.pid?'• PID: '+u.pid:''} ${u.telephone?'• '+u.telephone:''}</div>
+          <div class="user-row-email">${u.email||''} ${u.pid?'• PID: '+u.pid:''} ${u.telephone?'• '+formatPhoneDisplay(u.telephone):''}</div>
         </div>
         <div class="user-row-actions">
           <button class="btn-approve" onclick="approveUser('${u.id||u.email}','${(u.email||'').replace(/'/g,"\\'")}')">✓ Approuver</button>
@@ -3635,6 +3644,7 @@ async function loadAllGradues(){
     ]);
     const list = Array.isArray(result) ? result : (result.users || result.data || []);
     const gradues = list.filter(u => u.role === 'gradue' || !u.role);
+    window._graduesListCache = gradues;
     if(gradues.length === 0){
       container.innerHTML = '<p style="color:#7a8a9a;font-size:13px;text-align:center;padding:12px">Aucun compte gradué trouvé.</p>';
       return;
@@ -3676,7 +3686,7 @@ async function loadAllGradues(){
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
           <div class="user-row-info">
             <div class="user-row-name">${u.name||'—'} ${statusBadge}</div>
-            <div class="user-row-email">${u.email||''} ${u.pid?'• PID: '+u.pid:''} ${u.telephone?'• '+u.telephone:''}</div>
+            <div class="user-row-email">${u.email||''} ${u.pid?'• PID: '+u.pid:''} ${u.telephone?'• '+formatPhoneDisplay(u.telephone):''}</div>
             ${guestHtml}
           </div>
           <div class="user-row-actions">
@@ -3706,7 +3716,7 @@ async function loadAllGradues(){
             </div>
             <div>
               <label class="fl" style="margin-top:0;font-size:12px">Téléphone (optionnel)</label>
-              <input type="tel" class="ai" id="edit-tel-${u.id||u.email}" value="${u.telephone||''}" style="font-size:13px;padding:7px 10px">
+              <div id="edit-tel-wrap-${u.id||u.email}" class="phone-picker-wrap" style="font-size:13px"></div>
             </div>
             <div>
               <label class="fl" style="margin-top:0;font-size:12px">Rôle</label>
@@ -3775,7 +3785,13 @@ async function deleteUserConfirm(userId, userName){
 function toggleEditGradue(userId){
   const form = document.getElementById('edit-form-'+userId);
   if(!form) return;
-  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+  const isOpening = form.style.display === 'none';
+  form.style.display = isOpening ? 'block' : 'none';
+  if(isOpening && !document.getElementById('edit-tel-'+userId)){
+    buildPhonePicker('edit-tel-wrap-'+userId, 'edit-tel-'+userId);
+    const cachedUser = (window._graduesListCache||[]).find(u=>(u.id||u.email)===userId);
+    if(cachedUser && cachedUser.telephone) setPhonePickerValue('edit-tel-'+userId, cachedUser.telephone);
+  }
 }
 
 async function saveEditGradue(userId){
