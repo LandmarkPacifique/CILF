@@ -3337,24 +3337,12 @@ async function loadLeadersList(){
   if(!container) return;
   container.innerHTML = '<p style="color:#7a8a9a;font-size:13px;text-align:center;padding:12px">Chargement…</p>';
   try {
-    const [result, allGuests] = await Promise.all([
-      apiFetch('/api/users-list'),
-      getAllGuests().catch(() => [])
-    ]);
+    const result = await apiFetch('/api/users-list');
     const list = Array.isArray(result) ? result : (result.users || result.data || []);
     if(list.length === 0){
       container.innerHTML = '<p style="color:#7a8a9a;font-size:13px;text-align:center;padding:12px">Aucun utilisateur trouvé.</p>';
       return;
     }
-
-    // Index guests par grad_email
-    const guestsByGrad = {};
-    allGuests.forEach(g => {
-      if(!g.grad_email) return;
-      if(!guestsByGrad[g.grad_email]) guestsByGrad[g.grad_email] = [];
-      guestsByGrad[g.grad_email].push(g);
-    });
-    Object.values(guestsByGrad).forEach(arr => arr.sort((a,b) => (b.date||b.timestamp||'').localeCompare(a.date||a.timestamp||'')));
 
     function getRoleInfo(role){
       if(role==='superadmin') return {label:'Super Admin', bg:'#fde8e8', color:'#b91c1c', border:'#f5b7b7'};
@@ -3372,30 +3360,12 @@ async function loadLeadersList(){
       const fonctionBadge = u.fonction ? `<span style="background:#f0f4ff;color:#5a6a9a;border:1px solid #c8d4f0;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:500;display:inline-block;margin-left:4px">${u.fonction === 'leader_intro' ? "Leader d'introduction" : u.fonction === 'gradue' ? 'Gradué' : u.fonction.replace('_',' ')}</span>` : '';
       const delBtn = isSuperAdmin ? `<button class="btn-delete-user" onclick="deleteLeaderConfirm('${u.id||u.email}','${(u.name||'').replace(/'/g,"\\'")}')">Supprimer</button>` : '';
 
-      // Infos invités
-      const guests = guestsByGrad[u.email] || [];
-      const lastGuest = guests[0] || null;
-      let guestHtml = '';
-      if(lastGuest) {
-        const introLabel = lastGuest.titre ? `« ${lastGuest.titre} »` : '';
-        const animLabel = lastGuest.animateur ? ` par ${lastGuest.animateur}` : '';
-        const dateLabel = lastGuest.date_tah || lastGuest.date || '';
-        guestHtml = `
-          <div style="margin-top:6px;padding:6px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:12px;color:#166534">
-            <span style="font-weight:600">👤 Dernier invité :</span> <span style="color:#1a9e6e;font-weight:600">${lastGuest.guest_name||'—'}</span>
-            ${lastGuest.guest_email ? `<span style="color:#7a8a9a"> · ${lastGuest.guest_email}</span>` : ''}
-            ${dateLabel || introLabel || animLabel ? `<br><span style="color:#7a8a9a;font-size:11px">Intro ${introLabel}${animLabel}${dateLabel ? ' · '+dateLabel : ''}</span>` : ''}
-            ${guests.length > 1 ? `<span style="margin-left:8px;background:#dcfce7;color:#166534;border-radius:20px;padding:1px 7px;font-size:10px;font-weight:600">${guests.length} invité(s) au total</span>` : ''}
-          </div>`;
-      }
-
       return `
       <div class="user-row" id="leader-row-${u.id||u.email}" style="flex-direction:column;align-items:stretch">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
           <div class="user-row-info">
             <div class="user-row-name">${u.name||'—'} ${badgeHtml}${fonctionBadge}</div>
             <div class="user-row-email">${u.email||''} ${u.pid?'• PID: '+u.pid:''} ${u.telephone?'• '+u.telephone:''}</div>
-            ${guestHtml}
           </div>
           <div class="user-row-actions">
             <button class="btn-edit-user" onclick="toggleEditLeader('${u.id||u.email}')">✎ Modifier</button>
