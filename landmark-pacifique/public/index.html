@@ -831,7 +831,7 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
       <div id="stab-manual" class="stab-panel" style="display:none">
         <div class="admin-card">
           <p style="font-size:14px;font-weight:500;color:var(--navy-deep);margin-bottom:4px">Inscrire manuellement un gradué</p>
-          <p style="font-size:12px;color:#7a8a9a;margin-bottom:18px">Créez un compte gradué directement. Le compte sera immédiatement actif (validé).</p>
+          <p style="font-size:12px;color:#7a8a9a;margin-bottom:18px">Créez un compte gradué directement. Un email avec un lien de définition du mot de passe sera envoyé automatiquement.</p>
           <div style="display:flex;flex-direction:column;gap:10px;max-width:420px">
             <div style="display:flex;gap:10px">
               <div style="flex:1">
@@ -853,15 +853,11 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
             </div>
             <div>
               <label class="fl" style="margin-top:0">Téléphone (optionnel)</label>
-              <input type="tel" class="ai" id="manual-tel" placeholder="+689 00 00 00 00">
-            </div>
-            <div>
-              <label class="fl" style="margin-top:0">Mot de passe provisoire</label>
-              <input type="password" class="ai" id="manual-pw" placeholder="Minimum 6 caractères">
+              <div id="manual-tel-wrap" class="phone-picker-wrap ai"></div>
             </div>
           </div>
           <p id="manual-reg-msg" style="margin-top:10px;font-size:13px;display:none"></p>
-          <button class="save-btn" style="margin-top:14px;max-width:300px" onclick="manualRegister()">Créer le compte</button>
+          <button class="save-btn" style="margin-top:14px;max-width:300px" onclick="manualRegister()">Créer le compte et envoyer le lien</button>
         </div>
       </div>
     </div>
@@ -3448,6 +3444,7 @@ function switchSettingsTab(id, btn){
   // Charger les données
   if(id==='validation'){ loadPendingUsers(); loadAllGradues(); }
   if(id==='users'){ _guestsCache = null; loadLeadersList(); }
+  if(id==='manual' && !document.getElementById('manual-tel')){ buildPhonePicker('manual-tel-wrap','manual-tel'); }
 }
 
 // ── LOAD LEADERS LIST ─────────────────────────────────────────────────────────
@@ -3471,6 +3468,7 @@ async function loadLeadersList(){
     const order = {superadmin:0, utilisateur:1, gradue:1};
     const filtered = list.filter(u => u.role !== 'invité' && u.role !== 'invite' && u.role !== 'guest');
     const sorted = [...filtered].sort((a,b) => (order[a.role]??3) - (order[b.role]??3));
+    window._leadersListCache = sorted; // cache pour toggleEditLeader
     const curSession = getSession();
     const isSuperAdmin = curSession && curSession.role === 'superadmin';
     container.innerHTML = sorted.map(u => {
@@ -3512,7 +3510,7 @@ async function loadLeadersList(){
             </div>
             <div>
               <label class="fl" style="margin-top:0;font-size:12px">Téléphone (optionnel)</label>
-              <input type="tel" class="ai" id="leader-tel-${u.id||u.email}" value="${u.telephone||''}" style="font-size:13px;padding:7px 10px">
+              <div id="leader-tel-wrap-${u.id||u.email}" class="phone-picker-wrap" style="font-size:13px"></div>
             </div>
             <div>
               <label class="fl" style="margin-top:0;font-size:12px">Rôle</label>
@@ -3546,7 +3544,18 @@ async function loadLeadersList(){
 function toggleEditLeader(userId){
   const form = document.getElementById('leader-edit-'+userId);
   if(!form) return;
-  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+  const isOpening = form.style.display === 'none';
+  form.style.display = isOpening ? 'block' : 'none';
+  if(isOpening && !document.getElementById('leader-tel-'+userId)){
+    buildPhonePicker('leader-tel-wrap-'+userId, 'leader-tel-'+userId);
+    // Pré-remplir avec la valeur du téléphone si disponible
+    const row = document.getElementById('leader-row-'+userId);
+    if(row){
+      const emailEl = form.querySelector('[id^="leader-email-"]');
+      const cachedUser = (window._leadersListCache||[]).find(u=>(u.id||u.email)===userId);
+      if(cachedUser && cachedUser.telephone) setPhonePickerValue('leader-tel-'+userId, cachedUser.telephone);
+    }
+  }
 }
 
 async function saveEditLeader(userId){
@@ -3801,35 +3810,41 @@ async function manualRegister(){
   const name      = (firstName + ' ' + lastName).trim();
   const email = document.getElementById('manual-email').value.trim();
   const pid   = document.getElementById('manual-pid').value.trim();
-  const tel   = document.getElementById('manual-tel').value.trim();
-  const pw    = document.getElementById('manual-pw').value;
+  const tel   = document.getElementById('manual-tel')?.value.trim() || '';
   const msg   = document.getElementById('manual-reg-msg');
   msg.style.display='none';
-  if(!firstName||!lastName||!email||!pw){ msg.style.display='block'; msg.style.color='#c00'; msg.textContent='Prénom, nom, email et mot de passe requis.'; return; }
-  if(pw.length < 6){ msg.style.display='block'; msg.style.color='#c00'; msg.textContent='Le mot de passe doit contenir au moins 6 caractères.'; return; }
+  if(!firstName||!lastName||!email){ msg.style.display='block'; msg.style.color='#c00'; msg.textContent='Prénom, nom et email requis.'; return; }
   if(pid && !/^\d{7}$/.test(pid)){ msg.style.display='block'; msg.style.color='#c00'; msg.textContent='Le PID doit contenir exactement 7 chiffres.'; return; }
   const btn = document.querySelector('#stab-manual .save-btn');
   btn.disabled=true; btn.textContent='Création…';
+  // Génère un mot de passe aléatoire temporaire (jamais communiqué)
+  const tmpPw = Math.random().toString(36).slice(-10) + Math.random().toString(36).slice(-4).toUpperCase() + '!9';
   try {
-    // On crée le compte avec status "approved" / validated:true pour qu'il soit actif immédiatement
     const res = await fetch(API_BASE + '/api/register', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ name, email, password:pw, pid:pid||null, telephone:tel||null, role:'gradue', status:'approved', validated:true, approved:true })
+      body: JSON.stringify({ name, first_name: firstName, last_name: lastName, email, password:tmpPw, pid:pid||null, telephone:tel||null, role:'gradue', status:'approved', validated:true, approved:true, fonction:'gradue' })
     });
     const data = await res.json();
-    if(!res.ok){ msg.style.display='block'; msg.style.color='#c00'; msg.textContent = data.error || 'Erreur lors de la création.'; btn.disabled=false; btn.textContent='Créer le compte'; return; }
-    msg.style.display='block'; msg.style.color='green'; msg.textContent='✓ Compte créé avec succès pour ' + name + ' !';
+    if(!res.ok){ msg.style.display='block'; msg.style.color='#c00'; msg.textContent = data.error || 'Erreur lors de la création.'; btn.disabled=false; btn.textContent='Créer le compte et envoyer le lien'; return; }
+    // Envoi automatique de l'email de réinitialisation du mot de passe
+    const userId = data.id || data.userId || email;
+    await sendResetPassword(userId, name, true);
+    msg.style.display='block'; msg.style.color='green'; msg.textContent='✓ Compte créé et email de définition du mot de passe envoyé à ' + email + ' !';
     document.getElementById('manual-first').value='';
     document.getElementById('manual-last').value='';
     document.getElementById('manual-email').value='';
     document.getElementById('manual-pid').value='';
-    document.getElementById('manual-tel').value='';
-    document.getElementById('manual-pw').value='';
-    btn.disabled=false; btn.textContent='Créer le compte';
+    // Reset phone picker
+    const numEl = document.getElementById('manual-tel-num');
+    const selEl = document.getElementById('manual-tel-country');
+    if(numEl) numEl.value='';
+    if(selEl) selEl.value='PF';
+    if(document.getElementById('manual-tel')) document.getElementById('manual-tel').value='';
+    btn.disabled=false; btn.textContent='Créer le compte et envoyer le lien';
   } catch(e){
     msg.style.display='block'; msg.style.color='#c00'; msg.textContent='Erreur réseau, réessayez.';
-    btn.disabled=false; btn.textContent='Créer le compte';
+    btn.disabled=false; btn.textContent='Créer le compte et envoyer le lien';
   }
 }
 
@@ -3864,17 +3879,20 @@ async function addUser(){
 }
 
 // ── SEND RESET PASSWORD (admin) ───────────────────────────────────────────────
-async function sendResetPassword(userId, userName){
-  const ok = await lmConfirm(`Envoyer un email de réinitialisation de mot de passe à ${userName} ?`, 'Envoyer');
-  if(!ok) return;
+async function sendResetPassword(userId, userName, silent=false){
+  if(!silent){
+    const ok = await lmConfirm(`Envoyer un email de réinitialisation de mot de passe à ${userName} ?`, 'Envoyer');
+    if(!ok) return;
+  }
   try {
     await apiFetch('/api/users', {
       method: 'POST',
       body: JSON.stringify({ action: 'reset_password', userId })
     });
-    alert(`✅ Email de réinitialisation envoyé à ${userName}.`);
+    if(!silent) alert(`✅ Email de réinitialisation envoyé à ${userName}.`);
   } catch(e) {
-    alert('Erreur : ' + e.message);
+    if(!silent) alert('Erreur : ' + e.message);
+    else throw e;
   }
 }
 
@@ -4042,6 +4060,7 @@ async function loadMaintenanceState() {
   // Init pickers de téléphone (formulaires visibles dès le début ou à la demande)
   buildPhonePicker('s-phone-wrap', 's-phone');
   buildPhonePicker('reg-tel-wrap', 'reg-tel');
+  buildPhonePicker('manual-tel-wrap', 'manual-tel');
   // Vérifie si un token de reset est présent dans l'URL
   const _resetParams = new URLSearchParams(window.location.search);
   const _resetToken = _resetParams.get('reset');
