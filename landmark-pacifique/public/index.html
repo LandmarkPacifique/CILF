@@ -4031,7 +4031,7 @@ async function loadMesIntros() {
 
   try {
     // Récupérer toutes les intros (CILF + PILF), y compris les archivées pour l'onglet "passées"
-    const fetchArchived = _mesIntrosCurrentTab === 'passe';
+    const fetchArchived = _mesIntrosCurrentTab === 'passees';
     const fetches = [
       getIntros(),
       getPilfIntros(),
