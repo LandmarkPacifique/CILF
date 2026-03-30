@@ -49,16 +49,23 @@ export default async function handler(req, res) {
     try {
       let rows;
       if (user.role === 'superadmin') {
-        rows = await sql`SELECT * FROM grad_guests ORDER BY created_at DESC`;
+        rows = await sql`
+          SELECT gg.*, COALESCE(i.archived, false) AS intro_archived
+          FROM grad_guests gg
+          LEFT JOIN introductions i ON i.id::text = gg.introduction_id
+          ORDER BY gg.created_at DESC
+        `;
       } else if (
         user.role === 'utilisateur' ||
         user.role === 'gradue' ||
         user.role === 'leader_intro'
       ) {
         rows = await sql`
-          SELECT * FROM grad_guests
-          WHERE grad_email = ${user.email}
-          ORDER BY created_at DESC
+          SELECT gg.*, COALESCE(i.archived, false) AS intro_archived
+          FROM grad_guests gg
+          LEFT JOIN introductions i ON i.id::text = gg.introduction_id
+          WHERE gg.grad_email = ${user.email}
+          ORDER BY gg.created_at DESC
         `;
       } else {
         return res.status(403).json({ error: 'Accès refusé' });
