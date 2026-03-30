@@ -1255,6 +1255,28 @@ async function apiFetch(path, opts = {}) {
   return res.json();
 }
 
+// ── PROXY WEBHOOK MAKE ────────────────────────────────────────────────────────
+// Appelle /api/webhook-make au lieu de Make.com directement (sécurité)
+async function makeWebhook(payload) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (_adminToken) {
+    headers['Authorization'] = 'Bearer ' + _adminToken;
+  }
+  try {
+    const res = await fetch(API_BASE + '/api/webhook-make', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.error('[makeWebhook] Erreur proxy:', res.status, err);
+    }
+  } catch (e) {
+    console.error('[makeWebhook] Erreur réseau:', e);
+  }
+}
+
 async function publicFetch(path) {
   const res = await fetch(API_BASE + path);
   if (!res.ok) throw new Error(`API ${path} → ${res.status}`);
@@ -1430,16 +1452,12 @@ async function doForgotPassword(){
     // 2. Si un token est retourné, envoie l'email via le webhook Make principal
     if(data.token){
       const resetLink = window.location.origin + window.location.pathname + '?reset=' + data.token;
-      await fetch("https://hook.us2.make.com/2njt9kkq4ovz75l0yg3otstsda4ug6ry", {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({
+      await makeWebhook({
           type:       'forgot_password',
           name:       data.name || '',
           email:      email,
           role:       data.role || '',
           reset_link: resetLink
-        })
       });
     }
 
@@ -1763,11 +1781,7 @@ async function sendResetFromCompte(){
     else {
       if(data.token){
         const resetLink = window.location.origin + window.location.pathname + '?reset=' + data.token;
-        await fetch("https://hook.us2.make.com/2njt9kkq4ovz75l0yg3otstsda4ug6ry", {
-          method:'POST',
-          headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ type:'forgot_password', name: session ? session.name : '', email, role: session ? session.role : '', reset_link: resetLink })
-        });
+        await makeWebhook({ type:'forgot_password', name: session ? session.name : '', email, role: session ? session.role : '', reset_link: resetLink });
       }
       suc.style.display='block';
     }
@@ -2088,10 +2102,7 @@ async function selectPilfIntro(id){
     const ccTAHFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","TAH").split("·")[1]||"":"";
     const ccNCFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","NC").split("·")[1]||"":"";
     const ccFRFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","FR").split("·")[1]||"":"";
-    await fetch("https://hook.us2.make.com/2njt9kkq4ovz75l0yg3otstsda4ug6ry", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
+    await makeWebhook({
         type:"solo",
         grad_name:window._gradueName,
         grad_email:window._graduEmail,
@@ -2105,7 +2116,6 @@ async function selectPilfIntro(id){
         cc_fin_tah:ccTAHFin, cc_fin_nc:ccNCFin, cc_fin_fr:ccFRFin,
         zoom_intro:intro.zoomIntro||"", zoom_cc:intro.zoomCC||"",
         zoom_intro_id:extractZoomId(intro.zoomIntro), zoom_cc_id:extractZoomId(intro.zoomCC)
-      })
     });
     logToSheets("graduate",{prenom:fn,nom:ln,email:window._graduEmail,telephone:window._gradueTelephone||"",pays:"",animateur:intro.animateur,titre:intro.titre,date_tah:tah,introduction_id:intro.id});
     markGradRegistered(intro.id, window._graduEmail);
@@ -2368,10 +2378,7 @@ async function selectIntro(id){
     const ccFRFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","FR").split("·")[1]||"":"";
     const sessionUTC=toUTC(intro.date,intro.heure);
     const [iy,im,idd]=intro.date.split("-").map(Number); const tMatin=Math.floor(Date.UTC(iy,im-1,idd,17,0)/1000); const t40=sessionUTC-40*60;
-    await fetch("https://hook.us2.make.com/2njt9kkq4ovz75l0yg3otstsda4ug6ry", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
+    await makeWebhook({
         type:"solo",
         grad_name:window._gradueName,
         grad_email:window._graduEmail,
@@ -2387,7 +2394,6 @@ async function selectIntro(id){
         zoom_intro:intro.zoomIntro||"", zoom_cc:intro.zoomCC||"",
         zoom_intro_id:extractZoomId(intro.zoomIntro), zoom_cc_id:extractZoomId(intro.zoomCC),
         t3h:tMatin, t30:t40
-      })
     });
     logToSheets("graduate",{prenom:fn,nom:ln,email:window._graduEmail,telephone:window._gradueTelephone||"",pays:"",animateur:intro.animateur,titre:intro.titre,date_tah:tah,introduction_id:intro.id});
     markGradRegistered(intro.id, window._graduEmail);
@@ -2541,10 +2547,7 @@ async function submitInvite(){
   const sessionUTC=toUTC(intro.date,intro.heure);
   const [iy,im,idd]=intro.date.split("-").map(Number); const tMatin=Math.floor(Date.UTC(iy,im-1,idd,17,0)/1000); const t40=sessionUTC-40*60;
   try{
-    await fetch("https://hook.us2.make.com/2njt9kkq4ovz75l0yg3otstsda4ug6ry", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
+    await makeWebhook({
         type:"guest_self",
         guest_name:fn+" "+ln,
         guest_email:em,
@@ -2561,7 +2564,6 @@ async function submitInvite(){
         zoom_intro:intro.zoomIntro||"", zoom_cc:intro.zoomCC||"",
         zoom_intro_id:extractZoomId(intro.zoomIntro), zoom_cc_id:extractZoomId(intro.zoomCC),
         t3h:tMatin, t30:t40
-      })
     });
   }catch(e){console.error("Make webhook invite:",e);}
   // Stocker les infos invité dans la BDD pour affichage admin/leader
@@ -2640,10 +2642,7 @@ async function submitSolo(){
   const sessionUTC=toUTC(intro.date,intro.heure);
   const [iy,im,idd]=intro.date.split("-").map(Number); const tMatin=Math.floor(Date.UTC(iy,im-1,idd,17,0)/1000); const t40=sessionUTC-40*60;
   try{
-    await fetch("https://hook.us2.make.com/2njt9kkq4ovz75l0yg3otstsda4ug6ry", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
+    await makeWebhook({
         type:"solo",
         grad_name:fn+" "+ln,
         grad_email:em,
@@ -2659,7 +2658,6 @@ async function submitSolo(){
         zoom_intro:intro.zoomIntro||"", zoom_cc:intro.zoomCC||"",
         zoom_intro_id:extractZoomId(intro.zoomIntro), zoom_cc_id:extractZoomId(intro.zoomCC),
         t3h:tMatin, t30:t40
-      })
     });
   }catch(e){console.error("Make webhook solo:",e);}
   btn.disabled=false;btn.textContent="Confirmer ma participation";
@@ -2713,10 +2711,7 @@ async function submitWithGuest(){
   const gradAlreadyReg = await checkGradAlreadyRegisteredServer(intro.id, gem);
   // Webhook Make (emails)
   try{
-    await fetch("https://hook.us2.make.com/2njt9kkq4ovz75l0yg3otstsda4ug6ry", {
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({
+    await makeWebhook({
         type:"guest",
         grad_name:gfn+" "+gln,
         grad_email:gem,
@@ -2735,7 +2730,6 @@ async function submitWithGuest(){
         zoom_intro_id:extractZoomId(intro.zoomIntro), zoom_cc_id:extractZoomId(intro.zoomCC),
         invite_link:getInviteLink(intro.id, gfn+" "+gln, gem, ufn+" "+uln, uem),
         t3h:tMatin, t30:t40
-      })
     });
   }catch(e){console.error("Make webhook:",e);}
   btn.disabled=false;btn.textContent="Envoyer";
