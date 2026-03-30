@@ -49,25 +49,16 @@ export default async function handler(req, res) {
     try {
       let rows;
       if (user.role === 'superadmin') {
-        // Super admin : tout voir sauf intros archivées
-        rows = await sql`
-          SELECT gg.* FROM grad_guests gg
-          LEFT JOIN introductions i ON i.id::text = gg.introduction_id
-          WHERE (i.archived IS NULL OR i.archived = false)
-          ORDER BY gg.created_at DESC
-        `;
+        rows = await sql`SELECT * FROM grad_guests ORDER BY created_at DESC`;
       } else if (
         user.role === 'utilisateur' ||
         user.role === 'gradue' ||
         user.role === 'leader_intro'
       ) {
-        // Gradué / leader : ses inscriptions, intros non archivées uniquement
         rows = await sql`
-          SELECT gg.* FROM grad_guests gg
-          LEFT JOIN introductions i ON i.id::text = gg.introduction_id
-          WHERE gg.grad_email = ${user.email}
-            AND (i.archived IS NULL OR i.archived = false)
-          ORDER BY gg.created_at DESC
+          SELECT * FROM grad_guests
+          WHERE grad_email = ${user.email}
+          ORDER BY created_at DESC
         `;
       } else {
         return res.status(403).json({ error: 'Accès refusé' });
