@@ -419,7 +419,7 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
       <div class="form-recap" id="solo-recap"></div>
       <div class="form-group"><label class="form-label">Prénom</label><input type="text" class="form-input" id="s-first" placeholder="Prénom"></div>
       <div class="form-group"><label class="form-label">Nom</label><input type="text" class="form-input" id="s-last" placeholder="Nom"></div>
-      <div class="form-group"><label class="form-label">Numéro de téléphone</label><input type="tel" class="form-input" id="s-phone" placeholder="+689 00 00 00 00"></div>
+      <div class="form-group"><label class="form-label">Numéro de téléphone</label><div id="s-phone-wrap" class="phone-picker-wrap"></div></div>
       <div class="form-group"><label class="form-label">Email</label><input type="email" class="form-input" id="s-email" placeholder="votre@email.com"></div>
       <p class="form-error" id="solo-error"></p>
       <button class="submit-btn" id="solo-submit" onclick="submitSolo()">Confirmer ma participation</button>
@@ -548,7 +548,7 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
         <label class="fl" style="text-align:left;display:block;margin-top:12px">PID (Votre référence chez Landmark - 7 chiffres)</label>
         <input type="text" id="reg-pid" class="ai" placeholder="1234567 (optionnel)" maxlength="7">
         <label class="fl" style="text-align:left;display:block;margin-top:12px">Téléphone</label>
-        <input type="tel" id="reg-tel" class="ai" placeholder="+689 00 00 00 00">
+        <div id="reg-tel-wrap" class="phone-picker-wrap ai"></div>
         <label class="fl" style="text-align:left;display:block;margin-top:12px">Mot de passe</label>
         <input type="password" id="reg-password" class="ai" placeholder="Minimum 6 caractères">
         <label class="fl" style="text-align:left;display:block;margin-top:12px">Confirmer le mot de passe</label>
@@ -657,7 +657,7 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
           <div style="flex:1;min-width:140px"><label class="fl" style="margin-top:0">Nom</label><input type="text" id="compte-last-input" class="form-input ai" placeholder="Nom"></div>
         </div>
         <label class="fl" style="margin-top:12px">Téléphone</label>
-        <input type="tel" id="compte-tel-input" class="form-input ai" placeholder="+689 00 00 00 00">
+        <div id="compte-tel-wrap" class="phone-picker-wrap ai"></div>
         <label class="fl" style="margin-top:12px">PID <span style="font-size:10px;color:#aab8c4">(Votre référence chez Landmark — 7 chiffres)</span></label>
         <input type="text" id="compte-pid-input" class="form-input ai" placeholder="1234567" maxlength="7">
         <p class="form-error" id="compte-info-error" style="display:none"></p>
@@ -906,6 +906,123 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
     </div>
   </div>
 </div>
+
+<style>
+/* ── PHONE PICKER ─────────────────────────────────────────────────────────── */
+.phone-picker-wrap { display:flex; gap:0; align-items:stretch; }
+.phone-picker-wrap .phone-country-select {
+  flex:0 0 auto;
+  border:1px solid #ddd; border-right:none;
+  border-radius:8px 0 0 8px;
+  padding:0 8px;
+  font-size:13px; font-family:inherit;
+  background:#f8f9fb; color:#2a3a4a;
+  cursor:pointer; height:42px;
+  min-width:90px;
+  appearance:none; -webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236a7a8a'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 8px center;
+  padding-right:24px;
+}
+.phone-picker-wrap .phone-number-input {
+  flex:1; border:1px solid #ddd;
+  border-radius:0 8px 8px 0;
+  padding:10px 12px; font-size:14px; font-family:inherit;
+  color:#2a3a4a; background:#fff; outline:none;
+  height:42px; box-sizing:border-box;
+}
+.phone-picker-wrap .phone-number-input:focus { border-color:#38d8f0; box-shadow:0 0 0 2px rgba(56,216,240,.15); }
+.phone-picker-wrap .phone-country-select:focus { outline:none; border-color:#38d8f0; }
+.ai.phone-picker-wrap { display:flex; }
+</style>
+
+<script>
+// ── PAYS & INDICATIFS ──────────────────────────────────────────────────────
+const PHONE_COUNTRIES = [
+  {code:'PF', dial:'+689', flag:'🇵🇫', name:'Polynésie française', fmt:'## ## ## ##'},
+  {code:'NC', dial:'+687', flag:'🇳🇨', name:'Nouvelle-Calédonie', fmt:'## ## ##'},
+  {code:'FR', dial:'+33',  flag:'🇫🇷', name:'France',             fmt:'# ## ## ## ##'},
+  {code:'RE', dial:'+262', flag:'🇷🇪', name:'La Réunion',         fmt:'### ## ## ##'},
+  {code:'GP', dial:'+590', flag:'🇬🇵', name:'Guadeloupe',         fmt:'### ## ## ##'},
+  {code:'MQ', dial:'+596', flag:'🇲🇶', name:'Martinique',         fmt:'### ## ## ##'},
+  {code:'GF', dial:'+594', flag:'🇬🇫', name:'Guyane française',   fmt:'### ## ## ##'},
+  {code:'PM', dial:'+508', flag:'🇵🇲', name:'St-Pierre-et-Miquelon', fmt:'## ####'},
+  {code:'WF', dial:'+681', flag:'🇼🇫', name:'Wallis-et-Futuna',   fmt:'## ## ##'},
+  {code:'AU', dial:'+61',  flag:'🇦🇺', name:'Australie',          fmt:'### ### ###'},
+  {code:'NZ', dial:'+64',  flag:'🇳🇿', name:'Nouvelle-Zélande',   fmt:'## ### ####'},
+  {code:'US', dial:'+1',   flag:'🇺🇸', name:'États-Unis',         fmt:'(###) ###-####'},
+  {code:'CA', dial:'+1',   flag:'🇨🇦', name:'Canada',             fmt:'(###) ###-####'},
+  {code:'GB', dial:'+44',  flag:'🇬🇧', name:'Royaume-Uni',        fmt:'#### ### ####'},
+  {code:'BE', dial:'+32',  flag:'🇧🇪', name:'Belgique',           fmt:'### ## ## ##'},
+  {code:'CH', dial:'+41',  flag:'🇨🇭', name:'Suisse',             fmt:'## ### ## ##'},
+  {code:'DE', dial:'+49',  flag:'🇩🇪', name:'Allemagne',          fmt:'#### #######'},
+  {code:'ES', dial:'+34',  flag:'🇪🇸', name:'Espagne',            fmt:'### ### ###'},
+  {code:'IT', dial:'+39',  flag:'🇮🇹', name:'Italie',             fmt:'### ### ####'},
+  {code:'JP', dial:'+81',  flag:'🇯🇵', name:'Japon',              fmt:'## #### ####'},
+  {code:'SG', dial:'+65',  flag:'🇸🇬', name:'Singapour',          fmt:'#### ####'},
+];
+
+function formatPhoneNumber(value, fmt){
+  const digits = value.replace(/\D/g,'');
+  let result = ''; let di = 0;
+  for(let i=0;i<fmt.length && di<digits.length;i++){
+    if(fmt[i]==='#'){ result+=digits[di++]; }
+    else { if(di>0) result+=fmt[i]; }
+  }
+  return result;
+}
+
+function buildPhonePicker(wrapperId, inputId, opts={}){
+  const wrap = document.getElementById(wrapperId);
+  if(!wrap) return;
+  const defaultDial = opts.defaultDial || '+689';
+  const country = PHONE_COUNTRIES.find(c=>c.dial===defaultDial) || PHONE_COUNTRIES[0];
+
+  const selectId = inputId + '-country';
+  const numId    = inputId + '-num';
+
+  wrap.innerHTML = `
+    <select class="phone-country-select" id="${selectId}">
+      ${PHONE_COUNTRIES.map(c=>`<option value="${c.code}" ${c.code===country.code?'selected':''}>${c.flag} ${c.dial}</option>`).join('')}
+    </select>
+    <input type="tel" class="phone-number-input" id="${numId}" placeholder="${country.fmt.replace(/#/g,'0')}" autocomplete="tel">
+    <input type="hidden" id="${inputId}">
+  `;
+
+  const sel = document.getElementById(selectId);
+  const num = document.getElementById(numId);
+  const hid = document.getElementById(inputId);
+
+  function update(){
+    const c = PHONE_COUNTRIES.find(x=>x.code===sel.value) || PHONE_COUNTRIES[0];
+    num.placeholder = c.fmt.replace(/#/g,'0');
+    num.value = formatPhoneNumber(num.value, c.fmt);
+    hid.value = num.value ? c.dial + ' ' + num.value : '';
+  }
+  sel.addEventListener('change', update);
+  num.addEventListener('input', ()=>{
+    const c = PHONE_COUNTRIES.find(x=>x.code===sel.value) || PHONE_COUNTRIES[0];
+    num.value = formatPhoneNumber(num.value, c.fmt);
+    hid.value = num.value ? c.dial + ' ' + num.value : '';
+  });
+}
+
+function setPhonePickerValue(inputId, fullNumber){
+  if(!fullNumber) return;
+  const country = PHONE_COUNTRIES.find(c => fullNumber.startsWith(c.dial));
+  if(!country) return;
+  const selectId = inputId + '-country';
+  const numId    = inputId + '-num';
+  const sel = document.getElementById(selectId);
+  const num = document.getElementById(numId);
+  const hid = document.getElementById(inputId);
+  if(!sel||!num||!hid) return;
+  sel.value = country.code;
+  const local = fullNumber.slice(country.dial.length).trim();
+  num.value = formatPhoneNumber(local, country.fmt);
+  hid.value = fullNumber;
+}
+</script>
 
 <script>
 
@@ -1241,8 +1358,6 @@ async function doRegister(){
   if(pwd !== pwd2){ err.textContent='Les mots de passe ne correspondent pas.'; err.style.display='block'; return; }
   if(pwd.length < 6){ err.textContent='Le mot de passe doit contenir au moins 6 caractères.'; err.style.display='block'; return; }
   if(pid && !/^\d{7}$/.test(pid)){ err.textContent='Le PID doit contenir exactement 7 chiffres.'; err.style.display='block'; return; }
-  const profileEl = null;
-  const profileVal = 'gradue';
   const btn = document.getElementById('reg-btn');
   btn.disabled=true; btn.textContent='Création…';
   try {
@@ -1254,7 +1369,7 @@ async function doRegister(){
           last_name: lastName,
           email, password:pwd, pid:pid||null, telephone:tel||null,
           role: 'utilisateur',
-          fonction: profileVal === 'leader' ? 'leader_intro' : null
+          fonction: 'gradue'
         })
     });
     const data = await res.json();
@@ -1412,22 +1527,23 @@ async function openMonCompte(){
   const btnRetourAdmin = document.getElementById('btn-retour-admin');
   if(btnRetourAdmin) btnRetourAdmin.style.display = (session.role === 'superadmin' || (session.role === 'utilisateur' && (getSessionExtra().fonction === 'leader_intro'))) ? '' : 'none';
 
+  // Assure que le picker est construit avant de remplir
+  if(!document.getElementById('compte-tel-input')) buildPhonePicker('compte-tel-wrap','compte-tel-input');
+
   // Chargement du profil (avec cache)
   const firstInput = document.getElementById('compte-first-input');
   const lastInput  = document.getElementById('compte-last-input');
-  const telInput   = document.getElementById('compte-tel-input');
   const pidInput   = document.getElementById('compte-pid-input');
 
   if(_profileCache){
     if(firstInput) firstInput.value = _profileCache.first_name || '';
     if(lastInput)  lastInput.value  = _profileCache.last_name  || '';
-    if(telInput)   telInput.value   = _profileCache.telephone  || '';
+    if(_profileCache.telephone) setPhonePickerValue('compte-tel-input', _profileCache.telephone);
     if(pidInput)   pidInput.value   = _profileCache.pid        || '';
   } else {
-    if(!firstInput || !lastInput || !telInput || !pidInput) return;
+    if(!firstInput || !lastInput || !pidInput) return;
     firstInput.placeholder = 'Chargement…';
     lastInput.placeholder  = 'Chargement…';
-    telInput.placeholder   = 'Chargement…';
     pidInput.placeholder   = 'Chargement…';
     // Pré-remplit depuis l'API
     try {
@@ -1439,14 +1555,13 @@ async function openMonCompte(){
         _profileCache = data;
         firstInput.value = data.first_name || '';
         lastInput.value  = data.last_name  || '';
-        telInput.value   = data.telephone  || '';
+        if(data.telephone) setPhonePickerValue('compte-tel-input', data.telephone);
         pidInput.value   = data.pid        || '';
       }
     } catch(e){ console.error('profile fetch:', e); }
     finally {
       firstInput.placeholder = 'Prénom';
       lastInput.placeholder  = 'Nom';
-      telInput.placeholder   = '+689 00 00 00 00';
       pidInput.placeholder   = '1234567';
     }
   }
@@ -1783,17 +1898,21 @@ function goPage(id){
   if(_protectedPages.includes(id) && sessionStorage.getItem('lm_jwt')){
     sessionStorage.setItem('lm_last_page', id);
   }
+  // Init phone picker solo form si pas encore fait
+  if(id==='page-form-solo' && !document.getElementById('s-phone')){
+    buildPhonePicker('s-phone-wrap','s-phone');
+  }
   // Pré-remplissage si gradué connecté
   if(window._gradueName){
     if(id==='page-form-solo'){
       const parts = (window._gradueName||'').split(' ');
       const fn = parts[0]||''; const ln = parts.slice(1).join(' ')||'';
       const sf = document.getElementById('s-first'); const sl = document.getElementById('s-last');
-      const sp = document.getElementById('s-phone'); const se = document.getElementById('s-email');
+      const se = document.getElementById('s-email');
       if(sf&&!sf.value) sf.value=fn;
       if(sl&&!sl.value) sl.value=ln;
-      if(sp&&!sp.value) sp.value=window._gradueTelephone||'';
       if(se&&!se.value) se.value=window._graduEmail||'';
+      if(window._gradueTelephone) setPhonePickerValue('s-phone', window._gradueTelephone);
     }
     if(id==='page-form-guest'){
       const parts = (window._gradueName||'').split(' ');
@@ -3920,6 +4039,9 @@ async function loadMaintenanceState() {
 }
 
 (async function init(){
+  // Init pickers de téléphone (formulaires visibles dès le début ou à la demande)
+  buildPhonePicker('s-phone-wrap', 's-phone');
+  buildPhonePicker('reg-tel-wrap', 'reg-tel');
   // Vérifie si un token de reset est présent dans l'URL
   const _resetParams = new URLSearchParams(window.location.search);
   const _resetToken = _resetParams.get('reset');
