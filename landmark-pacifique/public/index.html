@@ -1207,20 +1207,17 @@ async function apiFetch(path, opts = {}) {
     headers['x-admin-token'] = _adminToken;
     headers['Authorization'] = 'Bearer ' + _adminToken;
   }
-  // Ajoute aussi le token en query param comme fallback
-  const sep = path.includes('?') ? '&' : '?';
-  const url = API_BASE + path + (_adminToken ? sep + '_token=' + encodeURIComponent(_adminToken) : '');
+  const url = API_BASE + path;
 
   // Debug : log la requête
   const debugInfo = {
-    url: url.replace(/_token=[^&]+/, '_token=[REDACTED]'),
+    url: url,
     method: opts.method || 'GET',
     tokenPresent: !!_adminToken,
     tokenRole: _adminToken ? (jwtDecode(_adminToken)||{}).role : null,
     tokenExp: _adminToken ? new Date(((jwtDecode(_adminToken)||{}).exp||0)*1000).toISOString() : null,
     bodyKeys: opts.body ? Object.keys(JSON.parse(opts.body)) : null,
   };
-  console.log('[apiFetch →]', debugInfo);
 
   const res = await fetch(url, { ...opts, headers });
   if (!res.ok) {
@@ -1598,14 +1595,12 @@ async function loadComptIntros(gradEmail) {
   try {
     // Charger toutes les entrées du gradué depuis /api/guests
     const all = await getAllGuests();
-    console.log('[loadComptIntros] total guests reçus:', all.length, '| email recherché:', gradEmail);
 
     // Filtre par grad_email
     const mine = all.filter(g =>
       g.grad_email && gradEmail &&
       g.grad_email.toLowerCase() === gradEmail.toLowerCase()
     );
-    console.log('[loadComptIntros] inscriptions trouvées pour cet email:', mine.length);
 
     const allMine = mine;
 
@@ -2146,7 +2141,6 @@ async function getLeadersList(){
   if(!_adminToken) { console.warn('[leaders] pas de token admin'); return []; }
   try {
     const result = await apiFetch('/api/users-list');
-    console.log('[leaders] résultat API:', JSON.stringify(result));
     // Le serveur peut retourner { users: [...] } ou directement [...]
     const list = Array.isArray(result) ? result : (result.users || result.data || []);
     if(list.length > 0) _leadersList = list;
@@ -4369,35 +4363,26 @@ async function saveGuestRecord(data) {
     headers['Authorization'] = 'Bearer ' + token;
     headers['x-admin-token'] = token;
   }
-  const sep = token ? '?_token=' + encodeURIComponent(token) : '';
-
   // Essai 1 : /api/guests (endpoint standard)
   try {
-    const res = await fetch(API_BASE + '/api/guests' + sep, { method: 'POST', headers, body: payload });
+    const res = await fetch(API_BASE + '/api/guests', { method: 'POST', headers, body: payload });
     if (res.ok) {
       _guestsCache = null; // invalider le cache
-      console.log('[saveGuestRecord] ✓ sauvegardé dans /api/guests');
       return;
     }
-    console.warn('[saveGuestRecord] /api/guests HTTP', res.status, '— essai /api/register-intro');
   } catch(e) {
-    console.warn('[saveGuestRecord] /api/guests réseau KO:', e.message);
   }
 
   // Essai 2 : /api/register-intro (endpoint dédié gradués si disponible)
   try {
-    const res2 = await fetch(API_BASE + '/api/register-intro' + sep, { method: 'POST', headers, body: payload });
+    const res2 = await fetch(API_BASE + '/api/register-intro', { method: 'POST', headers, body: payload });
     if (res2.ok) {
       _guestsCache = null;
-      console.log('[saveGuestRecord] ✓ sauvegardé dans /api/register-intro');
       return;
     }
-    console.warn('[saveGuestRecord] /api/register-intro HTTP', res2.status);
   } catch(e2) {
-    console.warn('[saveGuestRecord] /api/register-intro réseau KO:', e2.message);
   }
 
-  console.warn('[saveGuestRecord] Échec sauvegarde API. L\'inscription n\'a pas pu être enregistrée en base.');
 }
 
 // Récupère tous les guests depuis l'API Neon (source de vérité unique)
@@ -4412,20 +4397,16 @@ async function getAllGuests() {
       headers['Authorization'] = 'Bearer ' + token;
       headers['x-admin-token'] = token;
     }
-    const sep = token ? '?_token=' + encodeURIComponent(token) : '';
-    const res = await fetch(API_BASE + '/api/guests' + sep, { headers });
+    const res = await fetch(API_BASE + '/api/guests', { headers });
     if (res.ok) {
       const result = await res.json();
       const records = Array.isArray(result) ? result : (result.guests || result.data || []);
-      console.log('[getAllGuests] API Neon: ' + records.length + ' records');
       _guestsCache = records;
       return _guestsCache;
     } else {
-      console.warn('[getAllGuests] API HTTP', res.status);
       return [];
     }
   } catch(e) {
-    console.warn('[getAllGuests] API error:', e.message);
     return [];
   }
 }
