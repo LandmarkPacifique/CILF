@@ -1430,34 +1430,13 @@ async function doForgotPassword(){
   const btn = document.getElementById('forgot-btn');
   btn.disabled=true; btn.textContent='Envoi…';
   try {
-    // 1. Génère le token côté backend
-    const res = await fetch(API_BASE + '/api/forgot-password', {
+    // Le backend génère le token ET envoie l'email via Make — rien ne transite par le frontend
+    await fetch(API_BASE + '/api/forgot-password', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ email })
     });
-    const data = await res.json();
-
-    // Email non trouvé en BDD
-    if(data.not_found){
-      err.textContent='Aucun compte trouvé avec cet email.';
-      err.style.display='block';
-      btn.disabled=false; btn.textContent='Envoyer le lien de réinitialisation';
-      return;
-    }
-
-    // 2. Si un token est retourné, envoie l'email via le webhook Make principal
-    if(data.token){
-      const resetLink = window.location.origin + window.location.pathname + '?reset=' + data.token;
-      await makeWebhook({
-          type:       'forgot_password',
-          name:       data.name || '',
-          email:      email,
-          role:       data.role || '',
-          reset_link: resetLink
-      });
-    }
-
+    // Réponse identique que l'email existe ou non (anti-énumération)
     suc.style.display='block';
     btn.disabled=false; btn.textContent='Envoyer le lien de réinitialisation';
   } catch(e){
@@ -1771,15 +1750,8 @@ async function sendResetFromCompte(){
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ email })
     });
-    const data = await res.json();
-    if(data.not_found){ err.textContent='Email introuvable.'; err.style.display='block'; }
-    else {
-      if(data.token){
-        const resetLink = window.location.origin + window.location.pathname + '?reset=' + data.token;
-        await makeWebhook({ type:'forgot_password', name: session ? session.name : '', email, role: session ? session.role : '', reset_link: resetLink });
-      }
-      suc.style.display='block';
-    }
+    // Le backend génère le token ET envoie l'email via Make
+    suc.style.display='block';
   } catch(e){ err.textContent='Erreur réseau.'; err.style.display='block'; }
   finally { if(btn){ btn.disabled=false; btn.textContent='Envoyez-moi un lien de réinitialisation'; } }
 }
