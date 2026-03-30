@@ -1457,20 +1457,7 @@ async function loadComptIntros(gradEmail) {
     );
     console.log('[loadComptIntros] inscriptions trouvées pour cet email:', mine.length);
 
-    // Lire aussi le localStorage pour les records locaux non encore synchronisés
-    let localRecords = [];
-    try { localRecords = JSON.parse(localStorage.getItem('lm_my_registrations') || '[]'); } catch(e) {}
-    const localMine = localRecords.filter(g =>
-      g.grad_email && gradEmail &&
-      g.grad_email.toLowerCase() === gradEmail.toLowerCase()
-    );
-    // Marquer les records qui ne sont PAS encore dans l'API
-    const apiKeys = new Set(mine.map(r => String(r.introduction_id) + '|' + (r.grad_email||'').toLowerCase()));
-    const pendingSync = localMine.filter(r =>
-      !apiKeys.has(String(r.introduction_id) + '|' + (r.grad_email||'').toLowerCase())
-    ).map(r => ({...r, _pendingSync: true}));
-
-    const allMine = [...mine, ...pendingSync];
+    const allMine = mine;
 
     if(allMine.length === 0){
       el.innerHTML = '<p style="font-size:13px;color:#7a8a9a;text-align:center;padding:10px 0">Aucune inscription enregistrée.</p>';
@@ -1507,9 +1494,7 @@ async function loadComptIntros(gradEmail) {
              <span style="font-weight:600">👤 Invité(e) :</span> <strong>${g.guest_name}</strong>${g.guest_email ? ' <span style="color:#7a8a9a">· '+g.guest_email+'</span>' : ''}
            </div>`
         : '';
-      const syncBadge = g._pendingSync
-        ? '<span style="background:#fff8e1;color:#b45309;border:1px solid #fcd34d;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:600;margin-left:4px" title="Sera synchronisé au prochain chargement">⏳ local</span>'
-        : '';
+      const syncBadge = '';
       return `
         <div style="padding:14px;border:1px solid ${isUpcoming ? '#b7e8d2' : '#e0e0e0'};border-radius:12px;margin-bottom:10px;background:${isUpcoming ? '#f4fdf8' : '#fafafa'}">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
@@ -4035,21 +4020,7 @@ async function saveGuestRecord(data) {
     timestamp: new Date().toISOString()
   };
 
-  // Stocker immédiatement dans localStorage (persistant entre sessions)
-  // pour que "Mes introductions" fonctionne même si l'API échoue
-  try {
-    const lsKey = 'lm_my_registrations';
-    const existing = JSON.parse(localStorage.getItem(lsKey) || '[]');
-    // Dédoublonner : remplacer si même introduction_id + grad_email
-    const filtered = existing.filter(r =>
-      !(String(r.introduction_id) === String(record.introduction_id) &&
-        (r.grad_email||'').toLowerCase() === (record.grad_email||'').toLowerCase())
-    );
-    filtered.unshift(record);
-    localStorage.setItem(lsKey, JSON.stringify(filtered.slice(0, 500)));
-  } catch(e2) { console.warn('[saveGuestRecord] localStorage write failed:', e2.message); }
-
-  // Puis tenter la sauvegarde API (en arrière-plan)
+  // Sauvegarde API (source de vérité : base Neon)
   const payload = JSON.stringify(record);
   const token = sessionStorage.getItem('lm_jwt');
   const headers = { 'Content-Type': 'application/json' };
@@ -4085,22 +4056,14 @@ async function saveGuestRecord(data) {
     console.warn('[saveGuestRecord] /api/register-intro réseau KO:', e2.message);
   }
 
-  console.warn('[saveGuestRecord] Sauvegardé en localStorage uniquement. Sera synchronisé au prochain chargement.');
+  console.warn('[saveGuestRecord] Échec sauvegarde API. L\'inscription n\'a pas pu être enregistrée en base.');
 }
 
-// Récupère tous les guests depuis l'API + les inscriptions locales (gradués)
+// Récupère tous les guests depuis l'API Neon (source de vérité unique)
 let _guestsCache = null;
 async function getAllGuests() {
   if (_guestsCache) return _guestsCache;
 
-  // Lire les inscriptions locales persistantes (localStorage) — toujours disponibles
-  let localRecords = [];
-  try {
-    localRecords = JSON.parse(localStorage.getItem('lm_my_registrations') || '[]');
-  } catch(e) {}
-
-  // Tenter la récupération API
-  let apiRecords = [];
   try {
     const token = sessionStorage.getItem('lm_jwt');
     const headers = { 'Content-Type': 'application/json' };
@@ -4112,41 +4075,18 @@ async function getAllGuests() {
     const res = await fetch(API_BASE + '/api/guests' + sep, { headers });
     if (res.ok) {
       const result = await res.json();
-      apiRecords = Array.isArray(result) ? result : (result.guests || result.data || []);
-      console.log('[getAllGuests] API: ' + apiRecords.length + ' records');
-
-      // Synchroniser : si un record local est déjà dans l'API, le supprimer du localStorage
-      if (localRecords.length > 0 && apiRecords.length > 0) {
-        const apiKeys = new Set(apiRecords.map(r =>
-          String(r.introduction_id) + '|' + (r.grad_email||'').toLowerCase()
-        ));
-        const stillLocal = localRecords.filter(r =>
-          !apiKeys.has(String(r.introduction_id) + '|' + (r.grad_email||'').toLowerCase())
-        );
-        if (stillLocal.length !== localRecords.length) {
-          try { localStorage.setItem('lm_my_registrations', JSON.stringify(stillLocal)); } catch(e) {}
-          localRecords = stillLocal;
-          console.log('[getAllGuests] ' + (localRecords.length - stillLocal.length) + ' records locaux synchronisés avec l\'API');
-        }
-      }
+      const records = Array.isArray(result) ? result : (result.guests || result.data || []);
+      console.log('[getAllGuests] API Neon: ' + records.length + ' records');
+      _guestsCache = records;
+      return _guestsCache;
     } else {
       console.warn('[getAllGuests] API HTTP', res.status);
+      return [];
     }
   } catch(e) {
     console.warn('[getAllGuests] API error:', e.message);
+    return [];
   }
-
-  // Fusionner : API en priorité, compléter avec les records locaux non présents dans l'API
-  const apiKeys = new Set(apiRecords.map(r =>
-    String(r.introduction_id) + '|' + (r.grad_email||'').toLowerCase()
-  ));
-  const onlyLocal = localRecords.filter(r =>
-    !apiKeys.has(String(r.introduction_id) + '|' + (r.grad_email||'').toLowerCase())
-  );
-  const merged = [...apiRecords, ...onlyLocal];
-  console.log('[getAllGuests] total fusionné: ' + merged.length + ' (' + apiRecords.length + ' API + ' + onlyLocal.length + ' local)');
-  _guestsCache = merged;
-  return _guestsCache;
 }
 
 // Retourne les invités d'un gradué donné (par email)
