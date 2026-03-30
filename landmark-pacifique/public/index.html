@@ -1466,8 +1466,9 @@ async function loadComptIntros(gradEmail) {
 
     // Date du jour dans le fuseau horaire local du navigateur du gradué
     const todayStr = new Date().toLocaleDateString('en-CA'); // "YYYY-MM-DD" dans le TZ local
-    function isUpcomingDate(dateStr) {
-      if (!dateStr) return true; // pas de date → à venir par précaution
+    function isUpcomingDate(dateStr, archived) {
+      if (archived) return false; // intro archivée → toujours dans "Passées"
+      if (!dateStr) return true;
       return dateStr >= todayStr;
     }
 
@@ -1477,7 +1478,6 @@ async function loadComptIntros(gradEmail) {
     allMine.forEach(g => {
       const key = String(g.introduction_id);
       if (!byIntro[key]) {
-        // Première occurrence : initialiser avec les infos de l'intro
         byIntro[key] = {
           introduction_id: g.introduction_id,
           animateur: g.animateur,
@@ -1485,6 +1485,7 @@ async function loadComptIntros(gradEmail) {
           date: g.date,
           date_tah: g.date_tah,
           created_at: g.created_at,
+          intro_archived: g.intro_archived || false,
           guests: []
         };
       }
@@ -1498,11 +1499,11 @@ async function loadComptIntros(gradEmail) {
     // Trier par date (plus récente en tête)
     grouped.sort((a, b) => (b.date||b.created_at||'').localeCompare(a.date||a.created_at||''));
 
-    const upcoming = grouped.filter(g => isUpcomingDate(g.date));
-    const past     = grouped.filter(g => !isUpcomingDate(g.date));
+    const upcoming = grouped.filter(g => isUpcomingDate(g.date, g.intro_archived));
+    const past     = grouped.filter(g => !isUpcomingDate(g.date, g.intro_archived));
 
     function renderCard(g) {
-      const isUp = isUpcomingDate(g.date);
+      const isUp = isUpcomingDate(g.date, g.intro_archived);
       const statusDot = isUp
         ? '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#1a9e6e;margin-right:6px;vertical-align:middle"></span>'
         : '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#aaa;margin-right:6px;vertical-align:middle"></span>';
