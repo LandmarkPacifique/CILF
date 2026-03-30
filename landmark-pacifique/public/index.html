@@ -1488,11 +1488,11 @@ async function loadComptIntros(gradEmail) {
           guests: []
         };
       }
-      // Ajouter l'invité s'il existe et n'est pas déjà dans la liste
+      // Ajouter l'invité s'il existe — dédoublonnage par id de l'enregistrement uniquement
       if (g.guest_name) {
-        const alreadyAdded = byIntro[key].guests.some(gu => gu.name === g.guest_name && gu.email === g.guest_email);
+        const alreadyAdded = byIntro[key].guests.some(gu => gu.id === g.id);
         if (!alreadyAdded) {
-          byIntro[key].guests.push({ name: g.guest_name, email: g.guest_email });
+          byIntro[key].guests.push({ id: g.id, name: g.guest_name, email: g.guest_email });
         }
       }
     });
