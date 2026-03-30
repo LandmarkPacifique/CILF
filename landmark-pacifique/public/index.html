@@ -1473,37 +1473,51 @@ async function loadComptIntros(gradEmail) {
     const unique = Object.values(byIntro);
 
     // Trier par date d'intro (la plus récente en tête)
-    unique.sort((a, b) => (b.date||b.timestamp||'').localeCompare(a.date||a.timestamp||''));
+    unique.sort((a, b) => (b.date||b.created_at||'').localeCompare(a.date||a.created_at||''));
 
     // Séparer à venir / passées
-    const today = new Date().toISOString().slice(0,10);
-    const upcoming = unique.filter(g => (g.date||'') >= today);
-    const past     = unique.filter(g => (g.date||'') < today);
+    // Comparaison robuste : utiliser la date en UTC à minuit pour éviter les décalages horaires
+    const todayStr = new Date().toISOString().slice(0,10); // "YYYY-MM-DD"
+    function isUpcomingDate(dateStr) {
+      if (!dateStr) return true; // Si pas de date, on met en "à venir" par précaution
+      // dateStr est au format "YYYY-MM-DD" — on compare uniquement les dates sans heure
+      return dateStr >= todayStr;
+    }
+    const upcoming = unique.filter(g => isUpcomingDate(g.date));
+    const past     = unique.filter(g => !isUpcomingDate(g.date));
+
+    // Regrouper tous les enregistrements par introduction_id pour lister les invités
+    const guestsByIntro = {};
+    allMine.forEach(g => {
+      const key = String(g.introduction_id);
+      if (!guestsByIntro[key]) guestsByIntro[key] = [];
+      if (g.guest_name) guestsByIntro[key].push({ name: g.guest_name, email: g.guest_email });
+    });
 
     function renderCard(g) {
-      const isUpcoming = (g.date||'') >= today;
-      const isSolo = (g.type === 'solo' || !g.guest_name);
-      const typeBadge = isSolo
-        ? '<span style="background:#e8f8f0;color:#1a9e6e;border:1px solid #b7e8d2;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">Solo</span>'
-        : '<span style="background:#f0f4ff;color:#5a6a9a;border:1px solid #c8d4f0;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.06em">Avec invité</span>';
-      const statusDot = isUpcoming
+      const isUp = isUpcomingDate(g.date);
+      const statusDot = isUp
         ? '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#1a9e6e;margin-right:6px;vertical-align:middle"></span>'
         : '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#aaa;margin-right:6px;vertical-align:middle"></span>';
-      const guestHtml = (!isSolo && g.guest_name)
-        ? `<div style="margin-top:6px;padding:6px 10px;background:#f0f4ff;border:1px solid #c8d4f0;border-radius:8px;font-size:12px;color:#3a4a7a">
-             <span style="font-weight:600">👤 Invité(e) :</span> <strong>${g.guest_name}</strong>${g.guest_email ? ' <span style="color:#7a8a9a">· '+g.guest_email+'</span>' : ''}
-           </div>`
+
+      // Liste des invités pour cette intro
+      const guests = guestsByIntro[String(g.introduction_id)] || [];
+      const guestHtml = guests.length > 0
+        ? `<div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">` +
+          guests.map(gu => `
+            <div style="padding:5px 10px;background:#f0f4ff;border:1px solid #c8d4f0;border-radius:8px;font-size:12px;color:#3a4a7a;display:flex;align-items:center;gap:6px">
+              <span>👤</span>
+              <span><strong>${gu.name}</strong>${gu.email ? ' <span style="color:#7a8a9a;font-size:11px">· '+gu.email+'</span>' : ''}</span>
+            </div>`).join('') +
+          `</div>`
         : '';
-      const syncBadge = '';
+
       return `
-        <div style="padding:14px;border:1px solid ${isUpcoming ? '#b7e8d2' : '#e0e0e0'};border-radius:12px;margin-bottom:10px;background:${isUpcoming ? '#f4fdf8' : '#fafafa'}">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
-            <div style="flex:1;min-width:0">
-              <div style="font-size:14px;font-weight:600;color:var(--navy-deep)">${statusDot}${g.animateur||'—'}</div>
-              ${g.titre ? `<div style="font-size:12px;color:#7a8a9a;margin-top:3px"><em>« ${g.titre} »</em></div>` : ''}
-              <div style="font-size:12px;color:#5a6a7a;margin-top:4px">📅 ${g.date_tah || g.date || '—'}</div>
-            </div>
-            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">${typeBadge}${syncBadge}</div>
+        <div style="padding:14px;border:1px solid ${isUp ? '#b7e8d2' : '#e0e0e0'};border-radius:12px;margin-bottom:10px;background:${isUp ? '#f4fdf8' : '#fafafa'}">
+          <div style="flex:1;min-width:0">
+            <div style="font-size:14px;font-weight:600;color:var(--navy-deep)">${statusDot}${g.animateur||'—'}</div>
+            ${g.titre ? `<div style="font-size:12px;color:#7a8a9a;margin-top:3px"><em>« ${g.titre} »</em></div>` : ''}
+            <div style="font-size:12px;color:#5a6a7a;margin-top:4px">📅 ${g.date_tah || g.date || '—'}</div>
           </div>
           ${guestHtml}
         </div>`;
