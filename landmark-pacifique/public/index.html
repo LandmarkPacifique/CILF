@@ -3491,7 +3491,11 @@ async function loadLeadersList(){
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
           <div class="user-row-info">
             <div class="user-row-name">${u.name||'—'} ${u.role !== 'utilisateur' ? badgeHtml : ''}${fonctionBadge}</div>
-            <div class="user-row-email">${u.email||''} ${u.pid?'• PID: '+u.pid:''} ${u.telephone?'• '+formatPhoneDisplay(u.telephone):''}</div>
+            <div style="font-size:12px;color:#5a6a7a;margin-top:3px;display:flex;flex-direction:column;gap:2px">
+              ${u.email ? `<span>✉ ${u.email}</span>` : ''}
+              ${u.pid ? `<span>🪪 PID : ${u.pid}</span>` : ''}
+              ${u.telephone ? `<span>📞 ${formatPhoneDisplay(u.telephone)}</span>` : ''}
+            </div>
           </div>
           <div class="user-row-actions">
             <button class="btn-edit-user" onclick="toggleEditLeader('${u.id||u.email}')">✎ Modifier</button>
