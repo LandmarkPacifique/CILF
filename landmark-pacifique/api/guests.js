@@ -87,22 +87,6 @@ export default async function handler(req, res) {
           introduction_id, timestamp
         } = body;
 
-        // Éviter uniquement le doublon exact : même gradué + même intro + même invité
-        const existing = await sql`
-          SELECT id FROM grad_guests
-          WHERE grad_email = ${(grad_email || '').toLowerCase()}
-            AND introduction_id = ${String(introduction_id || '')}
-            AND (
-              (guest_name IS NULL AND ${guest_name || null} IS NULL)
-              OR (guest_name = ${guest_name || null} AND guest_email = ${guest_email || null})
-            )
-          LIMIT 1
-        `;
-
-        if (existing.length > 0) {
-          return res.status(200).json({ success: true, duplicate: true });
-        }
-
         await sql`
           INSERT INTO grad_guests
             (type, guest_name, guest_email, grad_name, grad_email,
