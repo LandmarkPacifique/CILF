@@ -3364,7 +3364,7 @@ async function loadLeadersList(){
       <div class="user-row" id="leader-row-${u.id||u.email}" style="flex-direction:column;align-items:stretch">
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
           <div class="user-row-info">
-            <div class="user-row-name">${u.name||'—'} ${badgeHtml}${fonctionBadge}</div>
+            <div class="user-row-name">${u.name||'—'} ${u.role !== 'utilisateur' ? badgeHtml : ''}${fonctionBadge}</div>
             <div class="user-row-email">${u.email||''} ${u.pid?'• PID: '+u.pid:''} ${u.telephone?'• '+u.telephone:''}</div>
           </div>
           <div class="user-row-actions">
