@@ -4121,8 +4121,8 @@ async function loadMesIntros() {
       const inscritsHtml = grads.length > 0
         ? `<div style="margin-top:12px">
              <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
-               <span style="font-size:11px;font-weight:700;color:#0a9e6e;letter-spacing:.06em;text-transform:uppercase">🎓 Gradués</span>
-               <span style="font-size:11px;font-weight:700;background:#e8f8f2;color:#0a7a55;border:1px solid #b7e8d2;border-radius:10px;padding:1px 8px">${grads.length} gradué${grads.length > 1 ? 's' : ''}</span>
+               <span style="font-size:11px;font-weight:700;color:#0a9e6e;letter-spacing:.06em;text-transform:uppercase">🎓 Inscrits</span>
+               <span style="font-size:11px;font-weight:700;background:#e8f8f2;color:#0a7a55;border:1px solid #b7e8d2;border-radius:10px;padding:1px 8px">🎓 ${grads.length} gradué${grads.length > 1 ? 's' : ''}</span>
                ${totalGuests > 0 ? `<span style="font-size:11px;font-weight:700;background:#f0f4ff;color:#3a4a7a;border:1px solid #c8d4f0;border-radius:10px;padding:1px 8px">👤 ${totalGuests} invité${totalGuests > 1 ? 's' : ''}</span>` : ''}
              </div>
              ${grads.map(grad => `
@@ -4150,7 +4150,7 @@ async function loadMesIntros() {
         <div style="padding:16px;border:1px solid ${borderColor};border-radius:12px;margin-bottom:12px;background:${bgColor}">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
             ${slugLabel ? `<span style="font-size:10px;font-weight:700;color:#fff;background:var(--navy-mid);border-radius:4px;padding:2px 7px;letter-spacing:.08em">${slugLabel}</span>` : ''}
-            <span style="font-size:15px;font-weight:700;color:var(--navy-deep)">${yearMonth} #${intro.id}</span>
+            <span style="font-size:15px;font-weight:700;color:var(--navy-deep)">Introduction n° ${yearMonth} #${intro.id}</span>
           </div>
           ${intro.titre ? `<div style="font-size:12px;color:#7a8a9a;margin-top:2px"><em>« ${intro.titre} »</em></div>` : ''}
           <div style="font-size:12px;color:#5a6a7a;margin-top:4px">📅 ${tah||intro.date||'—'}</div>
