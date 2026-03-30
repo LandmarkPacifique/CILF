@@ -87,26 +87,19 @@ export default async function handler(req, res) {
           introduction_id, timestamp
         } = body;
 
-        // Éviter les doublons : même gradué + même intro
+        // Éviter uniquement le doublon exact : même gradué + même intro + même invité
         const existing = await sql`
           SELECT id FROM grad_guests
           WHERE grad_email = ${(grad_email || '').toLowerCase()}
             AND introduction_id = ${String(introduction_id || '')}
+            AND (
+              (guest_name IS NULL AND ${guest_name || null} IS NULL)
+              OR (guest_name = ${guest_name || null} AND guest_email = ${guest_email || null})
+            )
           LIMIT 1
         `;
 
         if (existing.length > 0) {
-          // Déjà inscrit — on met à jour si un invité s'ajoute
-          if (guest_name || guest_email) {
-            await sql`
-              UPDATE grad_guests
-              SET guest_name  = ${guest_name || null},
-                  guest_email = ${guest_email || null},
-                  type        = 'guest'
-              WHERE grad_email = ${(grad_email || '').toLowerCase()}
-                AND introduction_id = ${String(introduction_id || '')}
-            `;
-          }
           return res.status(200).json({ success: true, duplicate: true });
         }
 
