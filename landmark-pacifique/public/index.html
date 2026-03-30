@@ -1448,18 +1448,38 @@ async function loadComptIntros(gradEmail) {
   try {
     // Charger toutes les entrées du gradué depuis /api/guests
     const all = await getAllGuests();
-    const mine = all.filter(g =>
-      g.grad_email && g.grad_email.toLowerCase() === gradEmail.toLowerCase()
-    );
+    console.log('[loadComptIntros] total guests reçus:', all.length, '| email recherché:', gradEmail);
 
-    if(mine.length === 0){
+    // Filtre par grad_email
+    const mine = all.filter(g =>
+      g.grad_email && gradEmail &&
+      g.grad_email.toLowerCase() === gradEmail.toLowerCase()
+    );
+    console.log('[loadComptIntros] inscriptions trouvées pour cet email:', mine.length);
+
+    // Lire aussi le localStorage pour les records locaux non encore synchronisés
+    let localRecords = [];
+    try { localRecords = JSON.parse(localStorage.getItem('lm_my_registrations') || '[]'); } catch(e) {}
+    const localMine = localRecords.filter(g =>
+      g.grad_email && gradEmail &&
+      g.grad_email.toLowerCase() === gradEmail.toLowerCase()
+    );
+    // Marquer les records qui ne sont PAS encore dans l'API
+    const apiKeys = new Set(mine.map(r => String(r.introduction_id) + '|' + (r.grad_email||'').toLowerCase()));
+    const pendingSync = localMine.filter(r =>
+      !apiKeys.has(String(r.introduction_id) + '|' + (r.grad_email||'').toLowerCase())
+    ).map(r => ({...r, _pendingSync: true}));
+
+    const allMine = [...mine, ...pendingSync];
+
+    if(allMine.length === 0){
       el.innerHTML = '<p style="font-size:13px;color:#7a8a9a;text-align:center;padding:10px 0">Aucune inscription enregistrée.</p>';
       return;
     }
 
     // Dédoublonner par introduction_id (garder la plus récente)
     const byIntro = {};
-    mine.forEach(g => {
+    allMine.forEach(g => {
       const key = String(g.introduction_id);
       if(!byIntro[key] || (g.timestamp||'') > (byIntro[key].timestamp||'')) byIntro[key] = g;
     });
@@ -1487,15 +1507,18 @@ async function loadComptIntros(gradEmail) {
              <span style="font-weight:600">👤 Invité(e) :</span> <strong>${g.guest_name}</strong>${g.guest_email ? ' <span style="color:#7a8a9a">· '+g.guest_email+'</span>' : ''}
            </div>`
         : '';
+      const syncBadge = g._pendingSync
+        ? '<span style="background:#fff8e1;color:#b45309;border:1px solid #fcd34d;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:600;margin-left:4px" title="Sera synchronisé au prochain chargement">⏳ local</span>'
+        : '';
       return `
         <div style="padding:14px;border:1px solid ${isUpcoming ? '#b7e8d2' : '#e0e0e0'};border-radius:12px;margin-bottom:10px;background:${isUpcoming ? '#f4fdf8' : '#fafafa'}">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">
-            <div>
+            <div style="flex:1;min-width:0">
               <div style="font-size:14px;font-weight:600;color:var(--navy-deep)">${statusDot}${g.animateur||'—'}</div>
               ${g.titre ? `<div style="font-size:12px;color:#7a8a9a;margin-top:3px"><em>« ${g.titre} »</em></div>` : ''}
               <div style="font-size:12px;color:#5a6a7a;margin-top:4px">📅 ${g.date_tah || g.date || '—'}</div>
             </div>
-            <div>${typeBadge}</div>
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">${typeBadge}${syncBadge}</div>
           </div>
           ${guestHtml}
         </div>`;
@@ -1927,7 +1950,7 @@ async function selectPilfIntro(id){
     });
     logToSheets("graduate",{prenom:fn,nom:ln,email:window._graduEmail,telephone:window._gradueTelephone||"",pays:"",animateur:intro.animateur,titre:intro.titre,date_tah:tah,introduction_id:intro.id});
     markGradRegistered(intro.id, window._graduEmail);
-    saveGuestRecord({type:'solo', grad_name:window._gradueName, grad_email:window._graduEmail, animateur:intro.animateur, titre:intro.titre, date:intro.date, date_tah:tah, introduction_id:intro.id});
+    await saveGuestRecord({type:'solo', grad_name:window._gradueName, grad_email:window._graduEmail, animateur:intro.animateur, titre:intro.titre, date:intro.date, date_tah:tah, introduction_id:intro.id});
   } catch(e){ console.error("selectPilfIntro direct:", e); }
 
   if(btn){ btn.disabled=false; btn.textContent="Je m'inscris →"; }
@@ -2205,7 +2228,7 @@ async function selectIntro(id){
     });
     logToSheets("graduate",{prenom:fn,nom:ln,email:window._graduEmail,telephone:window._gradueTelephone||"",pays:"",animateur:intro.animateur,titre:intro.titre,date_tah:tah,introduction_id:intro.id});
     markGradRegistered(intro.id, window._graduEmail);
-    saveGuestRecord({type:'solo', grad_name:window._gradueName, grad_email:window._graduEmail, animateur:intro.animateur, titre:intro.titre, date:intro.date, date_tah:tah, introduction_id:intro.id});
+    await saveGuestRecord({type:'solo', grad_name:window._gradueName, grad_email:window._graduEmail, animateur:intro.animateur, titre:intro.titre, date:intro.date, date_tah:tah, introduction_id:intro.id});
   } catch(e){ console.error("selectIntro direct:", e); }
 
   if(btn){ btn.disabled=false; btn.textContent="Je m'inscris →"; }
@@ -2379,7 +2402,7 @@ async function submitInvite(){
     });
   }catch(e){console.error("Make webhook invite:",e);}
   // Stocker les infos invité dans la BDD pour affichage admin/leader
-  saveGuestRecord({guest_name:fn+" "+ln, guest_email:em, grad_name:data.gn, grad_email:data.ge, animateur:intro.animateur, titre:intro.titre, date:intro.date, date_tah:fmtTZ(intro.date,intro.heure,"TAH","TAH"), introduction_id:intro.id});
+  await saveGuestRecord({guest_name:fn+" "+ln, guest_email:em, grad_name:data.gn, grad_email:data.ge, animateur:intro.animateur, titre:intro.titre, date:intro.date, date_tah:fmtTZ(intro.date,intro.heure,"TAH","TAH"), introduction_id:intro.id});
   btn.disabled=false;
   // Injecter la vidéo YouTube pour l'invité
   const yt = document.getElementById('confirm-youtube');
@@ -2473,7 +2496,7 @@ async function submitSolo(){
   btn.disabled=false;btn.textContent="Confirmer ma participation";
   logToSheets("graduate",{prenom:fn,nom:ln,email:em,telephone:document.getElementById("s-phone").value.trim(),pays:"",animateur:intro.animateur,titre:intro.titre,date_tah:fmtTZ(intro.date,intro.heure,"TAH","TAH"),introduction_id:intro.id});
   markGradRegistered(intro.id, em);
-  saveGuestRecord({type:'solo', grad_name:fn+' '+ln, grad_email:em, animateur:intro.animateur, titre:intro.titre, date:intro.date, date_tah:fmtTZ(intro.date,intro.heure,"TAH","TAH"), introduction_id:intro.id});
+  await saveGuestRecord({type:'solo', grad_name:fn+' '+ln, grad_email:em, animateur:intro.animateur, titre:intro.titre, date:intro.date, date_tah:fmtTZ(intro.date,intro.heure,"TAH","TAH"), introduction_id:intro.id});
   showConfirm("Inscription confirmée !",`\'Ia ora na ${fn} ! Un email de confirmation vous a été envoyé.`,null,null);
 }
 
@@ -2554,7 +2577,7 @@ async function submitWithGuest(){
   }
   logToSheets("guest",{prenom:ufn,nom:uln,email:uem,telephone:"",graduate:gfn+" "+gln,graduate_email:gem,animateur:intro.animateur,titre:intro.titre,date_tah:fmtTZ(intro.date,intro.heure,"TAH","TAH"),introduction_id:intro.id});
   // Stocker les infos invité dans la BDD pour affichage admin/leader
-  saveGuestRecord({type:'guest', guest_name:ufn+" "+uln, guest_email:uem, grad_name:gfn+" "+gln, grad_email:gem, animateur:intro.animateur, titre:intro.titre, date:intro.date, date_tah:fmtTZ(intro.date,intro.heure,"TAH","TAH"), introduction_id:intro.id});
+  await saveGuestRecord({type:'guest', guest_name:ufn+" "+uln, guest_email:uem, grad_name:gfn+" "+gln, grad_email:gem, animateur:intro.animateur, titre:intro.titre, date:intro.date, date_tah:fmtTZ(intro.date,intro.heure,"TAH","TAH"), introduction_id:intro.id});
   ["g-first","g-last","g-email","g-phone","gu-first","gu-last","gu-email"].forEach(id=>document.getElementById(id).value="");
   showConfirm("Inscription confirmée !",`\u2019Ia ora na ! Un email de confirmation a \u00e9t\u00e9 envoy\u00e9 à ${ufn} ${uln} pour s'inscrire. `,tMatin,t40,false,intro);
 }
@@ -3995,53 +4018,135 @@ async function checkGradAlreadyRegisteredServer(introId, gradEmail) {
   } catch(e) { return false; }
 }
 
-// Stocke les infos d'un invité via l'API pour affichage admin/leader
+// Stocke une inscription (solo ou avec invité) — fonctionne pour gradués ET admins
 async function saveGuestRecord(data) {
+  const record = {
+    action: 'add',
+    type: data.type || 'guest',
+    guest_name: data.guest_name || null,
+    guest_email: data.guest_email || null,
+    grad_name: data.grad_name,
+    grad_email: data.grad_email,
+    animateur: data.animateur,
+    titre: data.titre,
+    date: data.date,
+    date_tah: data.date_tah,
+    introduction_id: data.introduction_id,
+    timestamp: new Date().toISOString()
+  };
+
+  // Stocker immédiatement dans localStorage (persistant entre sessions)
+  // pour que "Mes introductions" fonctionne même si l'API échoue
   try {
-    await apiFetch('/api/guests', {
-      method: 'POST',
-      body: JSON.stringify({
-        action: 'add',
-        type: data.type || 'guest',
-        guest_name: data.guest_name || null,
-        guest_email: data.guest_email || null,
-        grad_name: data.grad_name,
-        grad_email: data.grad_email,
-        animateur: data.animateur,
-        titre: data.titre,
-        date: data.date,
-        date_tah: data.date_tah,
-        introduction_id: data.introduction_id,
-        timestamp: new Date().toISOString()
-      })
-    });
-  } catch(e) {
-    // Fallback : stocker localement si l'API /api/guests n'existe pas encore
-    try {
-      const key = 'lm_guests_cache';
-      const existing = JSON.parse(sessionStorage.getItem(key) || '[]');
-      existing.unshift({ ...data, timestamp: new Date().toISOString() });
-      // Garder max 200 entrées en cache
-      sessionStorage.setItem(key, JSON.stringify(existing.slice(0, 200)));
-    } catch(e2) { /* silently fail */ }
-    console.warn('[saveGuestRecord] API /api/guests non disponible, stocké en cache local:', e.message);
+    const lsKey = 'lm_my_registrations';
+    const existing = JSON.parse(localStorage.getItem(lsKey) || '[]');
+    // Dédoublonner : remplacer si même introduction_id + grad_email
+    const filtered = existing.filter(r =>
+      !(String(r.introduction_id) === String(record.introduction_id) &&
+        (r.grad_email||'').toLowerCase() === (record.grad_email||'').toLowerCase())
+    );
+    filtered.unshift(record);
+    localStorage.setItem(lsKey, JSON.stringify(filtered.slice(0, 500)));
+  } catch(e2) { console.warn('[saveGuestRecord] localStorage write failed:', e2.message); }
+
+  // Puis tenter la sauvegarde API (en arrière-plan)
+  const payload = JSON.stringify(record);
+  const token = sessionStorage.getItem('lm_jwt');
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers['Authorization'] = 'Bearer ' + token;
+    headers['x-admin-token'] = token;
   }
+  const sep = token ? '?_token=' + encodeURIComponent(token) : '';
+
+  // Essai 1 : /api/guests (endpoint standard)
+  try {
+    const res = await fetch(API_BASE + '/api/guests' + sep, { method: 'POST', headers, body: payload });
+    if (res.ok) {
+      _guestsCache = null; // invalider le cache
+      console.log('[saveGuestRecord] ✓ sauvegardé dans /api/guests');
+      return;
+    }
+    console.warn('[saveGuestRecord] /api/guests HTTP', res.status, '— essai /api/register-intro');
+  } catch(e) {
+    console.warn('[saveGuestRecord] /api/guests réseau KO:', e.message);
+  }
+
+  // Essai 2 : /api/register-intro (endpoint dédié gradués si disponible)
+  try {
+    const res2 = await fetch(API_BASE + '/api/register-intro' + sep, { method: 'POST', headers, body: payload });
+    if (res2.ok) {
+      _guestsCache = null;
+      console.log('[saveGuestRecord] ✓ sauvegardé dans /api/register-intro');
+      return;
+    }
+    console.warn('[saveGuestRecord] /api/register-intro HTTP', res2.status);
+  } catch(e2) {
+    console.warn('[saveGuestRecord] /api/register-intro réseau KO:', e2.message);
+  }
+
+  console.warn('[saveGuestRecord] Sauvegardé en localStorage uniquement. Sera synchronisé au prochain chargement.');
 }
 
-// Récupère les invités d'un gradué (par son email)
+// Récupère tous les guests depuis l'API + les inscriptions locales (gradués)
 let _guestsCache = null;
 async function getAllGuests() {
   if (_guestsCache) return _guestsCache;
+
+  // Lire les inscriptions locales persistantes (localStorage) — toujours disponibles
+  let localRecords = [];
   try {
-    const result = await apiFetch('/api/guests');
-    _guestsCache = Array.isArray(result) ? result : (result.guests || result.data || []);
-    return _guestsCache;
+    localRecords = JSON.parse(localStorage.getItem('lm_my_registrations') || '[]');
+  } catch(e) {}
+
+  // Tenter la récupération API
+  let apiRecords = [];
+  try {
+    const token = sessionStorage.getItem('lm_jwt');
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) {
+      headers['Authorization'] = 'Bearer ' + token;
+      headers['x-admin-token'] = token;
+    }
+    const sep = token ? '?_token=' + encodeURIComponent(token) : '';
+    const res = await fetch(API_BASE + '/api/guests' + sep, { headers });
+    if (res.ok) {
+      const result = await res.json();
+      apiRecords = Array.isArray(result) ? result : (result.guests || result.data || []);
+      console.log('[getAllGuests] API: ' + apiRecords.length + ' records');
+
+      // Synchroniser : si un record local est déjà dans l'API, le supprimer du localStorage
+      if (localRecords.length > 0 && apiRecords.length > 0) {
+        const apiKeys = new Set(apiRecords.map(r =>
+          String(r.introduction_id) + '|' + (r.grad_email||'').toLowerCase()
+        ));
+        const stillLocal = localRecords.filter(r =>
+          !apiKeys.has(String(r.introduction_id) + '|' + (r.grad_email||'').toLowerCase())
+        );
+        if (stillLocal.length !== localRecords.length) {
+          try { localStorage.setItem('lm_my_registrations', JSON.stringify(stillLocal)); } catch(e) {}
+          localRecords = stillLocal;
+          console.log('[getAllGuests] ' + (localRecords.length - stillLocal.length) + ' records locaux synchronisés avec l\'API');
+        }
+      }
+    } else {
+      console.warn('[getAllGuests] API HTTP', res.status);
+    }
   } catch(e) {
-    // Fallback : lire depuis le cache session
-    try {
-      return JSON.parse(sessionStorage.getItem('lm_guests_cache') || '[]');
-    } catch { return []; }
+    console.warn('[getAllGuests] API error:', e.message);
   }
+
+  // Fusionner : API en priorité, compléter avec les records locaux non présents dans l'API
+  const apiKeys = new Set(apiRecords.map(r =>
+    String(r.introduction_id) + '|' + (r.grad_email||'').toLowerCase()
+  ));
+  const onlyLocal = localRecords.filter(r =>
+    !apiKeys.has(String(r.introduction_id) + '|' + (r.grad_email||'').toLowerCase())
+  );
+  const merged = [...apiRecords, ...onlyLocal];
+  console.log('[getAllGuests] total fusionné: ' + merged.length + ' (' + apiRecords.length + ' API + ' + onlyLocal.length + ' local)');
+  _guestsCache = merged;
+  return _guestsCache;
 }
 
 // Retourne les invités d'un gradué donné (par email)
