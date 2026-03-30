@@ -2021,11 +2021,19 @@ async function renderPublic(){
   grid.innerHTML="<p style='text-align:center;padding:20px'>Chargement…</p>";
   const intros = await getIntros();
   window._cachedIntros = intros;
+  // Filtre : uniquement les introductions dans les 14 prochains jours
+  const today = new Date(); today.setHours(0,0,0,0);
+  const limit = new Date(today); limit.setDate(limit.getDate() + 14);
+  const filtered = intros.filter(intro => {
+    if(!intro.date) return false;
+    const d = new Date(intro.date); d.setHours(0,0,0,0);
+    return d >= today && d <= limit;
+  });
   grid.innerHTML="";
-  intros.forEach((intro, i)=>{
+  filtered.forEach((intro, i)=>{
     grid.appendChild(buildPublicCard(intro, "Introduction "+fmtIntroId(intro, i), 'cilf'));
   });
-  if(intros.length === 0){
+  if(filtered.length === 0){
     grid.innerHTML="<p style='text-align:center;padding:20px;color:#7a8a9a'>Aucune introduction disponible pour le moment.</p>";
   }
 }
