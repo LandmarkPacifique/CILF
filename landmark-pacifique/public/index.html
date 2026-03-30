@@ -1532,7 +1532,7 @@ async function loadComptIntros(gradEmail) {
             <div style="font-size:14px;font-weight:600;color:var(--navy-deep)">${statusDot}${g.animateur||'—'}</div>
             ${g.titre ? `<div style="font-size:12px;color:#7a8a9a;margin-top:3px"><em>« ${g.titre} »</em></div>` : ''}
             <div style="font-size:12px;color:#5a6a7a;margin-top:4px">📅 ${g.date_tah || g.date || '—'}</div>
-            <div style="font-size:11px;color:#9aabb8;margin-top:3px">ID : ${g.introduction_id || '—'}</div>
+            <div style="font-size:11px;color:#9aabb8;margin-top:3px">${g.date ? g.date.slice(0,7) : '—'} #${g.introduction_id || '—'}</div>
           </div>
           ${guestHtml}
         </div>`;
