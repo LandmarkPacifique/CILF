@@ -3362,7 +3362,8 @@ async function loadLeadersList(){
       return {label:'Utilisateur', bg:'#e8f8f0', color:'#1a9e6e', border:'#b7e8d2'};
     }
     const order = {superadmin:0, utilisateur:1, gradue:1};
-    const sorted = [...list].sort((a,b) => (order[a.role]??3) - (order[b.role]??3));
+    const filtered = list.filter(u => u.role !== 'invité' && u.role !== 'invite' && u.role !== 'guest');
+    const sorted = [...filtered].sort((a,b) => (order[a.role]??3) - (order[b.role]??3));
     const curSession = getSession();
     const isSuperAdmin = curSession && curSession.role === 'superadmin';
     container.innerHTML = sorted.map(u => {
