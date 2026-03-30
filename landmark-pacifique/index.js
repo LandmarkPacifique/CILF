@@ -1,4 +1,4 @@
-// api/index.js
+api/index.js
 // Routeur unique — fusionne les 13 endpoints en 1 seule fonction Vercel
 // Routes :
 //   POST   /api/login
