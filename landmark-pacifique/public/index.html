@@ -4030,15 +4030,34 @@ async function loadMesIntros() {
   const leaderName = session.name;
 
   try {
-    // Récupérer toutes les intros (CILF + PILF)
-    const [intros, pilfIntros, allGuests] = await Promise.all([
+    // Récupérer toutes les intros (CILF + PILF), y compris les archivées pour l'onglet "passées"
+    const fetchArchived = _mesIntrosCurrentTab === 'passe';
+    const fetches = [
       getIntros(),
       getPilfIntros(),
       apiFetch('/api/guests')
-    ]);
+    ];
+    if(fetchArchived) {
+      fetches.push(apiFetch('/api/intros?slug=cilf&archived=true'));
+      fetches.push(apiFetch('/api/intros?slug=pilf&archived=true'));
+    }
+    const results = await Promise.all(fetches);
+    const [intros, pilfIntros, allGuests] = results;
+    const archivedCilf = fetchArchived ? (results[3] || []) : [];
+    const archivedPilf = fetchArchived ? (results[4] || []) : [];
+
+    // Marquer les archivées pour les distinguer
+    archivedCilf.forEach(i => { i.archived = true; });
+    archivedPilf.forEach(i => { i.archived = true; });
+
+    // Fusionner actives + archivées, dédupliquer par id+slug
+    const allActive = [...intros, ...pilfIntros];
+    const allArchived = [...archivedCilf, ...archivedPilf];
+    const seenIds = new Set(allActive.map(i => i.id + '_' + (i.slug||'')));
+    const dedupedArchived = allArchived.filter(i => !seenIds.has(i.id + '_' + (i.slug||'')));
 
     // Filtrer les intros de ce leader
-    const allIntros = [...intros, ...pilfIntros].filter(i =>
+    const allIntros = [...allActive, ...dedupedArchived].filter(i =>
       (i.animateur || '').toLowerCase() === leaderName.toLowerCase()
     );
 
@@ -4106,9 +4125,13 @@ async function loadMesIntros() {
            </div>`
         : `<p style="font-size:12px;color:#9aabb8;margin-top:8px">Aucun inscrit pour le moment.</p>`;
 
+      const archivedBadge = intro.archived
+        ? `<span style="display:inline-block;font-size:10px;font-weight:700;color:#7a5c00;background:#fff3cd;border:1px solid #f5c842;border-radius:4px;padding:1px 6px;margin-left:8px;vertical-align:middle">🗄 Archivée</span>`
+        : '';
+
       return `
-        <div style="padding:16px;border:1px solid ${isUpcoming(intro) ? '#b7e8d2' : '#e0e0e0'};border-radius:12px;margin-bottom:12px;background:${isUpcoming(intro) ? '#f4fdf8' : '#fafafa'}">
-          <div style="font-size:14px;font-weight:600;color:var(--navy-deep)">${intro.animateur||'—'}</div>
+        <div style="padding:16px;border:1px solid ${isUpcoming(intro) ? '#b7e8d2' : (intro.archived ? '#f5c842' : '#e0e0e0')};border-radius:12px;margin-bottom:12px;background:${isUpcoming(intro) ? '#f4fdf8' : (intro.archived ? '#fffdf0' : '#fafafa')}">
+          <div style="font-size:14px;font-weight:600;color:var(--navy-deep)">${intro.animateur||'—'}${archivedBadge}</div>
           ${intro.titre ? `<div style="font-size:12px;color:#7a8a9a;margin-top:2px"><em>« ${intro.titre} »</em></div>` : ''}
           <div style="font-size:12px;color:#5a6a7a;margin-top:4px">📅 ${tah||intro.date||'—'}</div>
           <div style="font-size:11px;color:#9aabb8;margin-top:2px">${intro.date ? intro.date.slice(0,7) : '—'} #${intro.id}</div>
