@@ -2366,6 +2366,8 @@ async function selectIntro(id){
     const ccTAHFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","TAH").split("·")[1]||"":"";
     const ccNCFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","NC").split("·")[1]||"":"";
     const ccFRFin=intro.ccDate&&ccHFin?fmtTZ(intro.ccDate,ccHFin,"TAH","FR").split("·")[1]||"":"";
+    const sessionUTC=toUTC(intro.date,intro.heure);
+    const [iy,im,idd]=intro.date.split("-").map(Number); const tMatin=Math.floor(Date.UTC(iy,im-1,idd,17,0)/1000); const t40=sessionUTC-40*60;
     await fetch("https://hook.us2.make.com/2njt9kkq4ovz75l0yg3otstsda4ug6ry", {
       method:"POST",
       headers:{"Content-Type":"application/json"},
@@ -2377,12 +2379,14 @@ async function selectIntro(id){
         animateur:intro.animateur,
         animateur_email:intro.animateurEmail||"",
         titre:intro.titre,
+        introduction_id:intro.id,
         date_tah:tah, date_nc:nc, date_fr:fr,
         heure_fin_tah:tahFin, heure_fin_nc:ncFin, heure_fin_fr:frFin,
         cc_tah:ccTAH, cc_nc:ccNC, cc_fr:ccFR,
         cc_fin_tah:ccTAHFin, cc_fin_nc:ccNCFin, cc_fin_fr:ccFRFin,
         zoom_intro:intro.zoomIntro||"", zoom_cc:intro.zoomCC||"",
-        zoom_intro_id:extractZoomId(intro.zoomIntro), zoom_cc_id:extractZoomId(intro.zoomCC)
+        zoom_intro_id:extractZoomId(intro.zoomIntro), zoom_cc_id:extractZoomId(intro.zoomCC),
+        t3h:tMatin, t30:t40
       })
     });
     logToSheets("graduate",{prenom:fn,nom:ln,email:window._graduEmail,telephone:window._gradueTelephone||"",pays:"",animateur:intro.animateur,titre:intro.titre,date_tah:tah,introduction_id:intro.id});
