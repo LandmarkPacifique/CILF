@@ -1947,7 +1947,7 @@ function switchTab(id,btn){
 // logout défini plus haut
 
 // ── RENDER PUBLIC CARDS ───────────────────────────────────────────────────────
-function buildPublicCard(intro, badgeLabel, type) {
+function buildPublicCard(intro, badgeLabel, type, isPast) {
   const tah   = fmtTZ(intro.date,intro.heure,"TAH","TAH");
   const nc    = fmtTZ(intro.date,intro.heure,"TAH","NC");
   const fr    = fmtTZ(intro.date,intro.heure,"TAH","FR");
@@ -1977,19 +1977,30 @@ function buildPublicCard(intro, badgeLabel, type) {
           <td style="padding:7px 0;font-size:13px;font-weight:500;color:var(--navy-deep)">${ccFR}${ccEndFR?" à "+ccEndFR:""}</td>
         </tr>` : "";
   const isPilf = type === 'pilf';
-  const badgeStyle = isPilf
-    ? 'color:var(--navy);background:#e8f0ff;border:1px solid rgba(0,48,160,.15)'
-    : '';
-  const bottomButtons = isPilf
-    ? `<button class="btn-dark" onclick="selectPilfIntro('${intro.id}')">Je m'inscris →</button>
-       <button class="btn-outline-cyan" onclick="selectPilfIntroInvite('${intro.id}')">✉ Envoyer une invitation à mon invité</button>`
-    : `<button class="btn-dark" onclick="selectIntro('${intro.id}')">Je m'inscris →</button>
-       <button class="btn-outline-cyan" onclick="selectIntroInvite('${intro.id}')">✉ Envoyer une invitation à mon invité</button>`;
+
+  // Styles selon état passé/actif
+  const badgeStyle = isPast
+    ? 'color:#fff;background:#9aa5b4;border:1px solid #8a929e'
+    : isPilf
+      ? 'color:var(--navy);background:#e8f0ff;border:1px solid rgba(0,48,160,.15)'
+      : '';
+  const cardOpacity = isPast ? 'opacity:.72;' : '';
+  const effectiveBadgeLabel = isPast ? 'Introduction terminée' : badgeLabel;
+
+  const bottomButtons = isPast
+    ? `<p style="text-align:center;color:#9aa5b4;font-size:13px;padding:4px 0">Cette introduction est terminée.</p>`
+    : isPilf
+      ? `<button class="btn-dark" onclick="selectPilfIntro('${intro.id}')">Je m'inscris →</button>
+         <button class="btn-outline-cyan" onclick="selectPilfIntroInvite('${intro.id}')">✉ Envoyer une invitation à mon invité</button>`
+      : `<button class="btn-dark" onclick="selectIntro('${intro.id}')">Je m'inscris →</button>
+         <button class="btn-outline-cyan" onclick="selectIntroInvite('${intro.id}')">✉ Envoyer une invitation à mon invité</button>`;
+
   const c = document.createElement("div");
   c.className = "intro-card";
+  c.style.cssText = cardOpacity;
   c.innerHTML = `
     <div class="intro-card-top">
-      <span class="intro-badge" style="${badgeStyle}">${badgeLabel}</span>
+      <span class="intro-badge" style="${badgeStyle}">${effectiveBadgeLabel}</span>
       <h3 class="intro-card-name">Introduction animée par  ${intro.animateur}</h3>
       <p class="intro-card-theme">${intro.titre||''}</p>
       <table style="width:100%;border-collapse:collapse;margin-top:4px">
@@ -2021,19 +2032,19 @@ async function renderPublic(){
   grid.innerHTML="<p style='text-align:center;padding:20px'>Chargement…</p>";
   const intros = await getIntros();
   window._cachedIntros = intros;
-  // Filtre : uniquement les introductions dans les 14 prochains jours
+  // Uniquement les introductions à venir (aujourd'hui inclus) dans les 14 prochains jours
   const today = new Date(); today.setHours(0,0,0,0);
   const limit = new Date(today); limit.setDate(limit.getDate() + 14);
-  const filtered = intros.filter(intro => {
+  const upcoming = intros.filter(intro => {
     if(!intro.date) return false;
     const d = new Date(intro.date); d.setHours(0,0,0,0);
     return d >= today && d <= limit;
   });
   grid.innerHTML="";
-  filtered.forEach((intro, i)=>{
-    grid.appendChild(buildPublicCard(intro, "Introduction "+fmtIntroId(intro, i), 'cilf'));
+  upcoming.forEach((intro, i)=>{
+    grid.appendChild(buildPublicCard(intro, "Introduction "+fmtIntroId(intro, i), 'cilf', false));
   });
-  if(filtered.length === 0){
+  if(upcoming.length === 0){
     grid.innerHTML="<p style='text-align:center;padding:20px;color:#7a8a9a'>Aucune introduction disponible pour le moment.</p>";
   }
 }
@@ -2767,7 +2778,28 @@ function showConfirm(title,body,tMatin,t40,isGuest,intro){
 let draft = null;
 async function renderAdmin(){
   const [intros, cfg] = await Promise.all([getIntros(), getCfg()]);
-  draft=intros.map(i=>({...i}));
+  // ── Archivage automatique des introductions passées ──────────────────────────
+  const todayAdmin = new Date(); todayAdmin.setHours(0,0,0,0);
+  const toAutoArchive = intros.filter(intro => {
+    if(!intro.id || !intro.date) return false;
+    // Ignore les IDs temporaires (non encore sauvegardés)
+    if(typeof intro.id === 'number' && intro.id > Date.now() - 60000) return false;
+    const d = new Date(intro.date); d.setHours(0,0,0,0);
+    return d < todayAdmin;
+  });
+  if(toAutoArchive.length > 0){
+    await Promise.all(toAutoArchive.map(intro =>
+      apiFetch('/api/intros', {
+        method: 'POST',
+        body: JSON.stringify({ slug:'cilf', action:'archive', intro_id: intro.id, reason:'date_passee', reason_text:'Archivage automatique — date passée' })
+      }).catch(()=>{})
+    ));
+    // Recharge les intros après archivage
+    const fresh = await getIntros();
+    draft = fresh.map(i=>({...i}));
+  } else {
+    draft=intros.map(i=>({...i}));
+  }
   const wrap=document.getElementById("admin-forms");
   wrap.innerHTML="";
   draft.forEach((intro,i)=>wrap.appendChild(makeAdminForm(intro,i)));
@@ -3224,7 +3256,26 @@ function makePilfForm(intro, i) {
 
 async function renderPilf(){
   const intros = await getPilfIntros();
-  pilfDraft = intros.map(o=>({...o}));
+  // ── Archivage automatique des PILF passées ───────────────────────────────────
+  const todayPilf = new Date(); todayPilf.setHours(0,0,0,0);
+  const toAutoArchivePilf = intros.filter(intro => {
+    if(!intro.id || !intro.date) return false;
+    if(typeof intro.id === 'number' && intro.id > Date.now() - 60000) return false;
+    const d = new Date(intro.date); d.setHours(0,0,0,0);
+    return d < todayPilf;
+  });
+  if(toAutoArchivePilf.length > 0){
+    await Promise.all(toAutoArchivePilf.map(intro =>
+      apiFetch('/api/intros', {
+        method: 'POST',
+        body: JSON.stringify({ slug:'pilf', action:'archive', intro_id: intro.id, reason:'date_passee', reason_text:'Archivage automatique — date passée' })
+      }).catch(()=>{})
+    ));
+    const fresh = await getPilfIntros();
+    pilfDraft = fresh.map(o=>({...o}));
+  } else {
+    pilfDraft = intros.map(o=>({...o}));
+  }
   const wrap = document.getElementById('pilf-forms');
   wrap.innerHTML = '';
   pilfDraft.forEach((intro, j) => {
