@@ -626,60 +626,82 @@ footer { background:var(--navy-deep); padding:36px 32px; text-align:center; bord
       <button id="btn-retour-admin" class="nav-btn" style="display:none" onclick="goPage('page-admin')">← Admin</button>
     </nav>
   </header>
-  <div class="profile-wrap">
-    <div class="profile-card">
-      <span class="profile-badge" id="compte-badge">Gradué</span>
-      <h2 class="profile-title" id="compte-name">Mon compte</h2>
-      <p class="profile-sub" id="compte-email"></p>
 
-      <hr class="section-sep">
+  <div class="admin-wrap">
 
-      <!-- Infos personnelles -->
-      <p style="font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);margin-bottom:14px">Informations personnelles</p>
-      <div style="display:flex;gap:10px">
-        <div style="flex:1"><label class="fl">Prénom</label><input type="text" id="compte-first-input" class="form-input ai" placeholder="Prénom"></div>
-        <div style="flex:1"><label class="fl">Nom</label><input type="text" id="compte-last-input" class="form-input ai" placeholder="Nom"></div>
-      </div>
-      <label class="fl" style="margin-top:12px">Téléphone</label>
-      <input type="tel" id="compte-tel-input" class="form-input ai" placeholder="+689 00 00 00 00">
-      <label class="fl" style="margin-top:12px">PID (Votre référence chez Landmark - 7 chiffres)</label>
-      <input type="text" id="compte-pid-input" class="form-input ai" placeholder="1234567" maxlength="7">
-      <p class="form-error" id="compte-info-error" style="display:none"></p>
-      <p class="success-msg" id="compte-info-success">Informations mises à jour !</p>
-      <button class="submit-btn" style="margin-top:14px" onclick="saveProfile()">Enregistrer les modifications</button>
-
-      <hr class="section-sep">
-
-      <!-- Changement email -->
-      <p style="font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);margin-bottom:14px">Modifier mon adresse email</p>
-      <label class="fl" style="margin-top:0">Nouvelle adresse email</label>
-      <input type="email" id="compte-email-new" class="form-input ai" placeholder="nouvelle@email.com">
-      <label class="fl" style="margin-top:12px">Confirmer la nouvelle adresse email</label>
-      <input type="email" id="compte-email-new2" class="form-input ai" placeholder="nouvelle@email.com">
-      <p class="form-error" id="compte-email-error" style="display:none"></p>
-      <p class="success-msg" id="compte-email-success">Adresse email mise à jour !</p>
-      <button class="submit-btn" style="margin-top:14px" onclick="saveEmail()">Modifier mon email</button>
-
-      <hr class="section-sep">
-
-      <!-- Réinitialisation mot de passe -->
-      <p style="font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);margin-bottom:8px">Mot de passe</p>
-      <p style="font-size:13px;color:#7a8a9a;line-height:1.6;margin-bottom:14px">Vous recevrez un email avec un lien sécurisé pour choisir un nouveau mot de passe.</p>
-      <p class="form-error" id="compte-pwd-error" style="display:none"></p>
-      <p class="success-msg" id="compte-pwd-success">Email envoyé ! Vérifiez votre boîte mail.</p>
-      <button class="submit-btn" style="margin-top:0" onclick="sendResetFromCompte()">Envoyez-moi un lien de réinitialisation</button>
-
-      <hr class="section-sep">
-      <button class="copy-btn" onclick="logoutGradue()" style="width:100%;text-align:center;color:#e24b4a">Se déconnecter</button>
-
-      <hr class="section-sep">
-
-      <!-- Mes introductions -->
-      <p style="font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);margin-bottom:14px">Mes introductions</p>
-      <div id="compte-intros-list">
-        <p style="font-size:13px;color:#7a8a9a;text-align:center;padding:10px 0">Chargement…</p>
+    <!-- En-tête profil -->
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px;flex-wrap:wrap">
+      <div style="width:52px;height:52px;border-radius:50%;background:var(--cyan-pale);border:2px solid rgba(56,216,240,.35);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">👤</div>
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <h2 style="font-family:'Cormorant Garamond',serif;font-size:24px;color:var(--navy-deep);margin:0" id="compte-name">Mon compte</h2>
+          <span class="profile-badge" id="compte-badge" style="font-size:10px;padding:3px 10px">Gradué</span>
+        </div>
+        <p style="font-size:13px;color:#7a8a9a;margin:3px 0 0" id="compte-email"></p>
       </div>
     </div>
+
+    <!-- Onglets -->
+    <div class="cfg-tabs" id="compte-tabs-bar">
+      <button class="cfg-tab active" id="ctab-btn-profil" onclick="switchCompteTab('profil',this)">Mon profil</button>
+      <button class="cfg-tab" id="ctab-btn-intros" onclick="switchCompteTab('intros',this)">Mes introductions</button>
+      <button class="cfg-tab" id="ctab-btn-securite" onclick="switchCompteTab('securite',this)">Sécurité</button>
+    </div>
+
+    <!-- ── ONGLET : MON PROFIL ── -->
+    <div id="ctab-profil" class="cfg-panel active">
+      <div class="admin-card">
+        <p style="font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);margin-bottom:16px">Informations personnelles</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <div style="flex:1;min-width:140px"><label class="fl" style="margin-top:0">Prénom</label><input type="text" id="compte-first-input" class="form-input ai" placeholder="Prénom"></div>
+          <div style="flex:1;min-width:140px"><label class="fl" style="margin-top:0">Nom</label><input type="text" id="compte-last-input" class="form-input ai" placeholder="Nom"></div>
+        </div>
+        <label class="fl" style="margin-top:12px">Téléphone</label>
+        <input type="tel" id="compte-tel-input" class="form-input ai" placeholder="+689 00 00 00 00">
+        <label class="fl" style="margin-top:12px">PID <span style="font-size:10px;color:#aab8c4">(Votre référence chez Landmark — 7 chiffres)</span></label>
+        <input type="text" id="compte-pid-input" class="form-input ai" placeholder="1234567" maxlength="7">
+        <p class="form-error" id="compte-info-error" style="display:none"></p>
+        <p class="success-msg" id="compte-info-success">Informations mises à jour !</p>
+        <button class="save-btn" style="margin-top:16px" onclick="saveProfile()">Enregistrer les modifications</button>
+      </div>
+    </div>
+
+    <!-- ── ONGLET : MES INTRODUCTIONS ── -->
+    <div id="ctab-intros" class="cfg-panel">
+      <div class="admin-card">
+        <p style="font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);margin-bottom:16px">Mes introductions</p>
+        <div id="compte-intros-list">
+          <p style="font-size:13px;color:#7a8a9a;text-align:center;padding:10px 0">Chargement…</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ONGLET : SÉCURITÉ ── -->
+    <div id="ctab-securite" class="cfg-panel">
+
+      <!-- Modifier l'email -->
+      <div class="admin-card" style="margin-bottom:16px">
+        <p style="font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);margin-bottom:16px">Modifier l'adresse email</p>
+        <label class="fl" style="margin-top:0">Nouvelle adresse email</label>
+        <input type="email" id="compte-email-new" class="form-input ai" placeholder="nouvelle@email.com">
+        <label class="fl" style="margin-top:12px">Confirmer la nouvelle adresse email</label>
+        <input type="email" id="compte-email-new2" class="form-input ai" placeholder="nouvelle@email.com">
+        <p class="form-error" id="compte-email-error" style="display:none"></p>
+        <p class="success-msg" id="compte-email-success">Adresse email mise à jour !</p>
+        <button class="save-btn" style="margin-top:16px" onclick="saveEmail()">Modifier mon email</button>
+      </div>
+
+      <!-- Réinitialisation mot de passe -->
+      <div class="admin-card">
+        <p style="font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);margin-bottom:8px">Mot de passe</p>
+        <p style="font-size:13px;color:#7a8a9a;line-height:1.6;margin-bottom:16px">Vous recevrez un email avec un lien sécurisé pour choisir un nouveau mot de passe.</p>
+        <p class="form-error" id="compte-pwd-error" style="display:none"></p>
+        <p class="success-msg" id="compte-pwd-success">Email envoyé ! Vérifiez votre boîte mail.</p>
+        <button class="save-btn" onclick="sendResetFromCompte()">Envoyez-moi un lien de réinitialisation</button>
+      </div>
+
+    </div>
+
   </div>
 </div>
 
@@ -1347,11 +1369,27 @@ function logoutGradue(){
 
 // ── PAGE MON COMPTE ───────────────────────────────────────────────────────────
 let _profileCache = null; // Cache du profil pour éviter les appels répétés
+function switchCompteTab(id, btn){
+  document.querySelectorAll('#compte-tabs-bar .cfg-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('#page-compte .cfg-panel').forEach(p => { p.classList.remove('active'); });
+  if(btn) btn.classList.add('active');
+  const panel = document.getElementById('ctab-' + id);
+  if(panel) panel.classList.add('active');
+  // Charger les introductions à la première ouverture de l'onglet
+  if(id === 'intros'){
+    const session = getSession();
+    if(session && session.email) loadComptIntros(session.email);
+  }
+}
 async function openMonCompte(){
   // NE PAS appeler goPage ici — c'est goPage qui appelle openMonCompte, pas l'inverse
   const session = getSession();
   const extra = getSessionExtra();
   if(!session) return;
+
+  // Remettre l'onglet "Mon profil" actif à chaque ouverture
+  switchCompteTab('profil', document.getElementById('ctab-btn-profil'));
+
   document.getElementById('compte-name').textContent = session.name || '';
   document.getElementById('compte-email').textContent = session.email || '';
   const _extra = getSessionExtra();
@@ -1400,8 +1438,6 @@ async function openMonCompte(){
     }
   }
 
-  // Toujours charger les introductions du gradué
-  if(session.email) loadComptIntros(session.email);
 }
 async function loadComptIntros(gradEmail) {
   const el = document.getElementById('compte-intros-list');
