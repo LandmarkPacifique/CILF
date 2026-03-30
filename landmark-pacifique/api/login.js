@@ -2,6 +2,8 @@ const { neon } = require('@neondatabase/serverless');
 const jwt = require('jsonwebtoken');
 const sql = neon(process.env.DATABASE_URL);
 
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || 'https://www.landmark-pacifique.fr';
+
 async function parseBody(req) {
   return new Promise((resolve, reject) => {
     let data = Buffer.alloc(0);
@@ -22,7 +24,8 @@ function sendJSON(res, status, obj) {
 }
 
 async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  // ✅ CORS restreint au domaine du site (plus de wildcard *)
+  res.setHeader('Access-Control-Allow-Origin', ALLOWED_ORIGIN);
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
@@ -72,8 +75,9 @@ async function handler(req, res) {
     });
 
   } catch (err) {
+    // ✅ Ne pas exposer err.message en production (fuite d'info serveur)
     console.error('Login error:', err);
-    return sendJSON(res, 500, { error: 'Erreur serveur', detail: err.message });
+    return sendJSON(res, 500, { error: 'Erreur serveur' });
   }
 }
 
