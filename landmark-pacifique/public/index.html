@@ -3507,34 +3507,34 @@ async function loadLeadersList(){
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:560px">
             <div>
               <label class="fl" style="margin-top:0;font-size:12px">Prénom</label>
-              <input type="text" class="ai" id="leader-first-${u.id||u.email}" value="${(u.first_name||'').replace(/"/g,'&quot;')}" style="font-size:13px;padding:7px 10px">
+              <input type="text" class="ai" id="leader-first-${u.id||u.email}" value="${(u.first_name||'').replace(/"/g,'&quot;')}" style="font-size:13px;padding:7px 10px;width:100%;box-sizing:border-box">
             </div>
             <div>
               <label class="fl" style="margin-top:0;font-size:12px">Nom</label>
-              <input type="text" class="ai" id="leader-last-${u.id||u.email}" value="${(u.last_name||'').replace(/"/g,'&quot;')}" style="font-size:13px;padding:7px 10px">
+              <input type="text" class="ai" id="leader-last-${u.id||u.email}" value="${(u.last_name||'').replace(/"/g,'&quot;')}" style="font-size:13px;padding:7px 10px;width:100%;box-sizing:border-box">
             </div>
             <div>
               <label class="fl" style="margin-top:0;font-size:12px">Email</label>
-              <input type="email" class="ai" id="leader-email-${u.id||u.email}" value="${(u.email||'').replace(/"/g,'&quot;')}" style="font-size:13px;padding:7px 10px">
+              <input type="email" class="ai" id="leader-email-${u.id||u.email}" value="${(u.email||'').replace(/"/g,'&quot;')}" style="font-size:13px;padding:7px 10px;width:100%;box-sizing:border-box">
             </div>
             <div>
               <label class="fl" style="margin-top:0;font-size:12px">PID (optionnel)</label>
-              <input type="text" class="ai" id="leader-pid-${u.id||u.email}" value="${u.pid||''}" maxlength="7" style="font-size:13px;padding:7px 10px">
+              <input type="text" class="ai" id="leader-pid-${u.id||u.email}" value="${u.pid||''}" maxlength="7" style="font-size:13px;padding:7px 10px;width:100%;box-sizing:border-box">
             </div>
-            <div>
+            <div style="grid-column:span 2">
               <label class="fl" style="margin-top:0;font-size:12px">Téléphone (optionnel)</label>
               <div id="leader-tel-wrap-${u.id||u.email}" class="phone-picker-wrap" style="font-size:13px"></div>
             </div>
             <div>
               <label class="fl" style="margin-top:0;font-size:12px">Rôle</label>
-              <select class="ai" id="leader-role-${u.id||u.email}" style="font-size:13px;padding:7px 10px;border-radius:8px;border:1px solid #ddd;font-family:inherit">
+              <select class="ai" id="leader-role-${u.id||u.email}" style="font-size:13px;padding:7px 10px;border-radius:8px;border:1px solid #ddd;font-family:inherit;width:100%;box-sizing:border-box">
                 <option value="utilisateur" ${(u.role==='utilisateur'||u.role==='gradue') ? 'selected' : ''}>Utilisateur</option>
                 <option value="superadmin" ${u.role==='superadmin' ? 'selected' : ''}>Super Admin</option>
               </select>
             </div>
             <div>
               <label class="fl" style="margin-top:0;font-size:12px">Fonction</label>
-              <select class="ai" id="leader-fonction-${u.id||u.email}" style="font-size:13px;padding:7px 10px;border-radius:8px;border:1px solid #ddd;font-family:inherit">
+              <select class="ai" id="leader-fonction-${u.id||u.email}" style="font-size:13px;padding:7px 10px;border-radius:8px;border:1px solid #ddd;font-family:inherit;width:100%;box-sizing:border-box">
                 <option value="">— Aucune —</option>
                 <option value="leader_intro" ${u.fonction==='leader_intro' ? 'selected' : ''}>Leader d'introduction</option>
                 <option value="gradue" ${u.fonction==='gradue' ? 'selected' : ''}>Gradué</option>
@@ -3704,34 +3704,34 @@ async function loadAllGradues(){
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:560px">
             <div>
               <label class="fl" style="margin-top:0;font-size:12px">Prénom</label>
-              <input type="text" class="ai" id="edit-first-${u.id||u.email}" value="${(u.first_name||'').replace(/"/g,'&quot;')}" style="font-size:13px;padding:7px 10px">
+              <input type="text" class="ai" id="edit-first-${u.id||u.email}" value="${(u.first_name||'').replace(/"/g,'&quot;')}" style="font-size:13px;padding:7px 10px;width:100%;box-sizing:border-box">
             </div>
             <div>
               <label class="fl" style="margin-top:0;font-size:12px">Nom</label>
-              <input type="text" class="ai" id="edit-last-${u.id||u.email}" value="${(u.last_name||'').replace(/"/g,'&quot;')}" style="font-size:13px;padding:7px 10px">
+              <input type="text" class="ai" id="edit-last-${u.id||u.email}" value="${(u.last_name||'').replace(/"/g,'&quot;')}" style="font-size:13px;padding:7px 10px;width:100%;box-sizing:border-box">
             </div>
             <div>
               <label class="fl" style="margin-top:0;font-size:12px">Email</label>
-              <input type="email" class="ai" id="edit-email-${u.id||u.email}" value="${(u.email||'').replace(/"/g,'&quot;')}" style="font-size:13px;padding:7px 10px">
+              <input type="email" class="ai" id="edit-email-${u.id||u.email}" value="${(u.email||'').replace(/"/g,'&quot;')}" style="font-size:13px;padding:7px 10px;width:100%;box-sizing:border-box">
             </div>
             <div>
               <label class="fl" style="margin-top:0;font-size:12px">PID (optionnel)</label>
-              <input type="text" class="ai" id="edit-pid-${u.id||u.email}" value="${u.pid||''}" maxlength="7" style="font-size:13px;padding:7px 10px">
+              <input type="text" class="ai" id="edit-pid-${u.id||u.email}" value="${u.pid||''}" maxlength="7" style="font-size:13px;padding:7px 10px;width:100%;box-sizing:border-box">
             </div>
-            <div>
+            <div style="grid-column:span 2">
               <label class="fl" style="margin-top:0;font-size:12px">Téléphone (optionnel)</label>
               <div id="edit-tel-wrap-${u.id||u.email}" class="phone-picker-wrap" style="font-size:13px"></div>
             </div>
             <div>
               <label class="fl" style="margin-top:0;font-size:12px">Rôle</label>
-              <select class="ai" id="edit-role-${u.id||u.email}" style="font-size:13px;padding:7px 10px;border-radius:8px;border:1px solid #ddd;font-family:inherit">
+              <select class="ai" id="edit-role-${u.id||u.email}" style="font-size:13px;padding:7px 10px;border-radius:8px;border:1px solid #ddd;font-family:inherit;width:100%;box-sizing:border-box">
                 <option value="utilisateur" ${(u.role==='utilisateur'||u.role==='gradue'||!u.role) ? 'selected' : ''}>Utilisateur</option>
                 <option value="superadmin" ${u.role==='superadmin' ? 'selected' : ''}>Super Admin</option>
               </select>
             </div>
             <div>
               <label class="fl" style="margin-top:0;font-size:12px">Fonction</label>
-              <select class="ai" id="edit-fonction-${u.id||u.email}" style="font-size:13px;padding:7px 10px;border-radius:8px;border:1px solid #ddd;font-family:inherit">
+              <select class="ai" id="edit-fonction-${u.id||u.email}" style="font-size:13px;padding:7px 10px;border-radius:8px;border:1px solid #ddd;font-family:inherit;width:100%;box-sizing:border-box">
                 <option value="">— Aucune —</option>
                 <option value="leader_intro" ${u.fonction==='leader_intro' ? 'selected' : ''}>Leader d'introduction</option>
                 <option value="gradue" ${u.fonction==='gradue' ? 'selected' : ''}>Gradué</option>
