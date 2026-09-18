@@ -2664,7 +2664,14 @@ async function renderApp(page, args){
       } catch(e){}
     }
   }
-  else if(page==='admin'){ if(!isLeader(user)) { c.innerHTML = '<div class="empty">Accès refusé</div>'; } else { c.innerHTML = await renderAdmin(user, args[0]||'intros', args[1]||null); } }
+  else if(page==='admin'){
+    if(!isLeader(user)) { c.innerHTML = '<div class="empty">Accès refusé</div>'; }
+    else {
+      const adminTab = args[0]||'intros', adminSub = args[1]||null;
+      c.innerHTML = await renderAdmin(user, adminTab, adminSub);
+      if(adminTab==='intros' && adminSub==='calendrier') mountIntrosCalendar();
+    }
+  }
   else if(page==='section'){
     const key = decodeURIComponent(args[0]||'');
     if(!hasAccess(key, user.programs) || !user.programs.includes(key)){
@@ -3781,9 +3788,9 @@ async function renderAdmin(user, tab, subtab){
   let subtabs = [];
   if(tab==='intros'){
     if(isAd){
-      subtabs = [['list','📋 Liste'],['mes','🎯 Mes introductions'],['archives','🗄️ Archives']];
+      subtabs = [['list','📋 Liste'],['calendrier','🗓️ Calendrier'],['mes','🎯 Mes introductions'],['archives','🗄️ Archives']];
     } else {
-      subtabs = [['list','📋 Mes évènements'],['mes','🎯 Mes introductions'],['regs','👥 Inscrits'],['archives','🗄️ Archives']];
+      subtabs = [['list','📋 Mes évènements'],['calendrier','🗓️ Calendrier'],['mes','🎯 Mes introductions'],['regs','👥 Inscrits'],['archives','🗄️ Archives']];
     }
   }
   else if(tab==='members' && isAd){
@@ -3854,6 +3861,16 @@ async function renderAdmin(user, tab, subtab){
           </div>
         </div>`;
       }).join('');
+    }
+    else if(currentSub==='calendrier'){
+      window._introsCalData = allIntros;
+      html += `<div style="margin-bottom:1rem;color:var(--muted);font-size:.9rem">Vue calendrier de toute l'équipe. Cliquez sur une date pour ajouter directement un évènement, ou sur un évènement pour voir qui manque dans l'équipe.</div>
+      <div class="calendar-legend">
+        <span><i style="background:#22C55E"></i>Équipe complète (RC + OPM)</span>
+        <span><i style="background:#F59E0B"></i>RC ou OPM manquant</span>
+        <span><i style="background:#EF4444"></i>RC et OPM manquants</span>
+      </div>
+      <div id="introsCalendar"></div>`;
     }
     else if(currentSub==='mes'){
       const asOpm = allIntros.filter(i => i.opm_name && i.opm_name === user.name);
@@ -4234,7 +4251,40 @@ function onIntroTypeChange(){
   if(themeGroup) themeGroup.querySelector('label').textContent = isClinic ? 'Thème *' : 'Thème';
 }
 
-async function openIntroForm(introId){
+let _introsCalInstance = null;
+function mountIntrosCalendar(){
+  const el = document.getElementById('introsCalendar');
+  if(!el) return;
+  if(!window.FullCalendar){ el.innerHTML = '<div class="empty">Calendrier indisponible</div>'; return; }
+  if(_introsCalInstance){ _introsCalInstance.destroy(); _introsCalInstance = null; }
+  const data = window._introsCalData || [];
+  _introsCalInstance = new FullCalendar.Calendar(el, {
+    initialView: window.innerWidth<700 ? 'listWeek' : 'dayGridMonth',
+    locale: 'fr',
+    firstDay: 1,
+    headerToolbar: { left:'prev,next today', center:'title', right:'dayGridMonth,listWeek' },
+    height: 'auto',
+    dateClick: (info) => { openIntroForm(null, info.dateStr); },
+    eventClick: (info) => { const item = data.find(x=>x.id===info.event.id); if(item) openIntroForm(item.id); },
+    events: data.map(i => {
+      const missingRc = !i.rc_name, missingOpm = !i.opm_name;
+      const color = (missingRc && missingOpm) ? '#EF4444' : (missingRc || missingOpm) ? '#F59E0B' : '#22C55E';
+      const missLabel = [missingRc?'RC':null, missingOpm?'OPM':null].filter(Boolean).join('+');
+      return {
+        id: i.id,
+        title: (missLabel ? '⚠️ '+missLabel+' manquant — ' : '✅ ') + (i.titre||'Évènement'),
+        start: i.heure ? (i.date+'T'+i.heure) : i.date,
+        end: i.heure_fin ? (i.date+'T'+i.heure_fin) : null,
+        allDay: !i.heure,
+        backgroundColor: color,
+        borderColor: color
+      };
+    })
+  });
+  _introsCalInstance.render();
+}
+
+async function openIntroForm(introId, prefillDate){
   const user = currentUser();
 
   // ── Vérification permissions ──
@@ -4301,7 +4351,7 @@ async function openIntroForm(introId){
       : (firstProg ? `Introduction — ${PROGRAMS[firstProg[0]]?.label || firstProg[0]}` : 'Introduction');
     const defaultTarget = (_isAdmin || _isLeaderFonction) ? 'Forum' : (firstProg ? firstProg[0] : 'Forum');
     intro = {
-      id:'new', type:'forum', date:'', heure:'18:30', heure_fin:'21:00',
+      id:'new', type:'forum', date:prefillDate||'', heure:'18:30', heure_fin:'21:00',
       titre: defaultTitre, theme:'', format:'presentiel', location:'',
       animateur:user.name, animateur_email:user.email, rc_name:'', opm_name:'',
       zoom_url:'https://landmarkworldwide.zoom.us/j/94837564638',
