@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Analytics — Landmark Pacifique</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #1a1f36;
+      --navy-light: #2d3450;
+      --navy-mid: #6b7a90;
+      --teal: #00c6d7;
+      --teal-dark: #00a8b8;
+      --gold: #e8b86a;
+      --coral: #ff6b6b;
+      --green: #4ecdc4;
+      --purple: #a29bfe;
+      --bg: #f5f7fa;
+      --card-bg: #ffffff;
+      --shadow: 0 2px 12px rgba(26, 31, 54, 0.08);
+      --shadow-lg: 0 8px 32px rgba(26, 31, 54, 0.12);
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--navy);
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+      padding: 24px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: var(--shadow);
+    }
+
+    .header h1 {
+      color: white;
+      font-size: 24px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header h1 span {
+      color: var(--teal);
+    }
+
+    .header-user {
+      color: rgba(255,255,255,0.8);
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn-back {
+      background: rgba(255,255,255,0.1);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.2);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+
+    .btn-back:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 32px;
+    }
+
+    /* Login Modal */
+    .login-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(26, 31, 54, 0.6);
+      backdrop-filter: blur(8px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .login-box {
+      background: white;
+      border-radius: var(--radius);
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .login-box h2 {
+      font-size: 22px;
+      margin-bottom: 8px;
+      color: var(--navy);
+    }
+
+    .login-box p {
+      color: var(--navy-mid);
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--navy-light);
+      margin-bottom: 6px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e8ecf1;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--teal);
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--teal) 0%, var(--teal-dark) 100%);
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      margin-top: 8px;
+    }
+
+    .btn-login:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(0, 198, 215, 0.4);
+    }
+
+    .btn-login:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .login-error {
+      color: var(--coral);
+      font-size: 13px;
+      margin-top: 12px;
+      display: none;
+    }
+
+    /* Stats Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+
+    .stat-card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+    }
+
+    .stat-card.teal::before { background: var(--teal); }
+    .stat-card.gold::before { background: var(--gold); }
+    .stat-card.green::before { background: var(--green); }
+    .stat-card.purple::before { background: var(--purple); }
+    .stat-card.coral::before { background: var(--coral); }
+
+    .stat-icon {
+      font-size: 28px;
+      margin-bottom: 12px;
+    }
+
+    .stat-value {
+      font-size: 36px;
+      font-weight: 700;
+      color: var(--navy);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: var(--navy-mid);
+      font-weight: 500;
+    }
+
+    .stat-detail {
+      font-size: 12px;
+      color: var(--teal);
+      margin-top: 8px;
+    }
+
+    /* Section Cards */
+    .section-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 24px;
+      margin-bottom: 32px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--navy);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-badge {
+      background: var(--teal);
+      color: white;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+
+    /* Upcoming Intros Table */
+    .intro-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .intro-table th {
+      text-align: left;
+      padding: 10px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--navy-mid);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid #e8ecf1;
+    }
+
+    .intro-table td {
+      padding: 12px;
+      font-size: 14px;
+      border-bottom: 1px solid #f0f2f5;
+    }
+
+    .intro-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .intro-table tr:hover td {
+      background: #f8f9fb;
+    }
+
+    .intro-type-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .type-forum { background: rgba(0, 198, 215, 0.15); color: var(--teal); }
+    .type-special { background: rgba(232, 184, 106, 0.2); color: #c9963c; }
+    .type-advanced { background: rgba(162, 155, 254, 0.2); color: var(--purple); }
+
+    .registrations-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .reg-bar {
+      flex: 1;
+      height: 8px;
+      background: #e8ecf1;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .reg-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--teal), var(--green));
+      border-radius: 4px;
+      transition: width 0.6s ease;
+    }
+
+    .reg-count {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--navy);
+      min-width: 30px;
+      text-align: right;
+    }
+
+    /* Bar Chart */
+    .bar-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+      height: 180px;
+      padding-top: 20px;
+    }
+
+    .bar-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      height: 100%;
+      justify-content: flex-end;
+    }
+
+    .bar {
+      width: 100%;
+      max-width: 50px;
+      background: linear-gradient(180deg, var(--teal), var(--teal-dark));
+      border-radius: 6px 6px 0 0;
+      transition: height 0.6s ease;
+      min-height: 4px;
+    }
+
+    .bar-label {
+      font-size: 11px;
+      color: var(--navy-mid);
+      font-weight: 500;
+    }
+
+    .bar-value {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--navy);
+    }
+
+    /* Type Distribution */
+    .type-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .type-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .type-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .type-info {
+      flex: 1;
+    }
+
+    .type-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--navy);
+    }
+
+    .type-count {
+      font-size: 13px;
+      color: var(--navy-mid);
+    }
+
+    /* Loading State */
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      color: var(--navy-mid);
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #e8ecf1;
+      border-top-color: var(--teal);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Error State */
+    .error-box {
+      background: rgba(255, 107, 107, 0.1);
+      border: 1px solid rgba(255, 107, 107, 0.3);
+      border-radius: var(--radius-sm);
+      padding: 16px 20px;
+      color: var(--coral);
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+
+    /* Refresh Button */
+    .btn-refresh {
+      background: var(--card-bg);
+      border: 2px solid #e8ecf1;
+      padding: 10px 20px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+      color: var(--navy);
+    }
+
+    .btn-refresh:hover {
+      border-color: var(--teal);
+      color: var(--teal);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .header {
+        padding: 16px 20px;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .container {
+        padding: 20px;
+      }
+
+      .section-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .stat-value {
+        font-size: 28px;
+      }
+    }
+
+    /* Hidden */
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- Login Modal -->
+  <div id="loginOverlay" class="login-overlay">
+    <div class="login-box">
+      <h2>🔐 Accès Leadership</h2>
+      <p>Connectez-vous avec votre compte leader pour accéder au dashboard analytics.</p>
+      <form id="loginForm">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="loginEmail" placeholder="votre@email.com" required>
+        </div>
+        <div class="form-group">
+          <label>Mot de passe</label>
+          <input type="password" id="loginPassword" placeholder="••••••••" required>
+        </div>
+        <div id="loginError" class="login-error"></div>
+        <button type="submit" class="btn-login" id="loginBtn">Se connecter</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Dashboard -->
+  <div id="dashboard" class="hidden">
+    <div class="header">
+      <h1>📊 <span>Dashboard</span> Analytics</h1>
+      <div class="header-user">
+        <span id="userName"></span>
+        <a href="/" class="btn-back">← Retour au site</a>
+        <button onclick="logout()" class="btn-back">Déconnexion</button>
+      </div>
+    </div>
+
+    <div class="container">
+      <!-- Error -->
+      <div id="errorBox" class="error-box hidden"></div>
+
+      <!-- Loading -->
+      <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Chargement des analytics...</p>
+      </div>
+
+      <!-- Content -->
+      <div id="content" class="hidden">
+        <!-- Stats Cards -->
+        <div class="stats-grid" id="statsGrid"></div>
+
+        <!-- Sections -->
+        <div class="section-grid">
+          <!-- Upcoming Intros -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">📅 Prochaines Intros</div>
+              <span class="card-badge" id="upcomingCount">0</span>
+            </div>
+            <div id="upcomingList"></div>
+          </div>
+
+          <!-- Top Intros by Registrations -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">🏆 Top Intros par Inscriptions</div>
+            </div>
+            <div id="topIntrosList"></div>
+          </div>
+        </div>
+
+        <div class="section-grid">
+          <!-- Intros by Type -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">📌 Intros par Type</div>
+            </div>
+            <div id="typeDistribution" class="type-list"></div>
+          </div>
+
+          <!-- Intros by Month -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">📈 Activité Mensuelle (6 mois)</div>
+            </div>
+            <div id="monthChart" class="bar-chart"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = window.location.origin;
+    let token = localStorage.getItem('lp_token');
+    let userData = null;
+
+    // ─── Auth ───
+    async function login(email, password) {
+      const btn = document.getElementById('loginBtn');
+      const errorEl = document.getElementById('loginError');
+      btn.disabled = true;
+      btn.textContent = 'Connexion...';
+      errorEl.style.display = 'none';
+
+      try {
+        const res = await fetch(API_BASE + '/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || 'Erreur de connexion');
+
+        // Vérifier que l'utilisateur est leader
+        if (!['leader', 'admin', 'superadmin'].includes(data.user.role) &&
+            !['leader', "leader d'introduction au forum", 'team leader il',
+              'seminar leader in training', 'seminar leader', 'gradué'].includes(data.user.fonction)) {
+          throw new Error('Accès réservé aux leaders uniquement');
+        }
+
+        token = data.token;
+        userData = data.user;
+        localStorage.setItem('lp_token', token);
+        localStorage.setItem('lp_user', JSON.stringify(userData));
+        showDashboard();
+      } catch (e) {
+        errorEl.textContent = e.message;
+        errorEl.style.display = 'block';
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Se connecter';
+      }
+    }
+
+    function logout() {
+      token = null;
+      userData = null;
+      localStorage.removeItem('lp_token');
+      localStorage.removeItem('lp_user');
+      document.getElementById('dashboard').classList.add('hidden');
+      document.getElementById('loginOverlay').classList.remove('hidden');
+    }
+
+    function showDashboard() {
+      document.getElementById('loginOverlay').classList.add('hidden');
+      document.getElementById('dashboard').classList.remove('hidden');
+      document.getElementById('userName').textContent = userData?.name || userData?.email;
+      loadAnalytics();
+    }
+
+    // ─── Analytics ───
+    async function loadAnalytics() {
+      const loading = document.getElementById('loading');
+      const content = document.getElementById('content');
+      const errorBox = document.getElementById('errorBox');
+
+      loading.classList.remove('hidden');
+      content.classList.add('hidden');
+      errorBox.classList.add('hidden');
+
+      try {
+        const res = await fetch(API_BASE + '/api/leader/analytics', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+
+        if (res.status === 401) { logout(); return; }
+        if (res.status === 403) throw new Error('Accès refusé. Vous devez être leader pour accéder à cette page.');
+
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+
+        renderStats(data.overview);
+        renderUpcoming(data.upcoming_intros);
+        renderTopIntros(data.top_intros_by_registrations);
+        renderTypeDistribution(data.intros_by_type);
+        renderMonthChart(data.intros_by_month);
+
+        loading.classList.add('hidden');
+        content.classList.remove('hidden');
+      } catch (e) {
+        loading.classList.add('hidden');
+        errorBox.textContent = '❌ ' + e.message;
+        errorBox.classList.remove('hidden');
+      }
+    }
+
+    // ─── Render Functions ───
+    function renderStats(overview) {
+      const grid = document.getElementById('statsGrid');
+      const cards = [
+        { icon: '📅', value: overview.active_intros, label: 'Intros actives', detail: `${overview.archived_intros} archivées`, color: 'teal' },
+        { icon: '👥', value: overview.total_users, label: 'Utilisateurs', detail: `${overview.members} membres`, color: 'green' },
+        { icon: '✍️', value: overview.total_posts, label: 'Posts forum', detail: '', color: 'purple' },
+        { icon: '📊', value: overview.avg_participation, label: 'Inscriptions/intro', detail: `${overview.new_users_7d} nouveaux (7j)`, color: 'gold' },
+        { icon: '👑', value: overview.superadmins + overview.admins, label: 'Admins', detail: `${overview.superadmins} superadmins`, color: 'coral' }
+      ];
+
+      grid.innerHTML = cards.map(c => `
+        <div class="stat-card ${c.color}">
+          <div class="stat-icon">${c.icon}</div>
+          <div class="stat-value">${c.value}</div>
+          <div class="stat-label">${c.label}</div>
+          ${c.detail ? `<div class="stat-detail">${c.detail}</div>` : ''}
+        </div>
+      `).join('');
+    }
+
+    function renderUpcoming(intros) {
+      const container = document.getElementById('upcomingList');
+      const count = document.getElementById('upcomingCount');
+      count.textContent = intros.length;
+
+      if (!intros.length) {
+        container.innerHTML = '<p style="color:var(--navy-mid);text-align:center;padding:20px">Aucune intro à venir</p>';
+        return;
+      }
+
+      container.innerHTML = `
+        <table class="intro-table">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Titre</th>
+              <th>Date</th>
+              <th>Inscrits</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${intros.map(i => `
+              <tr>
+                <td><span class="intro-type-badge type-${i.type || 'forum'}">${getTypeLabel(i.type)}</span></td>
+                <td style="font-weight:500">${escapeHtml(i.titre)}</td>
+                <td>${formatDate(i.date)} ${i.heure ? '• ' + i.heure : ''}</td>
+                <td>
+                  <div class="registrations-bar">
+                    <div class="reg-bar">
+                      <div class="reg-bar-fill" style="width:${Math.min(100, ((i.registrations?.length || 0) / (i.capacite || 30)) * 100)}%"></div>
+                    </div>
+                    <span class="reg-count">${i.registrations?.length || 0}</span>
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function renderTopIntros(intros) {
+      const container = document.getElementById('topIntrosList');
+
+      if (!intros.length) {
+        container.innerHTML = '<p style="color:var(--navy-mid);text-align:center;padding:20px">Pas encore de données</p>';
+        return;
+      }
+
+      const max = Math.max(...intros.map(i => i.registrations || 1), 1);
+
+      container.innerHTML = `
+        <table class="intro-table">
+          <thead>
+            <tr>
+              <th>Intro</th>
+              <th>Date</th>
+              <th style="width:160px">Inscriptions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${intros.map(i => `
+              <tr>
+                <td style="font-weight:500">${escapeHtml(i.titre)}</td>
+                <td style="color:var(--navy-mid)">${formatDate(i.date)}</td>
+                <td>
+                  <div class="registrations-bar">
+                    <div class="reg-bar">
+                      <div class="reg-bar-fill" style="width:${((i.registrations || 0) / max) * 100}%"></div>
+                    </div>
+                    <span class="reg-count">${i.registrations || 0}</span>
+                  </div>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    function renderTypeDistribution(types) {
+      const container = document.getElementById('typeDistribution');
+      const colors = { forum: 'var(--teal)', special: 'var(--gold)', advanced: 'var(--purple)' };
+
+      if (!types.length) {
+        container.innerHTML = '<p style="color:var(--navy-mid);text-align:center;padding:20px">Aucune donnée</p>';
+        return;
+      }
+
+      const total = types.reduce((s, t) => s + parseInt(t.count), 0);
+
+      container.innerHTML = types.map(t => `
+        <div class="type-item">
+          <div class="type-dot" style="background:${colors[t.type] || 'var(--navy-mid)'}"></div>
+          <div class="type-info">
+            <div class="type-name">${getTypeLabel(t.type)}</div>
+          </div>
+          <div class="type-count">${t.count} <span style="color:var(--navy-mid)">(${Math.round((parseInt(t.count) / total) * 100)}%)</span></div>
+        </div>
+      `).join('');
+    }
+
+    function renderMonthChart(months) {
+      const container = document.getElementById('monthChart');
+
+      if (!months.length) {
+        container.innerHTML = '<p style="color:var(--navy-mid);text-align:center;padding:20px;flex:1">Aucune donnée</p>';
+        container.style.height = 'auto';
+        return;
+      }
+
+      const max = Math.max(...months.map(m => parseInt(m.count)), 1);
+
+      container.innerHTML = months.map(m => {
+        const pct = (parseInt(m.count) / max) * 100;
+        const label = formatMonth(m.month);
+        return `
+          <div class="bar-item">
+            <div class="bar-value">${m.count}</div>
+            <div class="bar" style="height:${Math.max(pct, 5)}%"></div>
+            <div class="bar-label">${label}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ─── Helpers ───
+    function getTypeLabel(type) {
+      const labels = { forum: 'Forum', special: 'Spécial', advanced: 'Avancé', communication: 'Communication', seminar: 'Séminaire' };
+      return labels[type] || type || 'Forum';
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '—';
+      try {
+        return new Date(dateStr + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+      } catch { return dateStr; }
+    }
+
+    function formatMonth(monthStr) {
+      try {
+        const [y, m] = monthStr.split('-');
+        return new Date(y, m - 1).toLocaleDateString('fr-FR', { month: 'short' });
+      } catch { return monthStr; }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    // ─── Init ───
+    document.getElementById('loginForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      login(document.getElementById('loginEmail').value, document.getElementById('loginPassword').value);
+    });
+
+    // Vérifier si déjà connecté
+    if (token && localStorage.getItem('lp_user')) {
+      userData = JSON.parse(localStorage.getItem('lp_user'));
+      showDashboard();
+    }
+  </script>
+</body>
+</html>
