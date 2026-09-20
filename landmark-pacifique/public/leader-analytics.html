@@ -517,6 +517,8 @@
     /* Hidden */
     .hidden { display: none !important; }
   </style>
+<script src="i18n.js?v=1"></script>
+<script src="i18n-en.js?v=1"></script>
 </head>
 <body>
 
@@ -859,14 +861,14 @@
     function formatDate(dateStr) {
       if (!dateStr) return '—';
       try {
-        return new Date(dateStr + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+        return new Date(dateStr + 'T12:00:00').toLocaleDateString(LP_I18N.locale(), { weekday: 'short', day: 'numeric', month: 'short' });
       } catch { return dateStr; }
     }
 
     function formatMonth(monthStr) {
       try {
         const [y, m] = monthStr.split('-');
-        return new Date(y, m - 1).toLocaleDateString('fr-FR', { month: 'short' });
+        return new Date(y, m - 1).toLocaleDateString(LP_I18N.locale(), { month: 'short' });
       } catch { return monthStr; }
     }
 

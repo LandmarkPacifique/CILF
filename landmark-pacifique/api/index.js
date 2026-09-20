@@ -146,6 +146,14 @@ const LEADER_FONCTIONS = ['leader', "leader d'introduction au forum", 'team lead
 function isLeader(u) { const f = (u.fonction || '').toLowerCase(); return isAdmin(u) || LEADER_FONCTIONS.includes(f) || f === 'gradué'; }
 function hasPerm(u, perm) { if (isSuperAdmin(u)) return true; return !!(u.permissions && u.permissions[perm]); }
 
+const SUPPORTED_LANGS = ['fr', 'en'];
+const DEFAULT_LANG    = 'fr';
+/** Retourne le code de langue supporté correspondant à `value`, sinon null. */
+function normalizeLang(value) {
+  const code = String(value || '').toLowerCase().slice(0, 2);
+  return SUPPORTED_LANGS.includes(code) ? code : null;
+}
+
 const VALID_ROLES    = ['utilisateur', 'admin', 'superadmin'];
 const VALID_FONCTIONS = ['invité', 'gradué', 'leader', 'Team Leader IL', 'Seminar Leader In Training', 'Seminar Leader', 'staff'];
 
@@ -178,11 +186,23 @@ function lastSunday(year, month) {
   d.setDate(d.getDate() - d.getDay());
   return d;
 }
+function firstSunday(year, month) {
+  const d = new Date(year, month, 1);
+  d.setDate(d.getDate() + ((7 - d.getDay()) % 7));
+  return d;
+}
 function isFranceSummer(dateStr) {
   if (!dateStr) return false;
   const d = new Date(dateStr);
   const y = d.getFullYear();
   return d >= lastSunday(y, 2) && d < lastSunday(y, 9);
+}
+// Heure d'été NZ (NZDT) : de fin septembre à début avril (hémisphère sud, saisons inversées).
+function isNZSummer(dateStr) {
+  if (!dateStr) return false;
+  const d = new Date(dateStr);
+  const y = d.getFullYear();
+  return d >= lastSunday(y, 8) || d < firstSunday(y, 3);
 }
 function addHours(timeStr, diff) {
   if (!timeStr) return '';
@@ -191,13 +211,15 @@ function addHours(timeStr, diff) {
   total = ((total % 1440) + 1440) % 1440;
   return String(Math.floor(total / 60)).padStart(2, '0') + ':' + String(total % 60).padStart(2, '0');
 }
-function fmtDateLong(dateStr) {
+function fmtDateLong(dateStr, locale = 'fr-FR') {
   if (!dateStr) return '';
-  return new Date(dateStr + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' });
+  return new Date(dateStr + 'T12:00:00').toLocaleDateString(locale, { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' });
 }
-function computeTimezones(intro) {
+function computeTimezones(intro, locale = 'fr-FR') {
   const frDiff   = isFranceSummer(intro.date)    ? 12 : 11;
   const frDiffCC = isFranceSummer(intro.cc_date) ? 12 : 11;
+  const nzDiff   = isNZSummer(intro.date)    ? 23 : 22;
+  const nzDiffCC = isNZSummer(intro.cc_date) ? 23 : 22;
 
   function dateWithOffset(dateStr, timeStr, diffHours) {
     if (!dateStr || !timeStr) return dateStr || '';
@@ -208,27 +230,34 @@ function computeTimezones(intro) {
 
   const dateNC   = dateWithOffset(intro.date,    intro.heure,    21);
   const dateFR   = dateWithOffset(intro.date,    intro.heure,    frDiff);
+  const dateNZ   = dateWithOffset(intro.date,    intro.heure,    nzDiff);
   const ccDateNC = dateWithOffset(intro.cc_date, intro.cc_heure, 21);
   const ccDateFR = dateWithOffset(intro.cc_date, intro.cc_heure, frDiffCC);
+  const ccDateNZ = dateWithOffset(intro.cc_date, intro.cc_heure, nzDiffCC);
 
   return {
     heure_tahiti:     intro.heure     || '',
     heure_nc:         addHours(intro.heure, 21),
     heure_fr:         addHours(intro.heure, frDiff),
+    heure_nz:         addHours(intro.heure, nzDiff),
     heure_fin_tahiti: intro.heure_fin || '',
     heure_fin_nc:     intro.heure_fin ? addHours(intro.heure_fin, 21)     : '',
     heure_fin_fr:     intro.heure_fin ? addHours(intro.heure_fin, frDiff) : '',
-    date_long:        fmtDateLong(intro.date),
-    date_long_nc:     fmtDateLong(dateNC),
-    date_long_fr:     fmtDateLong(dateFR),
+    heure_fin_nz:     intro.heure_fin ? addHours(intro.heure_fin, nzDiff) : '',
+    date_long:        fmtDateLong(intro.date, locale),
+    date_long_nc:     fmtDateLong(dateNC, locale),
+    date_long_fr:     fmtDateLong(dateFR, locale),
+    date_long_nz:     fmtDateLong(dateNZ, locale),
     date_iso:         intro.date || '',
     cc_date_iso:      intro.cc_date  || '',
-    cc_date_long:     fmtDateLong(intro.cc_date),
-    cc_date_long_nc:  fmtDateLong(ccDateNC),
-    cc_date_long_fr:  fmtDateLong(ccDateFR),
+    cc_date_long:     fmtDateLong(intro.cc_date, locale),
+    cc_date_long_nc:  fmtDateLong(ccDateNC, locale),
+    cc_date_long_fr:  fmtDateLong(ccDateFR, locale),
+    cc_date_long_nz:  fmtDateLong(ccDateNZ, locale),
     cc_heure_tahiti:  intro.cc_heure || '',
     cc_heure_nc:      intro.cc_heure ? addHours(intro.cc_heure, 21)       : '',
     cc_heure_fr:      intro.cc_heure ? addHours(intro.cc_heure, frDiffCC) : '',
+    cc_heure_nz:      intro.cc_heure ? addHours(intro.cc_heure, nzDiffCC) : '',
     zoom_cc:          intro.zoom_cc  || '',
   };
 }
@@ -333,7 +362,7 @@ app.post('/api/invitation/:token/confirm', async (req, res) => {
     const userRows = await sql`
       INSERT INTO users (email, password, name, role, fonction, programs, permissions, graduate_email, validated)
       VALUES (${inv.guest_email.toLowerCase()}, ${hash}, ${inv.guest_firstname + ' ' + inv.guest_lastname}, 'utilisateur', 'invité', '[]', '{}', ${inv.graduate_email || null}, true)
-      ON CONFLICT (email) DO UPDATE SET password = EXCLUDED.password, graduate_email = EXCLUDED.graduate_email, validated = true
+      ON CONFLICT (email) DO UPDATE SET graduate_email = COALESCE(users.graduate_email, EXCLUDED.graduate_email), validated = true
       RETURNING *
     `;
     invalidateUser(inv.guest_email.toLowerCase());
@@ -396,13 +425,14 @@ app.post('/api/invitation/:token/confirm', async (req, res) => {
 
 app.post('/api/signup', async (req, res) => {
   try {
-    const { email, password, name } = req.body;
+    const { email, password, name, lang } = req.body;
     if (!email || !password || !name) return res.status(400).json({ error: 'Champs requis manquants' });
     const hash = bcrypt.hashSync(password, 10);
+    const userLang = normalizeLang(lang) || DEFAULT_LANG;
     // 1 seule requête : INSERT ON CONFLICT remplace SELECT + INSERT
     const inserted = await sql`
-      INSERT INTO users (email, password, name, role, fonction, programs, permissions)
-      VALUES (${email.toLowerCase()}, ${hash}, ${name}, 'utilisateur', 'invité', '[]', '{}')
+      INSERT INTO users (email, password, name, role, fonction, programs, permissions, lang)
+      VALUES (${email.toLowerCase()}, ${hash}, ${name}, 'utilisateur', 'invité', '[]', '{}', ${userLang})
       ON CONFLICT (email) DO NOTHING RETURNING email`;
     if (!inserted.length) return res.status(400).json({ error: 'Cet email est déjà utilisé' });
     try {
@@ -636,6 +666,18 @@ app.put('/api/me', auth, async (req, res) => {
     const { password: _, ...safeUser } = rows[0];
     const newToken = jwt.sign({ email: newEmail }, JWT_SECRET, { expiresIn: '7d' });
     res.json({ user: safeUser, token: newToken, graduate_name: resolvedGradName });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.put('/api/me/lang', auth, async (req, res) => {
+  try {
+    const lang = normalizeLang(req.body.lang);
+    if (!lang) return res.status(400).json({ error: 'Langue invalide' });
+    await sql`UPDATE users SET lang = ${lang} WHERE email = ${req.user.email}`;
+    invalidateUser(req.user.email);
+    res.json({ ok: true, lang });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -1229,7 +1271,8 @@ app.delete('/api/intros/:id', auth, async (req, res) => {
     const introRows = await sql`SELECT * FROM intros WHERE id = ${req.params.id} AND archived = false`;
     if (!introRows.length) return res.status(404).json({ error: 'Introduction introuvable' });
     const intro = introRows[0];
-    await sql`UPDATE intros SET archived = true, archived_at = NOW(), archived_by = ${u.email} WHERE id = ${req.params.id}`;
+    const reason = ((req.body && req.body.reason) || '').trim() || null;
+    await sql`UPDATE intros SET archived = true, archived_at = NOW(), archived_by = ${u.email}, cancel_reason = ${reason} WHERE id = ${req.params.id}`;
     broadcast('intro_deleted', { id: req.params.id });
     res.json({ ok: true, archived: true });
 
@@ -1240,6 +1283,37 @@ app.delete('/api/intros/:id', auth, async (req, res) => {
       catch (gcalErr) { console.error('GCal cancel intro on archive error:', gcalErr.message); }
       try { await sql`DELETE FROM invitation_tokens WHERE intro_id = ${req.params.id} AND used = false`; }
       catch (tokenErr) { console.error('Invitation tokens cleanup on archive error:', tokenErr.message); }
+
+      // Annulation avec raison : prévenir le leader de l'introduction, les team leaders et le staff par email.
+      if (reason) {
+        try {
+          const recipients = [];
+          const seenEmails = new Set();
+          if (intro.animateur_email) { recipients.push({ email: intro.animateur_email, name: intro.animateur || '' }); seenEmails.add(intro.animateur_email.toLowerCase()); }
+          const teamRows = await sql`SELECT email, name FROM users WHERE LOWER(fonction) IN ('team leader il', 'staff')`;
+          for (const row of teamRows) {
+            if (!seenEmails.has(row.email.toLowerCase())) { recipients.push({ email: row.email, name: row.name }); seenEmails.add(row.email.toLowerCase()); }
+          }
+          const tzFr = computeTimezones(intro, 'fr-FR');
+          const tzEn = computeTimezones(intro, 'en-US');
+          const buildEvent = tz => ({
+            titre: intro.titre,
+            date_long: tz.date_long, date_long_nc: tz.date_long_nc, date_long_fr: tz.date_long_fr, date_long_nz: tz.date_long_nz,
+            heure_tahiti: tz.heure_tahiti, heure_nc: tz.heure_nc, heure_fr: tz.heure_fr, heure_nz: tz.heure_nz,
+            format: intro.format, location: intro.location,
+          });
+          for (const r of recipients) {
+            await sendAppMail({
+              type: 'intro_cancelled',
+              to_email: r.email,
+              to_name: r.name,
+              event_fr: buildEvent(tzFr),
+              event_en: buildEvent(tzEn),
+              reason,
+            });
+          }
+        } catch (mailErr) { console.error('Intro cancellation email error:', mailErr.message); }
+      }
     });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -1275,7 +1349,10 @@ app.delete('/api/intros/:id/permanent', auth, async (req, res) => {
 ════════════════════════════════════════ */
 
 async function performIntroRegistration(introId, body, callerToken) {
-  const { firstname, lastname, email, phone, invitedBy, isGraduate, graduatePid, selfRegister } = body;
+  const { firstname, lastname, phone, invitedBy, isGraduate, graduatePid, selfRegister } = body;
+  // Email normalisé (minuscules, sans espaces) : c'est celui du compte créé à l'activation,
+  // le site retrouve ainsi l'inscription de l'invité quelle que soit sa saisie.
+  const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : body.email;
   const invitedByEmail = body.invitedByEmail ? body.invitedByEmail.toLowerCase() : body.invitedByEmail;
   if (!firstname || !lastname || !email) { const err = new Error('Champs obligatoires manquants'); err.status = 400; throw err; }
   if (!phone && !selfRegister) { const err = new Error('Champs obligatoires manquants'); err.status = 400; throw err; }
@@ -1348,7 +1425,14 @@ async function performIntroRegistration(introId, body, callerToken) {
   if (!rows.length) { const err = new Error('Introduction introuvable'); err.status = 404; throw err; }
   const intro = rows[0];
     const regs = intro.registrations || [];
-    if (regs.find(r => r.email === email)) return res.status(400).json({ error: 'Déjà inscrit·e' });
+    if (regs.find(r => r.email && r.email.toLowerCase() === email.toLowerCase())) {
+      const err = new Error('Déjà inscrit·e à cette introduction'); err.status = 400; throw err;
+    }
+
+    // Toute inscription est confirmée d'emblée. Pour un invité inscrit par un gradué, l'email
+    // (token d'invitation) ne sert plus qu'à activer son compte, pas à confirmer sa place.
+    const confirmedNow = true;
+    const accountActivationPending = !!invitedBy && !selfRegister;
 
     regs.push({
       id: 'r' + uuidv4().slice(0, 8),
@@ -1357,8 +1441,8 @@ async function performIntroRegistration(introId, body, callerToken) {
       invitedByEmail: resolvedGraduateEmail,
       graduatePid: resolvedGraduatePid,
       isGraduate: !!isGraduate,
-      confirmed: !!selfRegister,
-      confirmed_at: selfRegister ? new Date().toISOString() : null,
+      confirmed: confirmedNow,
+      confirmed_at: confirmedNow ? new Date().toISOString() : null,
       date: new Date().toISOString()
     });
     // Parallélisation : UPDATE intros + UPDATE users graduate en 1 batch
@@ -1527,7 +1611,16 @@ async function performIntroRegistration(introId, body, callerToken) {
       }
     }
 
-  return { ok: true };
+  return {
+    ok: true,
+    confirmed: confirmedNow,
+    account_activation_pending: accountActivationPending,
+    intro: {
+      id: intro.id, titre: intro.titre, type: intro.type, theme: intro.theme || '',
+      date: intro.date, heure: intro.heure, heure_fin: intro.heure_fin, format: intro.format,
+      location: intro.location, animateur: intro.animateur
+    }
+  };
 }
 
 app.post('/api/intros/:id/register', async (req, res) => {
@@ -1612,14 +1705,17 @@ app.post('/api/intros/:id/reminder/:email', auth, async (req, res) => {
     // Parallélisation : intro + token fetch lancés ensemble
     const [rows, tokenRows] = await Promise.all([
       sql`SELECT * FROM intros WHERE id = ${req.params.id}`,
-      sql`SELECT token FROM invitation_tokens WHERE intro_id = ${req.params.id} AND guest_email = ${guestEmail} ORDER BY created_at DESC LIMIT 1`
+      sql`SELECT token, used FROM invitation_tokens WHERE intro_id = ${req.params.id} AND guest_email = ${guestEmail} ORDER BY created_at DESC LIMIT 1`
     ]);
     if (!rows.length) return res.status(404).json({ error: 'Introduction introuvable' });
     const intro = rows[0];
 
     const reg = (intro.registrations || []).find(r => r.email && r.email.toLowerCase() === guestEmail);
     if (!reg) return res.status(404).json({ error: 'Invité introuvable' });
-    if (reg.confirmed) return res.status(400).json({ error: 'Cet invité a déjà confirmé' });
+    // Un rappel n'a de sens que tant que le compte de l'invité n'est pas activé (lien non cliqué).
+    // Sans token (anciennes inscriptions), on retombe sur l'état « confirmé ».
+    const accountActivated = tokenRows.length ? tokenRows[0].used : reg.confirmed;
+    if (accountActivated) return res.status(400).json({ error: 'Cet invité a déjà activé son compte' });
 
     let invitationToken = tokenRows.length ? tokenRows[0].token : null;
     if (!invitationToken) {
@@ -1670,7 +1766,7 @@ app.post('/api/intros/:id/reminder/:email', auth, async (req, res) => {
 app.get('/api/my-guest-invitations', auth, async (req, res) => {
   try {
     const rows = await sql`
-      SELECT intro_id, guest_email, email_status, email_status_at
+      SELECT intro_id, guest_email, email_status, email_status_at, used
       FROM invitation_tokens
       WHERE graduate_email = ${req.user.email}
       ORDER BY created_at DESC
@@ -1690,7 +1786,7 @@ app.get('/api/intros/:id/invitation-status', auth, async (req, res) => {
     const u = await getUser(req.user.email);
     if (!isLeader(u)) return res.status(403).json({ error: 'Accès refusé' });
     const rows = await sql`
-      SELECT guest_email, email_status, email_status_at
+      SELECT guest_email, email_status, email_status_at, used
       FROM invitation_tokens
       WHERE intro_id = ${req.params.id}
     `;
@@ -1704,7 +1800,7 @@ app.get('/api/members', auth, async (req, res) => {
   try {
     const u = await getUser(req.user.email);
     if (!isAdmin(u)) return res.status(403).json({ error: 'Accès refusé' });
-    const rows = await sql`SELECT email, name, role, fonction, programs, permissions, phone, location, pid, created_at, validated FROM users ORDER BY created_at ASC`;
+    const rows = await sql`SELECT email, name, role, fonction, programs, permissions, phone, location, pid, lang, created_at, validated FROM users ORDER BY created_at ASC`;
     res.json(rows);
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -1715,7 +1811,7 @@ app.put('/api/members/:email', auth, async (req, res) => {
   try {
     const u = await getUser(req.user.email);
     if (!isAdmin(u) && !hasPerm(u, 'canManageMembers')) return res.status(403).json({ error: 'Accès refusé' });
-    const { role, fonction, programs, permissions, name, email: newEmail, phone, pid, location, graduate_pid, graduate_email } = req.body;
+    const { role, fonction, programs, permissions, name, email: newEmail, phone, pid, location, graduate_pid, graduate_email, lang } = req.body;
     const progs = Array.isArray(programs) ? programs : [];
     const perms = permissions && typeof permissions === 'object' ? permissions : {};
     if (pid && !/^\d{7}$/.test(pid)) return res.status(400).json({ error: 'PID invalide (7 chiffres requis)' });
@@ -1754,6 +1850,7 @@ app.put('/api/members/:email', auth, async (req, res) => {
       location=${location||''},
       graduate_pid=${graduate_pid||null},
       graduate_email=${resolvedGradEmail},
+      lang=COALESCE(${normalizeLang(lang)}, lang),
       validated=true
       WHERE email=${targetEmail}`;
     invalidateUser(targetEmail);
@@ -1761,6 +1858,22 @@ app.put('/api/members/:email', auth, async (req, res) => {
     res.json({ ok: true });
   } catch (e) {
     console.error('PUT /members error:', e);
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.put('/api/members/:email/lang', auth, async (req, res) => {
+  try {
+    const u = await getUser(req.user.email);
+    if (!isAdmin(u) && !hasPerm(u, 'canManageMembers')) return res.status(403).json({ error: 'Accès refusé' });
+    const lang = normalizeLang(req.body.lang);
+    if (!lang) return res.status(400).json({ error: 'Langue invalide' });
+    const targetEmail = req.params.email.toLowerCase();
+    const updated = await sql`UPDATE users SET lang = ${lang} WHERE email = ${targetEmail} RETURNING email`;
+    if (!updated.length) return res.status(404).json({ error: 'Utilisateur introuvable' });
+    invalidateUser(targetEmail);
+    res.json({ ok: true, lang });
+  } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });

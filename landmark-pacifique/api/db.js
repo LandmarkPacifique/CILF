@@ -62,6 +62,7 @@ async function initDB() {
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS graduate_pid TEXT`.catch(() => {});
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS graduate_email TEXT`.catch(() => {});
   await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS fonction TEXT DEFAULT 'invité'`.catch(() => {});
+  await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS lang TEXT NOT NULL DEFAULT 'fr'`.catch(() => {});
   await sql`UPDATE users SET fonction = 'leader',   role = 'utilisateur' WHERE role = 'leader'`.catch(() => {});
   await sql`UPDATE users SET fonction = 'gradué',   role = 'utilisateur' WHERE role = 'gradué'`.catch(() => {});
   await sql`UPDATE users SET fonction = 'staff',    role = 'utilisateur' WHERE role = 'staff'`.catch(() => {});
@@ -115,6 +116,7 @@ async function initDB() {
   await sql`ALTER TABLE intros ADD COLUMN IF NOT EXISTS archived BOOLEAN NOT NULL DEFAULT false`.catch(() => {});
   await sql`ALTER TABLE intros ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ`.catch(() => {});
   await sql`ALTER TABLE intros ADD COLUMN IF NOT EXISTS archived_by TEXT`.catch(() => {});
+  await sql`ALTER TABLE intros ADD COLUMN IF NOT EXISTS cancel_reason TEXT`.catch(() => {});
   await sql`ALTER TABLE intros ADD COLUMN IF NOT EXISTS media_url TEXT`.catch(() => {});
   await sql`ALTER TABLE intros ADD COLUMN IF NOT EXISTS target_program TEXT`.catch(() => {});
 

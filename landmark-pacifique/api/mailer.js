@@ -102,8 +102,8 @@ function renderEmail(type, p) {
         <p>Ia ora na ${esc(firstName)},</p>
         <p>${gradName ? esc(gradName) + ' vous invite' : 'Vous êtes invité·e'} à participer à un événement de la communauté Landmark Pacifique.</p>
         ${eventBlock(p.event)}
-        <p>Merci de confirmer votre présence en cliquant sur le bouton ci-dessous.</p>
-      `, { label: 'Confirmer ma présence', link: p.invitation_link }),
+        <p>Cliquez sur le bouton ci-dessous pour réserver votre place : votre espace personnel est créé automatiquement et vous y retrouverez tous les détails et le lien de l'événement.</p>
+      `, { label: 'Je réserve ma place', link: p.invitation_link }),
     };
   }
 
@@ -144,12 +144,12 @@ function renderEmail(type, p) {
 
   if (type === 'guest_reminder') {
     return {
-      subject: `Rappel — Confirmez votre présence à ${p.event ? p.event.titre : 'votre événement'}`,
-      html: wrapEmail('N\'oubliez pas de confirmer 🔔', `
+      subject: `Rappel — Réservez votre place à ${p.event ? p.event.titre : 'votre événement'}`,
+      html: wrapEmail('N\'oubliez pas de réserver votre place 🔔', `
         <p>Ia ora na ${esc(firstName)},</p>
-        <p>Petit rappel amical : vous êtes invité·e à l'événement suivant, mais votre présence n'est pas encore confirmée.</p>
+        <p>Petit rappel amical : vous êtes invité·e à l'événement suivant. Un clic sur le bouton ci-dessous suffit pour réserver votre place et accéder à votre espace, où vous retrouverez le lien de l'événement.</p>
         ${eventBlock(p.event)}
-      `, { label: 'Confirmer ma présence', link: p.invitation_link }),
+      `, { label: 'Je réserve ma place', link: p.invitation_link }),
     };
   }
 
@@ -183,6 +183,49 @@ function renderEmail(type, p) {
         <p>Votre inscription à la clinique est bien enregistrée.</p>
         ${eventBlock(p.event)}
       `, p.event && p.event.zoom_url ? { label: 'Rejoindre sur Zoom', link: p.event.zoom_url } : null),
+    };
+  }
+
+  if (type === 'intro_cancelled') {
+    const L = {
+      fr: { format: 'Format', location: 'Lieu', zoom: 'Visioconférence (Zoom)', reason: 'Raison', notSpecified: 'Non précisée' },
+      en: { format: 'Format', location: 'Location', zoom: 'Video call (Zoom)', reason: 'Reason', notSpecified: 'Not specified' },
+    };
+    function eventCardHtml(event, lang) {
+      if (!event) return '';
+      const t = L[lang];
+      const rows = [];
+      if (event.date_long) rows.push(`<div style="font-size:13.5px;color:${COLORS.muted};margin-bottom:2px"><strong style="color:${COLORS.text}">Tahiti:</strong> ${esc(event.date_long)}${event.heure_tahiti ? ' · ' + esc(event.heure_tahiti) : ''}</div>`);
+      if (event.date_long_nc) rows.push(`<div style="font-size:13.5px;color:${COLORS.muted};margin-bottom:2px"><strong style="color:${COLORS.text}">Nouméa:</strong> ${esc(event.date_long_nc)}${event.heure_nc ? ' · ' + esc(event.heure_nc) : ''}</div>`);
+      if (event.date_long_fr) rows.push(`<div style="font-size:13.5px;color:${COLORS.muted};margin-bottom:2px"><strong style="color:${COLORS.text}">France:</strong> ${esc(event.date_long_fr)}${event.heure_fr ? ' · ' + esc(event.heure_fr) : ''}</div>`);
+      if (event.date_long_nz) rows.push(`<div style="font-size:13.5px;color:${COLORS.muted};margin-bottom:2px"><strong style="color:${COLORS.text}">New Zealand:</strong> ${esc(event.date_long_nz)}${event.heure_nz ? ' · ' + esc(event.heure_nz) : ''}</div>`);
+      const meta = [];
+      if (event.format) meta.push(`<strong>${t.format}:</strong> ${esc(event.format === 'zoom' ? t.zoom : event.format)}`);
+      if (event.location) meta.push(`<strong>${t.location}:</strong> ${esc(event.location)}`);
+      return `
+        <div style="background:${COLORS.navy2};border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:16px 20px;margin:16px 0">
+          <div style="font-weight:700;color:#fff;font-size:16px;margin-bottom:10px">${esc(event.titre || '')}</div>
+          ${rows.join('')}
+          ${meta.length ? `<div style="margin-top:10px;font-size:13.5px;color:${COLORS.text}">${meta.join(' · ')}</div>` : ''}
+        </div>`;
+    }
+    const eventFr = p.event_fr || p.event;
+    const eventEn = p.event_en || p.event;
+    return {
+      subject: `Introduction annulée / Introduction cancelled — ${eventFr ? eventFr.titre : ''}`,
+      html: wrapEmail('Introduction annulée / Introduction cancelled ❌', `
+        <p>Ia ora na ${esc(firstName)},</p>
+        <p>L'introduction suivante a été annulée :</p>
+        ${eventCardHtml(eventFr, 'fr')}
+        <p><strong>${L.fr.reason} :</strong> ${esc(p.reason || L.fr.notSpecified)}</p>
+        <p>N'hésite pas à te rapprocher de l'équipe si tu as besoin de plus d'informations.</p>
+        <hr style="border:none;border-top:1px solid rgba(255,255,255,.08);margin:24px 0">
+        <p>Hi ${esc(firstName)},</p>
+        <p>The following introduction has been cancelled:</p>
+        ${eventCardHtml(eventEn, 'en')}
+        <p><strong>${L.en.reason}:</strong> ${esc(p.reason || L.en.notSpecified)}</p>
+        <p>Feel free to reach out to the team if you need more information.</p>
+      `),
     };
   }
 
@@ -270,6 +313,23 @@ function brevoTemplate(type, p) {
         guest_name: p.to_name, grad_name: gradName,
         heure_debut_tah: event.heure_tahiti, heure_debut_nc: event.heure_nc, heure_debut_fr: event.heure_fr,
         invite_link: event.zoom_url, id_invite: extractZoomId(event.zoom_url),
+      },
+    };
+  }
+
+  if (type === 'intro_cancelled') {
+    const eventFr = p.event_fr || {};
+    const eventEn = p.event_en || {};
+    return {
+      templateId: 24,
+      params: {
+        to_name: p.to_name,
+        titre: eventFr.titre,
+        reason: p.reason,
+        location: eventFr.location,
+        heure_tahiti: eventFr.heure_tahiti, heure_nc: eventFr.heure_nc, heure_fr: eventFr.heure_fr, heure_nz: eventFr.heure_nz,
+        date_tah_fr: eventFr.date_long, date_nc_fr: eventFr.date_long_nc, date_fr_fr: eventFr.date_long_fr, date_nz_fr: eventFr.date_long_nz,
+        date_tah_en: eventEn.date_long, date_nc_en: eventEn.date_long_nc, date_fr_en: eventEn.date_long_fr, date_nz_en: eventEn.date_long_nz,
       },
     };
   }

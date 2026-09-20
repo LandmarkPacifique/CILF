@@ -607,7 +607,8 @@ label {
   background: var(--bg);
   min-height: 100vh;
 }
-.main-inner { max-width: 840px; margin: 0 auto; }
+.main-inner { max-width: 100%; }
+.feed-column { max-width: 720px; }
 .page-header { margin-bottom: 1.75rem; }
 .page-header h2 { margin-bottom: .35rem; }
 .page-header p { color: var(--muted); }
@@ -1428,6 +1429,26 @@ label {
 .calendar-legend{display:flex;flex-wrap:wrap;gap:.75rem;margin-bottom:1rem;font-size:.8rem}
 .calendar-legend span{display:inline-flex;align-items:center;gap:.35rem}
 .calendar-legend i{display:inline-block;width:12px;height:12px;border-radius:3px}
+#introsCalendar{color:var(--text)}
+#introsCalendar thead th{background:var(--navy-3)!important}
+#introsCalendar .fc-col-header-cell{background:var(--glass-md)}
+#introsCalendar .fc-col-header-cell-cushion{color:var(--text);font-weight:700;padding:.6rem 0}
+#introsCalendar .fc-daygrid-day-number{color:var(--text)}
+#introsCalendar .fc-daygrid-day.fc-day-other .fc-daygrid-day-number{color:var(--muted)}
+#introsCalendar .fc-theme-standard td,#introsCalendar .fc-theme-standard th,#introsCalendar .fc-scrollgrid{border-color:var(--glass-border)}
+#introsCalendar .fc-day-today{background:var(--cyan-pale)!important}
+#introsCalendar .fc-toolbar-title{color:var(--text)}
+#introsCalendar .fc-button{background:var(--glass-md);border-color:var(--glass-border);color:var(--text)}
+#introsCalendar .fc-button:hover{background:var(--glass-hover)}
+#introsCalendar .fc-button-primary:disabled{background:var(--glass);opacity:.6}
+#introsCalendar .fc-list-day-cushion{background:var(--glass-md)!important;color:var(--text)!important}
+#introsCalendar .fc-list-event-time,#introsCalendar .fc-list-event-title{color:var(--text)}
+#introsCalendar .fc-list-empty{color:var(--muted);background:transparent}
+.fc-intro-heure{flex-shrink:0;font-size:.68rem;color:#fff;opacity:.92}
+.fc-intro-event-multiline{display:block;padding:.25rem .4rem;border-radius:6px;color:#fff;cursor:pointer}
+.fc-intro-event-multiline .fc-intro-row{display:flex;align-items:center;justify-content:space-between;gap:.3rem;margin-bottom:.1rem}
+.fc-intro-event-multiline .fc-intro-title-wrap{font-weight:700;font-size:.72rem;line-height:1.25;color:#fff;white-space:normal;word-break:break-word;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.fc-intro-event-multiline .fc-intro-sub{font-size:.68rem;color:#fff;opacity:.92;white-space:normal;word-break:break-word;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .event-detail-modal{max-width:640px}
 .role-badge{display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .55rem;border-radius:999px;font-size:.75rem;font-weight:600;background:#eef2f8;color:var(--navy);margin:.2rem}
 .role-badge .x{cursor:pointer;opacity:.5}
@@ -1437,7 +1458,20 @@ label {
 .role-slot h5{margin:0 0 .3rem;font-size:.8rem;color:#6B7A90;text-transform:uppercase;letter-spacing:.03em}
 .role-slot button{margin-top:.3rem;font-size:.75rem;padding:.25rem .6rem}
 
+
+/* ── Sélecteur de langue (pages publiques) ── */
+#langSwitch { position: fixed; right: 1rem; bottom: 1rem; z-index: 60; }
+#langSwitch select {
+  width: auto; padding: .45rem .8rem; font-size: .82rem; font-weight: 600; cursor: pointer;
+  border-radius: 999px; border: 1px solid var(--glass-border);
+  background: rgba(11, 22, 44, 0.85); color: var(--text);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+#app.active ~ #langSwitch { display: none; }
 </style>
+<!-- ============ I18N (français = langue source, traductions à la volée) ============ -->
+<script src="i18n.js?v=1"></script>
+<script src="i18n-en.js?v=1"></script>
 <!-- ============ FULLCALENDAR (CDN) ============ -->
 <link  href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
@@ -1500,7 +1534,7 @@ label {
       <span style="width:6px;height:6px;border-radius:50%;background:var(--cyan);display:inline-block;animation:pulse 1.8s infinite"></span>
       Communauté Landmark Pacifique · Tahiti
     </div>
-    <h1>La communauté <span>francophone</span><br>Landmark du Pacifique</h1>
+    <h1 data-i18n-scope="hero">La communauté <span>francophone</span><br>Landmark du Pacifique</h1>
     <p>Un espace communautaire pour les invités et les gradués Landmark — partager, apprendre, créer ensemble depuis Tahiti et au-delà.</p>
     <div class="hero-cta">
       <button class="btn btn-primary" onclick="goto('public-intros')">Voir les introductions au Forum</button>
@@ -1613,18 +1647,18 @@ label {
     <p class="subtitle" id="ii-subtitle"></p>
     <div id="ii-intro-recap" class="card" style="background:rgba(255,255,255,0.04);margin-bottom:1.5rem;padding:1rem"></div>
     <div class="form-row">
-      <div class="form-group"><label>Prénom *</label><input id="ii-firstname"></div>
-      <div class="form-group"><label>Nom *</label><input id="ii-lastname"></div>
+      <div class="form-group"><label for="ii-firstname">Prénom *</label><input id="ii-firstname"></div>
+      <div class="form-group"><label for="ii-lastname">Nom *</label><input id="ii-lastname"></div>
     </div>
-    <div class="form-group"><label>Email *</label><input id="ii-email" type="email"></div>
-    <div class="form-group"><label>Téléphone *</label>
+    <div class="form-group"><label for="ii-email">Email *</label><input id="ii-email" type="email"></div>
+    <div class="form-group"><label for="ii-phone">Téléphone *</label>
       <div class="phone-group">
         <select class="country-select" id="ii-phone-country"><option value="+689">🇵🇫 +689</option></select>
         <input class="phone-input" id="ii-phone" type="tel" placeholder="87 12 34 56">
       </div>
     </div>
     <div class="form-group" id="ii-graduate-pid-wrap">
-      <label>PID de votre gradué <span style="color:var(--danger)">*</span></label>
+      <label for="ii-graduate-pid">PID de votre gradué <span style="color:var(--danger)">*</span></label>
       <input id="ii-graduate-pid" placeholder="1234567" maxlength="7" pattern="[0-9]{7}" inputmode="numeric">
       <p style="font-size:.8rem;color:var(--muted);margin-top:.3rem">Le PID (7 chiffres) est indiqué sur le badge de votre gradué. Il doit correspondre à un gradué enregistré.</p>
     </div>
@@ -1639,11 +1673,11 @@ label {
     <h2>Créer mon compte</h2>
     <p class="subtitle">Rejoignez la communauté Landmark Pacifique</p>
     <div class="form-row">
-      <div class="form-group"><label>Prénom *</label><input id="su-firstname" placeholder="Votre prénom"></div>
-      <div class="form-group"><label>Nom *</label><input id="su-lastname" placeholder="Votre nom"></div>
+      <div class="form-group"><label for="su-firstname">Prénom *</label><input id="su-firstname" placeholder="Votre prénom"></div>
+      <div class="form-group"><label for="su-lastname">Nom *</label><input id="su-lastname" placeholder="Votre nom"></div>
     </div>
-    <div class="form-group"><label>Email</label><input id="su-email" type="email" placeholder="vous@email.com"></div>
-    <div class="form-group"><label>Mot de passe</label><input id="su-pass" type="password" placeholder="••••••••"></div>
+    <div class="form-group"><label for="su-email">Email</label><input id="su-email" type="email" placeholder="vous@email.com"></div>
+    <div class="form-group"><label for="su-pass">Mot de passe</label><input id="su-pass" type="password" placeholder="••••••••"></div>
     <p style="font-size:.85rem;color:var(--muted);margin-bottom:1rem;background:rgba(0,212,232,0.07);padding:.75rem;border-radius:8px;border:1px solid rgba(0,212,232,0.15)">
       ℹ️ Après la création, vous pourrez sélectionner les programmes que vous avez déjà complétés.
     </p>
@@ -1674,8 +1708,8 @@ label {
   <div class="auth-card">
     <h2>Connexion</h2>
     <p class="subtitle">Bienvenue à nouveau</p>
-    <div class="form-group"><label>Email</label><input id="li-email" type="email" placeholder="vous@email.com" onkeydown="if(event.key==='Enter')login()"></div>
-    <div class="form-group"><label>Mot de passe</label><input id="li-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')login()"></div>
+    <div class="form-group"><label for="li-email">Email</label><input id="li-email" type="email" placeholder="vous@email.com" onkeydown="if(event.key==='Enter')login()"></div>
+    <div class="form-group"><label for="li-pass">Mot de passe</label><input id="li-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')login()"></div>
     <button class="btn btn-primary" style="width:100%" onclick="login()">Se connecter</button>
 
     <div style="display:flex;align-items:center;gap:.75rem;margin:1.1rem 0">
@@ -1758,7 +1792,7 @@ label {
   <div class="auth-card">
     <h2>Mot de passe oublié</h2>
     <p class="subtitle">Entrez votre email pour recevoir un lien de réinitialisation</p>
-    <div class="form-group"><label>Email</label><input id="fp-email" type="email" placeholder="vous@email.com"></div>
+    <div class="form-group"><label for="fp-email">Email</label><input id="fp-email" type="email" placeholder="vous@email.com"></div>
     <button class="btn btn-primary" style="width:100%" onclick="sendForgotPasswordEmail()">Envoyer par email</button>
     <p class="auth-switch"><a onclick="goto('login')">← Retour à la connexion</a></p>
   </div>
@@ -1769,8 +1803,8 @@ label {
   <div class="auth-card">
     <h2>Nouveau mot de passe</h2>
     <p class="subtitle" id="rp-subtitle">Choisissez votre nouveau mot de passe</p>
-    <div class="form-group"><label>Nouveau mot de passe</label><input id="rp-newpass" type="password" placeholder="••••••••"></div>
-    <div class="form-group"><label>Confirmer</label><input id="rp-confirmpass" type="password" placeholder="••••••••"></div>
+    <div class="form-group"><label for="rp-newpass">Nouveau mot de passe</label><input id="rp-newpass" type="password" placeholder="••••••••"></div>
+    <div class="form-group"><label for="rp-confirmpass">Confirmer</label><input id="rp-confirmpass" type="password" placeholder="••••••••"></div>
     <button class="btn btn-primary" style="width:100%" onclick="submitResetPassword()">Valider</button>
     <p class="auth-switch"><a onclick="goto('login')">← Retour à la connexion</a></p>
   </div>
@@ -1779,9 +1813,9 @@ label {
 <script>
 /* ============ API LAYER ============ */
 const API = 'https://www.landmark-pacifique.fr/api';
-function getToken(){ return sessionStorage.getItem('lp_token'); }
-function setToken(t){ sessionStorage.setItem('lp_token', t); }
-function clearToken(){ sessionStorage.removeItem('lp_token'); }
+function getToken(){ return localStorage.getItem('lp_token'); }
+function setToken(t){ localStorage.setItem('lp_token', t); }
+function clearToken(){ localStorage.removeItem('lp_token'); }
 
 async function apiFetch(path, opts={}){
   const headers = { 'Content-Type': 'application/json' };
@@ -1833,6 +1867,7 @@ async function loadCurrentUser(){
   try {
     _currentUser = await apiFetch('/me');
     try { ensureWSConnected(); } catch {}
+    applyAccountLanguage(_currentUser);
     return _currentUser;
   } catch {
     clearToken();
@@ -1841,6 +1876,40 @@ async function loadCurrentUser(){
   }
 }
 function currentUser(){ return _currentUser; }
+/* Comparaison d'emails insensible à la casse et aux espaces (l'inscription garde la saisie de l'invité) */
+function sameEmail(a, b){
+  return !!a && !!b && String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
+}
+
+/* ============ LANGUE ============ */
+// La langue du compte prime sur celle mémorisée dans le navigateur (rechargement si elle diffère).
+function applyAccountLanguage(user){
+  if(user && user.lang && user.lang !== LP_I18N.lang()) LP_I18N.setLang(user.lang);
+}
+
+async function changeMyLanguage(code){
+  const lang = LP_I18N.normalize(code);
+  const user = currentUser();
+  if(!lang || !user) return;
+  try {
+    await apiFetch('/me/lang', {method:'PUT', body:JSON.stringify({lang})});
+    user.lang = lang;
+    invalidateCache('/members');
+    if(!LP_I18N.setLang(lang)) toast('Langue enregistrée', 'success');
+  } catch(e){ toast(e.message, 'error'); }
+}
+
+async function changeMemberLanguage(email, code){
+  const lang = LP_I18N.normalize(code);
+  if(!lang) return;
+  try {
+    await apiFetch('/members/'+encodeURIComponent(email)+'/lang', {method:'PUT', body:JSON.stringify({lang})});
+    invalidateCache('/members');
+    toast('Langue enregistrée', 'success');
+    const me = currentUser();
+    if(me && me.email === email) applyAccountLanguage({lang});
+  } catch(e){ toast(e.message, 'error'); router(); }
+}
 
 async function loadPrograms(){
   const data = await apiGet('/programs', 60000);
@@ -1990,8 +2059,8 @@ function unlockedSections(user){
 function findPost(db, postId){ for(const sec in db.posts){ const p = db.posts[sec].find(x=>x.id===postId); if(p) return {post:p, section:sec}; } return null; }
 
 /* ============ INTRO HELPERS (timezones) ============ */
-function fmtDate(d){ if(!d) return ''; const dt = new Date(d + 'T12:00:00'); return dt.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'}); }
-function fmtDayMonth(d){ if(!d) return {day:'',month:''}; const dt = new Date(d + 'T12:00:00'); return {day:dt.getDate(), month:dt.toLocaleDateString('fr-FR',{month:'short'}).replace('.','')}; }
+function fmtDate(d){ if(!d) return ''; const dt = new Date(d + 'T12:00:00'); return dt.toLocaleDateString(LP_I18N.locale(),{weekday:'long',day:'numeric',month:'long',year:'numeric'}); }
+function fmtDayMonth(d){ if(!d) return {day:'',month:''}; const dt = new Date(d + 'T12:00:00'); return {day:dt.getDate(), month:dt.toLocaleDateString(LP_I18N.locale(),{month:'short'}).replace('.','')}; }
 // Tahiti = UTC-10, Nouvelle-Calédonie = UTC+11, France = UTC+1 (hiver) ou +2 (été)
 function addHours(timeStr, diff){
   if(!timeStr) return '';
@@ -2061,6 +2130,7 @@ function renderTimezones(intro, extraStyle=''){
 /* ============ NAVIGATION ============ */
 function goto(page){ location.hash = page; }
 window.addEventListener('hashchange', ()=>router().catch(console.error));
+LP_I18N.mountPublicSwitcher();
 window.addEventListener('load', async () => {
   const handledGoogleCallback = await checkGoogleCallback();
   const iiCountrySel = document.getElementById('ii-phone-country');
@@ -2180,11 +2250,13 @@ async function renderPublicIntros(){
     grid.innerHTML = intros.length ? intros.map(i=>renderIntroCard(i, false)).join('')
       : '<div class="empty"><div class="empty-icon">📅</div>Aucune introduction programmée prochainement</div>';
   };
-  render(DEFAULT_INTROS);
+  grid.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div>Chargement des introductions…</div>';
   try {
     const all = await apiGet('/intros');
     render(all);
-  } catch(e){}
+  } catch(e){
+    grid.innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div>Impossible de charger les introductions pour le moment.<br><button class="btn btn-ghost" style="margin-top:.75rem" onclick="renderPublicIntros()">Réessayer</button></div>';
+  }
   // Adapter les boutons nav selon la connexion
   const navBtn = document.getElementById('publicIntrosNavButtons');
   if(navBtn){
@@ -2208,7 +2280,7 @@ function renderIntroCard(intro, isConnected, options={}){
   const showManage = options.showManage;
   const showZoom = options.showZoom;
   const isLeaderUser = options.isLeaderUser;
-  const isRegistered = options.userEmail && (intro.registrations||[]).find(r=>r.email===options.userEmail);
+  const isRegistered = options.userEmail && (intro.registrations||[]).find(r=>sameEmail(r.email, options.userEmail));
 
   // Helper : timestamp UTC d'une heure Tahiti (UTC-10)
   function eventMs(date, heure){
@@ -2405,7 +2477,7 @@ async function submitIntroInscription(){
     return toast('Le PID de votre gradué est obligatoire (7 chiffres)', 'error');
   }
   try {
-    await apiFetch('/intros/'+introId+'/register', {method:'POST', body:JSON.stringify({
+    const result = await apiFetch('/intros/'+introId+'/register', {method:'POST', body:JSON.stringify({
       firstname:first, lastname:last, email, phone,
       invitedBy,
       invitedByEmail,
@@ -2413,8 +2485,9 @@ async function submitIntroInscription(){
       isGraduate: false
     })});
     invalidateCache('/intros');
-    const allIntros = await apiGet('/intros');
-    const intro = allIntros.find(i=>i.id===introId);
+    // L'introduction vient de la réponse d'inscription : pas de second appel qui pourrait échouer
+    const intro = result.intro;
+    const accountActivationPending = !!result.account_activation_pending;
     document.getElementById('modalContent').innerHTML = `
       <h3 style="font-family:Cormorant Garamond">🎉 ${isGuestMode ? 'Invité inscrit !' : 'Inscription confirmée'}</h3>
       <p style="margin-bottom:1rem">${isGuestMode
@@ -2426,6 +2499,7 @@ async function submitIntroInscription(){
         ${renderTimezones(intro, 'margin-top:.5rem')}
         <p style="margin-top:.75rem">${intro.format==='zoom'?'':'📍 '+esc(intro.location||'')}</p>
       </div>
+      ${accountActivationPending ? `<p style="margin-bottom:1rem;padding:.7rem 1rem;border:1px solid var(--cyan);border-radius:10px;font-size:.92rem">📧 Un email vient d'être envoyé à <strong>${esc(email)}</strong> : cliquez sur « Je réserve ma place » pour accéder à votre espace et retrouver le lien de l'événement (pensez à vérifier vos spams).</p>` : ''}
       <p style="color:var(--muted);font-size:.9rem">Un rappel sera envoyé la veille et 40 minutes avant la session.</p>
       <div class="modal-actions">
         <button class="btn btn-primary" onclick="closeModal(); goto('${u?'events':'landing'}')">OK</button>
@@ -2503,6 +2577,7 @@ async function maintenanceLogin(){
   }
 }
 async function logout(){
+  const keptLang = LP_I18N.lang();
   try {
     // 1. Vider le token et l'utilisateur courant
     clearToken();
@@ -2512,6 +2587,7 @@ async function logout(){
     // 3. Vider localStorage et sessionStorage
     try { localStorage.clear(); } catch(e){}
     try { sessionStorage.clear(); } catch(e){}
+    LP_I18N.setLang(keptLang, {reload:false}); // le vidage ci-dessus ne doit pas réinitialiser la langue
     // 4. Vider les cookies accessibles
     try {
       document.cookie.split(';').forEach(c=>{
@@ -2543,7 +2619,7 @@ async function signup(){
   if(!firstname||!lastname||!email||!pass) return toast('Remplissez tous les champs', 'error');
   if(pass.length<4) return toast('Mot de passe trop court (min. 4 caractères)', 'error');
   try {
-    await apiFetch('/signup', {method:'POST', body:JSON.stringify({email, password:pass, name})});
+    await apiFetch('/signup', {method:'POST', body:JSON.stringify({email, password:pass, name, lang:LP_I18N.lang()})});
     const {token, user} = await apiFetch('/login', {method:'POST', body:JSON.stringify({email, password:pass})});
     setToken(token); _currentUser = user;
     if (user.avatar) window._avatarMap[user.email] = user.avatar;
@@ -2631,6 +2707,7 @@ async function renderApp(page, args){
   renderBottomNav(user, page);
   document.getElementById('sidebarUser').innerHTML = `<strong style="color:#fff">${esc(user.name)}</strong><br>${esc(user.email)}`;
   const c = document.getElementById('pageContent');
+  c.innerHTML = '<div class="empty"><div class="empty-icon">⏳</div>Chargement…</div>';
   if(page==='home') c.innerHTML = await renderHome(user);
   else if(page==='feed') c.innerHTML = await renderFeed(user);
   else if(page==='events') c.innerHTML = await renderEvents(user);
@@ -2696,6 +2773,7 @@ function renderSidebar(user, page){
   html += '<div class="nav-section"><div class="nav-label">Compte</div>';
   const profileDot = isAdmin(user) ? '<span id="navProfileDot" style="display:none;width:8px;height:8px;background:var(--danger);border-radius:50%;margin-left:.4rem;vertical-align:middle;box-shadow:0 0 6px rgba(255,77,109,.6);animation:pulse 1.5s infinite"></span>' : '';
   html += `<a class="nav-item ${page==='profile'?'active':''}" onclick="goto('profile')"><span class="nav-icon">👤</span> Mon profil${profileDot}</a>`;
+  if(isAdmin(user)) html += navLink('admin','⚙️','Administration', page==='admin');
   html += '</div>';
   document.getElementById('sidebarNav').innerHTML = html;
   if(isAdmin(user)) refreshAdminPendingDot();
@@ -2733,7 +2811,7 @@ async function renderHome(user){
   // Pour les invités (sans programme) : accueil de découverte
   if(user.programs.length===0){
     const allIntros = await apiGet('/intros');
-    const _hasRegs = allIntros.some(i=>(i.registrations||[]).find(r=>r.email===user.email));
+    const _hasRegs = allIntros.some(i=>(i.registrations||[]).find(r=>sameEmail(r.email, user.email)));
     const _regsHtml = _hasRegs ? '<div style="margin-bottom:1.5rem"><h3 style="font-family:Cormorant Garamond;margin-bottom:1rem">📅 Mes évènements</h3>'+await renderMyRegistrations(user)+'</div>' : '';
     return `<div class="page-header"><h2>Bienvenue, ${esc(user.name.split(' ')[0])} 🌺</h2><p>Découvrez la communauté et inscrivez-vous à une introduction au Forum.</p></div>
     <div class="card pattern-bg" style="background:linear-gradient(135deg,var(--navy),var(--navy-3));color:#fff;margin-bottom:1.5rem">
@@ -2781,7 +2859,7 @@ async function renderHome(user){
       const intros = await apiGet('/intros');
       intros.forEach(i=>{
         (i.registrations||[]).forEach(r=>{
-          if(r.invitedBy === user.email || r.graduate_email === user.email){
+          if(sameEmail(r.invitedByEmail, user.email) && !sameEmail(r.email, user.email)){
             myGuestsCount++;
             if(r.confirmed) myGuestsRegistered++;
           }
@@ -2790,7 +2868,7 @@ async function renderHome(user){
     } catch(e){}
   }
 
-  const fmtDateShort = d => d ? new Date(d+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'}) : '';
+  const fmtDateShort = d => d ? new Date(d+'T12:00:00').toLocaleDateString(LP_I18N.locale(),{weekday:'short',day:'numeric',month:'short'}) : '';
 
   const eventMini = item => {
     const typeColors = { intro:'#00C6D7', creation_call:'#E8B86A', clinic_call:'#9F7AEA' };
@@ -2867,7 +2945,7 @@ async function renderFeed(user){
   </div>
   ${programsBlock}
   ${feedTitle}
-  ${await renderFeedInner(user)}`;
+  <div class="feed-column">${await renderFeedInner(user)}</div>`;
 }
 
 async function renderFeedInner(user){
@@ -3116,8 +3194,8 @@ async function editPost(postId){
   window._editAtts[postId] = JSON.parse(JSON.stringify(p.attachments||[]));
   document.getElementById('modalContent').innerHTML = `
     <h3>Modifier la publication</h3>
-    <div class="form-group"><label>Titre (optionnel)</label><input id="ep-title" value="${esc(p.title||'')}"></div>
-    <div class="form-group"><label>Contenu *</label><textarea id="ep-body" style="min-height:120px">${esc(p.body||'')}</textarea></div>
+    <div class="form-group"><label for="ep-title">Titre (optionnel)</label><input id="ep-title" value="${esc(p.title||'')}"></div>
+    <div class="form-group"><label for="ep-body">Contenu *</label><textarea id="ep-body" style="min-height:120px">${esc(p.body||'')}</textarea></div>
     <div class="form-group">
       <label>Pièces jointes</label>
       <div id="ep-att-list" style="display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.5rem">${renderEditAttList(postId)}</div>
@@ -3317,7 +3395,7 @@ async function renderMyRegistrations(user){
   const allIntros = await apiGet('/intros');
   const myRegs = [];
   allIntros.forEach(i=>{
-    const reg = (i.registrations||[]).find(r=>r.email===user.email);
+    const reg = (i.registrations||[]).find(r=>sameEmail(r.email, user.email));
     if(reg) myRegs.push({intro:i, reg});
   });
   if(!myRegs.length) return '<div class="empty" style="padding:1.5rem">Vous n\'êtes inscrit·e à aucune introduction pour le moment.</div>';
@@ -3351,7 +3429,7 @@ async function selfRegister(introId){
   const allIntros = await apiGet('/intros');
   const intro = allIntros.find(i=>i.id===introId);
   if(!intro) return;
-  if((intro.registrations||[]).find(r=>r.email===user.email)) return toast('Vous êtes déjà inscrit·e à cet événement', 'error');
+  if((intro.registrations||[]).find(r=>sameEmail(r.email, user.email))) return toast('Vous êtes déjà inscrit·e à cet événement', 'error');
   document.getElementById('modalContent').innerHTML = `
     <h3 style="font-family:Cormorant Garamond">✋ M'inscrire à ${intro.type==='special'?'cet événement':'cette introduction'}</h3>
     <p style="margin-bottom:1rem">Vous allez vous inscrire à <strong>${esc(intro.titre)}</strong> en tant que membre.</p>
@@ -3446,21 +3524,25 @@ async function renderMyGuests(user){
 
   const html = eventGroups.map(({intro, guests})=>{
     const guestRows = guests.map(r=>{
-      const statusBadge = r.confirmed
-        ? '<span style="font-size:.75rem;padding:.2rem .55rem;background:rgba(34,197,94,.12);color:#15803d;border-radius:999px;font-weight:600;white-space:nowrap">✅ A confirmé sa présence</span>'
-        : '<span style="font-size:.75rem;padding:.2rem .55rem;background:rgba(107,122,144,.1);color:var(--muted);border-radius:999px;white-space:nowrap">⏳ En attente</span>';
-      const selfBadge = !r.invitedBy ? '<span style="font-size:.72rem;padding:.15rem .45rem;background:rgba(0,198,215,.12);color:#0096AC;border-radius:999px;margin-left:.3rem">✋ Seul·e</span>' : '';
       const emailInfo = statusByKey[intro.id + '|' + (r.email||'').toLowerCase()];
+      const accountPending = needsAccountActivation(r, emailInfo);
+      const statusBadge = r.confirmed
+        ? '<span style="font-size:.75rem;padding:.2rem .55rem;background:rgba(34,197,94,.12);color:#15803d;border-radius:999px;font-weight:600;white-space:nowrap">✅ Inscrit·e</span>'
+        : '<span style="font-size:.75rem;padding:.2rem .55rem;background:rgba(107,122,144,.1);color:var(--muted);border-radius:999px;white-space:nowrap">⏳ En attente</span>';
+      const activationBadge = r.confirmed && accountPending
+        ? '<span title="L\'invité n\'a pas encore cliqué sur « Je réserve ma place » dans l\'email" style="font-size:.72rem;padding:.15rem .45rem;background:#FFF3E0;color:#E65100;border-radius:999px;margin-left:.3rem;white-space:nowrap">📧 Pas encore cliqué sur l\'email</span>'
+        : '';
+      const selfBadge = !r.invitedBy ? '<span style="font-size:.72rem;padding:.15rem .45rem;background:rgba(0,198,215,.12);color:#0096AC;border-radius:999px;margin-left:.3rem">✋ Seul·e</span>' : '';
       const emailStatus = EMAIL_STATUS_BADGES[emailInfo && emailInfo.email_status] || null;
       const emailBadge = emailStatus
         ? `<span title="Statut de l'email d'invitation" style="font-size:.72rem;padding:.15rem .45rem;background:${emailStatus.bg};color:${emailStatus.color};border-radius:999px;margin-left:.3rem;white-space:nowrap">${emailStatus.icon} ${emailStatus.label}</span>`
         : '';
-      const reminderBtn = !r.confirmed ? `<button class="btn btn-ghost btn-sm" style="font-size:.72rem;padding:.2rem .55rem;margin-left:auto;flex-shrink:0" onclick="sendReminder('${intro.id}','${esc(r.email)}',this)">🔔 Rappel</button>` : '';
+      const reminderBtn = accountPending ? `<button class="btn btn-ghost btn-sm" style="font-size:.72rem;padding:.2rem .55rem;margin-left:auto;flex-shrink:0" onclick="sendReminder('${intro.id}','${esc(r.email)}',this)">🔔 Rappel</button>` : '';
       return `<div style="display:flex;align-items:center;gap:.5rem;padding:.6rem .75rem;border-bottom:1px solid var(--border);flex-wrap:wrap">
         <div style="flex:1;min-width:0">
           <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
             <strong style="font-size:.95rem">${esc(r.firstname)} ${esc(r.lastname)}</strong>${selfBadge}
-            ${statusBadge}${emailBadge}
+            ${statusBadge}${activationBadge}${emailBadge}
           </div>
           <div style="color:var(--muted);font-size:.8rem;margin-top:.15rem">📧 ${esc(r.email)} · 📱 ${esc(r.phone||'')}</div>
         </div>
@@ -3483,6 +3565,13 @@ async function renderMyGuests(user){
   return '<div class="page-header"><h2>Mes invités</h2><p>Les personnes rattachées à vous dans les introductions</p></div>' + html;
 }
 
+/* Un rappel concerne l'invité dont le compte n'est pas encore activé (lien de l'email non cliqué).
+   Sans token d'invitation (anciennes inscriptions), on retombe sur l'état « confirmé ». */
+function needsAccountActivation(reg, invitationInfo){
+  if(invitationInfo) return invitationInfo.used === false;
+  return !reg.confirmed;
+}
+
 async function sendReminder(introId, email, btn){
   try {
     btn.disabled = true; btn.textContent = '⏳';
@@ -3500,9 +3589,13 @@ async function sendBulkReminders(introId, btn){
     const intros = await apiGet('/intros');
     const intro = (intros||[]).find(i=>i.id===introId);
     if(!intro) return toast('Introduction introuvable','error');
-    const pending = (intro.registrations||[]).filter(r=>!r.confirmed);
+    let invitationStatuses = [];
+    try { invitationStatuses = await apiFetch(`/intros/${introId}/invitation-status`); } catch(e){}
+    const infoByEmail = {};
+    invitationStatuses.forEach(s=>{ infoByEmail[(s.guest_email||'').toLowerCase()] = s; });
+    const pending = (intro.registrations||[]).filter(r=>needsAccountActivation(r, infoByEmail[(r.email||'').toLowerCase()]));
     if(!pending.length) return toast('Aucun invité en attente','error');
-    if(!confirm(`Envoyer un rappel à ${pending.length} invité(s) en attente ?`)) return;
+    if(!confirm(`Envoyer un rappel à ${pending.length} invité(s) qui n'ont pas activé leur compte ?`)) return;
     btn.disabled = true; btn.textContent = '⏳ Envoi…';
     let ok=0, fail=0;
     for(const r of pending){
@@ -3551,18 +3644,18 @@ function renderProfile(user){
       </div>
       <div class="accordion-body" id="acc-profile-info">
         <div class="form-row" style="margin-top:.5rem">
-          <div class="form-group"><label>Prénom</label><input id="pf-firstname" value="${esc(user.name.split(' ')[0])}"></div>
-          <div class="form-group"><label>Nom</label><input id="pf-lastname" value="${esc(user.name.split(' ').slice(1).join(' '))}"></div>
+          <div class="form-group"><label for="pf-firstname">Prénom</label><input id="pf-firstname" value="${esc(user.name.split(' ')[0])}"></div>
+          <div class="form-group"><label for="pf-lastname">Nom</label><input id="pf-lastname" value="${esc(user.name.split(' ').slice(1).join(' '))}"></div>
         </div>
-        <div class="form-group"><label>Email</label><input id="pf-email" type="email" value="${esc(user.email)}"></div>
-        <div class="form-group"><label>Téléphone</label>${buildPhoneGroup('pf-phone', user.phone||'', '87 12 34 56')}</div>
-        <div class="form-group"><label>Ville / Pays</label><input id="pf-location" value="${esc(user.location||'')}" placeholder="Papeete, Tahiti"></div>
+        <div class="form-group"><label for="pf-email">Email</label><input id="pf-email" type="email" value="${esc(user.email)}"></div>
+        <div class="form-group"><label for="pf-phone">Téléphone</label>${buildPhoneGroup('pf-phone', user.phone||'', '87 12 34 56')}</div>
+        <div class="form-group"><label for="pf-location">Ville / Pays</label><input id="pf-location" value="${esc(user.location||'')}" placeholder="Papeete, Tahiti"></div>
         <div class="form-group">
-          <label>PID <span style="color:var(--muted);font-weight:400">(optionnel — 7 chiffres)</span></label>
+          <label for="pf-pid">PID <span style="color:var(--muted);font-weight:400">(optionnel — 7 chiffres)</span></label>
           <input id="pf-pid" value="${esc(user.pid||'')}" placeholder="1234567" maxlength="7" pattern="[0-9]{7}" inputmode="numeric">
         </div>
         <div class="form-group">
-          <label>PID de mon gradué <span style="color:var(--muted);font-weight:400">(7 chiffres — figurant sur son badge)</span></label>
+          <label for="pf-graduate-pid">PID de mon gradué <span style="color:var(--muted);font-weight:400">(7 chiffres — figurant sur son badge)</span></label>
           <input id="pf-graduate-pid" value="${esc(user.graduate_pid||'')}" placeholder="1234567" maxlength="7" pattern="[0-9]{7}" inputmode="numeric">
           ${user.graduate_email ? `<p style="font-size:.82rem;color:var(--ok);margin-top:.35rem">✅ Gradué rattaché : <strong id="pf-grad-name">chargement...</strong></p>` : '<p style="font-size:.82rem;color:var(--muted);margin-top:.35rem">Renseignez le PID de votre gradué pour lui être rattaché.</p>'}
         </div>
@@ -3585,6 +3678,17 @@ function renderProfile(user){
             <button class="btn btn-ghost btn-sm" onclick="copyResetLink()">Copier</button>
           </div>
         </div>
+      </div>
+    </div>
+
+    <div class="accordion" style="margin-top:.75rem">
+      <div class="accordion-header" onclick="toggleAccordion('acc-profile-lang')">
+        <span>🌐 Langue</span>
+        <span class="chevron" id="acc-profile-lang-chevron">▼</span>
+      </div>
+      <div class="accordion-body" id="acc-profile-lang">
+        <p style="font-size:.9rem;color:var(--muted);margin:.5rem 0 1rem">Langue d'affichage de la plateforme</p>
+        <select id="pf-lang" style="max-width:260px" onchange="changeMyLanguage(this.value)">${LP_I18N.languageOptionsHtml(user.lang || LP_I18N.lang())}</select>
       </div>
     </div>
 
@@ -3622,8 +3726,10 @@ async function renderSection(key, user){
     <span style="font-size:2rem">${p.icon}</span>
     <h2>${p.label}</h2><p>${p.desc}${p.isSeminar?' · Sous-groupe indépendant':''}</p>
   </div>
+  <div class="feed-column">
   ${composer}
-  ${postsWithSection.length?postsWithSection.map(po=>renderPost(po, user)).join(''):'<div class="empty"><div class="empty-icon">💬</div>Soyez le premier à publier dans cette section</div>'}`;
+  ${postsWithSection.length?postsWithSection.map(po=>renderPost(po, user)).join(''):'<div class="empty"><div class="empty-icon">💬</div>Soyez le premier à publier dans cette section</div>'}
+  </div>`;
 }
 
 async function uploadAvatar(event) {
@@ -3863,12 +3969,24 @@ async function renderAdmin(user, tab, subtab){
       }).join('');
     }
     else if(currentSub==='calendrier'){
-      window._introsCalData = allIntros;
-      html += `<div style="margin-bottom:1rem;color:var(--muted);font-size:.9rem">Vue calendrier de toute l'équipe. Cliquez sur une date pour ajouter directement un évènement, ou sur un évènement pour voir qui manque dans l'équipe.</div>
+      let archivedForCal = [];
+      try { archivedForCal = await apiFetch('/intros?archived=true'); } catch(e){ archivedForCal = []; }
+      window._introsCalData = [...allIntros, ...archivedForCal.map(i=>({...i, _archived:true}))];
+      window._ccCalData = allIntros.filter(i=>i.cc_date).map(i=>({
+        id: 'cc-of-'+i.id,
+        titre: 'Appel de création',
+        introTitre: i.titre||'Introduction',
+        introDate: i.date,
+        date: i.cc_date, heure: i.cc_heure, zoom_url: i.zoom_cc
+      }));
+      html += `<div style="margin-bottom:1rem;color:var(--muted);font-size:.9rem">Vue calendrier de toute l'équipe (y compris les évènements archivés/annulés). Cliquez sur une date pour ajouter directement un évènement, ou sur un évènement pour voir qui manque dans l'équipe.</div>
       <div class="calendar-legend">
         <span><i style="background:#22C55E"></i>Équipe complète (RC + OPM)</span>
         <span><i style="background:#F59E0B"></i>RC ou OPM manquant</span>
         <span><i style="background:#EF4444"></i>RC et OPM manquants</span>
+        <span><i style="background:#3B82F6"></i>Appel de création</span>
+        <span><i style="background:#6B7A90"></i>Archivé</span>
+        <span><i style="background:#7C2D12"></i>Annulé</span>
       </div>
       <div id="introsCalendar"></div>`;
     }
@@ -3922,13 +4040,14 @@ async function renderAdmin(user, tab, subtab){
       } else {
         html += archivedIntros.map(i=>`<div class="admin-intro-form" style="opacity:.8;border-left:4px solid var(--danger)">
           <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem">
-            <span style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--danger);background:#FEE2E2;padding:.2rem .6rem;border-radius:999px">🗄 Archivé</span>
-            <span style="font-size:.75rem;color:var(--muted)">${i.archived_at ? 'le ' + new Date(i.archived_at).toLocaleDateString('fr-FR') : ''}</span>
+            <span style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--danger);background:#FEE2E2;padding:.2rem .6rem;border-radius:999px">${i.cancel_reason?'❌ Annulé':'🗄 Archivé'}</span>
+            <span style="font-size:.75rem;color:var(--muted)">${i.archived_at ? 'le ' + new Date(i.archived_at).toLocaleDateString(LP_I18N.locale()) : ''}</span>
           </div>
           <h4 style="color:var(--muted)">🌅 ${esc(i.titre)} <span style="font-size:.85rem;font-weight:400">— ${esc(fmtDate(i.date))}</span></h4>
           <div class="detail">👤 Animateur : <strong>${esc(i.animateur||'—')}</strong>${i.rc_name?' · RC : '+esc(i.rc_name):''}${i.opm_name?' · OPM : '+esc(i.opm_name):''}</div>
           <div class="detail">${i.format==='zoom'?'':'📍'} ${esc(i.location||(i.format==='zoom'?'Zoom':''))}</div>
           <div class="detail">✓ ${(i.registrations||[]).filter(r=>!r.isGraduate).length} invité(s) inscrits</div>
+          ${i.cancel_reason?`<div class="detail" style="color:var(--danger)">❌ Raison de l'annulation : <strong>${esc(i.cancel_reason)}</strong></div>`:''}
           <div style="display:flex;gap:.5rem;margin-top:.75rem;flex-wrap:wrap">
             <button class="btn btn-ghost btn-sm" onclick="viewIntroRegistrations('${i.id}')">Voir inscrits (${(i.registrations||[]).length})</button>
             <button class="btn btn-primary btn-sm" onclick="unarchiveIntro('${i.id}')">↩ Désarchiver</button>
@@ -3947,7 +4066,7 @@ async function renderAdmin(user, tab, subtab){
     const roleColorAdmin = { superadmin:'#6B21A8', admin:'#1B4899' };
 
     if(currentSub==='list'){
-      const sorted = [...members].sort((a,b)=>a.name.localeCompare(b.name,'fr'));
+      const sorted = [...members].sort((a,b)=>a.name.localeCompare(b.name,LP_I18N.lang()));
       const fonctions = ['leader','Team Leader IL','Seminar Leader In Training','Seminar Leader','gradué','staff','invité'];
       const roleFilterHtml = `
         <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem">
@@ -3976,6 +4095,9 @@ async function renderAdmin(user, tab, subtab){
             <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-top:.2rem">
               <span style="font-size:.82rem;color:var(--muted)">${esc(u.email)}</span>
               <div style="display:flex;gap:.3rem;flex-wrap:wrap;margin-left:.3rem">
+                ${canManage
+                  ? `<select title="Langue" onchange="changeMemberLanguage('${u.email}',this.value)" style="width:auto;padding:.3rem .5rem;font-size:.78rem">${LP_I18N.languageOptionsHtml(u.lang||LP_I18N.defaultLang)}</select>`
+                  : `<span title="Langue" style="font-size:.78rem">${(LP_I18N.supported[u.lang]||LP_I18N.supported[LP_I18N.defaultLang]).flag}</span>`}
                 ${canManage?`<button class="btn btn-ghost btn-sm" style="padding:.3rem .7rem;font-size:.78rem" onclick="editMember('${u.email}')">Modifier</button>`:''}
                 ${isSA?`<button class="btn btn-ghost btn-sm" style="padding:.3rem .7rem;font-size:.78rem" onclick="adminGenerateResetLink('${u.email}')">✉️ Reset</button>`:''}
                 ${isSA && !isSelf && u.role!=='superadmin'?`<button class="btn btn-danger btn-sm" style="padding:.3rem .7rem;font-size:.78rem" onclick="deleteMember('${u.email}')">Supprimer</button>`:''}
@@ -3997,7 +4119,7 @@ async function renderAdmin(user, tab, subtab){
         html += '<div class="empty"><div class="empty-icon">✨</div><p>Aucune nouvelle inscription en attente</p></div>';
       } else {
         html += pending.map(u => {
-          const dateInscription = u.created_at ? new Date(Number(u.created_at)).toLocaleDateString('fr-FR', {day:'2-digit',month:'short',year:'numeric'}) : '';
+          const dateInscription = u.created_at ? new Date(Number(u.created_at)).toLocaleDateString(LP_I18N.locale(), {day:'2-digit',month:'short',year:'numeric'}) : '';
           return `<div class="member-row admin-member-row" style="border-left:3px solid var(--cyan);margin-bottom:.5rem">
             ${avatarEl(u.name, u.email)}
             <div class="info" style="flex:1;min-width:200px">
@@ -4040,14 +4162,14 @@ async function renderAdmin(user, tab, subtab){
       html += `<div class="card">
         <h3 style="margin-bottom:1rem;font-family:Cormorant Garamond">Ajouter un programme</h3>
         <div class="form-row">
-          <div class="form-group"><label>Clé unique</label><input id="ap-key" placeholder="ex: NLP"></div>
-          <div class="form-group"><label>Icône</label><input id="ap-icon" placeholder="🌟"></div>
+          <div class="form-group"><label for="ap-key">Clé unique</label><input id="ap-key" placeholder="ex: NLP"></div>
+          <div class="form-group"><label for="ap-icon">Icône</label><input id="ap-icon" placeholder="🌟"></div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label>Nom affiché</label><input id="ap-label" placeholder="Nom du programme"></div>
-          <div class="form-group"><label>Description courte</label><input id="ap-desc" placeholder="Description"></div>
+          <div class="form-group"><label for="ap-label">Nom affiché</label><input id="ap-label" placeholder="Nom du programme"></div>
+          <div class="form-group"><label for="ap-desc">Description courte</label><input id="ap-desc" placeholder="Description"></div>
         </div>
-        <div class="form-group"><label>Badge CSS</label><input id="ap-badge" placeholder="Forum"></div>
+        <div class="form-group"><label for="ap-badge">Badge CSS</label><input id="ap-badge" placeholder="Forum"></div>
         <button class="btn btn-primary" onclick="addProgram()">Ajouter</button>
       </div>`;
     }
@@ -4099,12 +4221,12 @@ async function renderAdmin(user, tab, subtab){
       const catOptions = [['community','🌺 Communauté']].concat(Object.keys(PROGRAMS).map(k=>[k, `${PROGRAMS[k].icon} ${PROGRAMS[k].label}`]));
       html += `<div class="card">
         <h3 style="margin-bottom:1rem;font-family:Cormorant Garamond">Ajouter un témoignage</h3>
-        <div class="form-group"><label>Catégorie</label>
+        <div class="form-group"><label for="tm-category">Catégorie</label>
           <select id="tm-category">${catOptions.map(([v,l])=>`<option value="${esc(v)}">${esc(l)}</option>`).join('')}</select>
         </div>
-        <div class="form-group"><label>Texte</label><textarea id="tm-text" rows="4" placeholder="Le témoignage..."></textarea></div>
-        <div class="form-group"><label>Auteur</label><input id="tm-author" placeholder="Prénom Nom"></div>
-        <div class="form-group"><label>Rôle / lieu</label><input id="tm-role" placeholder="ex: Gradué Forum, Tahiti"></div>
+        <div class="form-group"><label for="tm-text">Texte</label><textarea id="tm-text" rows="4" placeholder="Le témoignage..."></textarea></div>
+        <div class="form-group"><label for="tm-author">Auteur</label><input id="tm-author" placeholder="Prénom Nom"></div>
+        <div class="form-group"><label for="tm-role">Rôle / lieu</label><input id="tm-role" placeholder="ex: Gradué Forum, Tahiti"></div>
         <button class="btn btn-primary" onclick="addTestimonial()">Ajouter</button>
       </div>`;
     }
@@ -4258,28 +4380,79 @@ function mountIntrosCalendar(){
   if(!window.FullCalendar){ el.innerHTML = '<div class="empty">Calendrier indisponible</div>'; return; }
   if(_introsCalInstance){ _introsCalInstance.destroy(); _introsCalInstance = null; }
   const data = window._introsCalData || [];
+  const ccData = window._ccCalData || [];
+  const introEvents = data.map(i => {
+    const missingRc = !i.rc_name, missingOpm = !i.opm_name;
+    const color = i.cancel_reason ? '#7C2D12' : i._archived ? '#6B7A90'
+      : (missingRc && missingOpm) ? '#EF4444' : (missingRc || missingOpm) ? '#F59E0B' : '#22C55E';
+    return {
+      id: 'intro-'+i.id,
+      start: i.heure ? (i.date+'T'+i.heure) : i.date,
+      end: i.heure_fin ? (i.date+'T'+i.heure_fin) : null,
+      allDay: !i.heure,
+      backgroundColor: color,
+      borderColor: color,
+      extendedProps: { kind:'intro', introId: i.id, titre: i.titre||'Évènement', leader: i.animateur||'—', opm: i.opm_name||'—', rc: i.rc_name||'—', heure: i.heure||'', heureFin: i.heure_fin||'', archived: !!i._archived, cancelReason: i.cancel_reason||'' }
+    };
+  });
+  const ccEvents = ccData.map(cc => {
+    const dm = fmtDayMonth(cc.introDate);
+    return {
+      id: cc.id,
+      start: cc.heure ? (cc.date+'T'+cc.heure) : cc.date,
+      end: cc.heure_fin ? (cc.date+'T'+cc.heure_fin) : null,
+      allDay: !cc.heure,
+      backgroundColor: '#3B82F6',
+      borderColor: '#3B82F6',
+      extendedProps: { kind:'creation_call', titre: cc.titre||'Appel de création', introTitre: cc.introTitre||'', introDateLabel: dm.day?(dm.day+' '+dm.month):'', heure: cc.heure||'' }
+    };
+  });
   _introsCalInstance = new FullCalendar.Calendar(el, {
     initialView: window.innerWidth<700 ? 'listWeek' : 'dayGridMonth',
-    locale: 'fr',
+    locale: LP_I18N.lang(),
     firstDay: 1,
     headerToolbar: { left:'prev,next today', center:'title', right:'dayGridMonth,listWeek' },
     height: 'auto',
     dateClick: (info) => { openIntroForm(null, info.dateStr); },
-    eventClick: (info) => { const item = data.find(x=>x.id===info.event.id); if(item) openIntroForm(item.id); },
-    events: data.map(i => {
-      const missingRc = !i.rc_name, missingOpm = !i.opm_name;
-      const color = (missingRc && missingOpm) ? '#EF4444' : (missingRc || missingOpm) ? '#F59E0B' : '#22C55E';
-      const missLabel = [missingRc?'RC':null, missingOpm?'OPM':null].filter(Boolean).join('+');
-      return {
-        id: i.id,
-        title: (missLabel ? '⚠️ '+missLabel+' manquant — ' : '✅ ') + (i.titre||'Évènement'),
-        start: i.heure ? (i.date+'T'+i.heure) : i.date,
-        end: i.heure_fin ? (i.date+'T'+i.heure_fin) : null,
-        allDay: !i.heure,
-        backgroundColor: color,
-        borderColor: color
-      };
-    })
+    eventClick: (info) => {
+      const p = info.event.extendedProps;
+      if(p.kind==='intro') openIntroForm(p.introId);
+    },
+    eventContent: (arg) => {
+      const p = arg.event.extendedProps;
+      const bg = arg.event.backgroundColor;
+      const heureRange = p.heure ? (p.heure + (p.heureFin ? ' → '+p.heureFin : '')) : '';
+      const heureLine = heureRange?`<div class="fc-intro-heure">🕐 ${esc(heureRange)}</div>`:'';
+      if(p.kind==='creation_call'){
+        return { html: `<div class="fc-intro-event-multiline" style="background:${bg}">
+          <div class="fc-intro-title-wrap">📞 Appel de création</div>
+          <div class="fc-intro-sub">→ Intro du ${esc(p.introDateLabel||'—')}</div>
+          ${heureLine}
+        </div>` };
+      }
+      if(p.archived){
+        const statusLine = p.cancelReason ? `<div class="fc-intro-sub">❌ Annulé</div>` : `<div class="fc-intro-sub">🗄 Archivé</div>`;
+        return { html: `<div class="fc-intro-event-multiline" style="background:${bg}">
+          ${statusLine}
+          <div class="fc-intro-sub" style="opacity:.85">${esc(p.titre)}</div>
+        </div>` };
+      }
+      return { html: `<div class="fc-intro-event-multiline" style="background:${bg}">
+        <div class="fc-intro-sub">👤 ${esc(p.leader)}</div>
+        <div class="fc-intro-sub">💎 OPM : ${esc(p.opm)}</div>
+        <div class="fc-intro-sub">🎯 RC : ${esc(p.rc)}</div>
+        ${heureLine}
+      </div>` };
+    },
+    eventDidMount: (arg) => {
+      const p = arg.event.extendedProps;
+      const heureRange = p.heure ? (p.heure + (p.heureFin ? ' → '+p.heureFin : '')) : '';
+      const statusTxt = p.cancelReason ? `\n❌ Annulé — Raison : ${p.cancelReason}` : p.archived ? '\n🗄 Archivé' : '';
+      arg.el.title = p.kind==='creation_call'
+        ? `Appel de création\nPour l'introduction : ${p.introTitre} (${p.introDateLabel})${heureRange?'\n🕐 '+heureRange:''}`
+        : `${p.titre}${statusTxt}\n👤 Leader : ${p.leader}\n💎 OPM : ${p.opm}\n🎯 RC : ${p.rc}${heureRange?'\n🕐 '+heureRange:''}`;
+    },
+    events: [...introEvents, ...ccEvents]
   });
   _introsCalInstance.render();
 }
@@ -4387,38 +4560,38 @@ async function openIntroForm(introId, prefillDate){
 
   document.getElementById('modalContent').innerHTML = `
     <h3>${isNew?'Nouvel évènement':'Modifier l\'évènement'}</h3>
-    <div class="form-group"><label>Type</label><select id="if-type" onchange="updateTargetFromType(); onIntroTypeChange()">${typeOptions}${clinicOption}</select></div>
+    <div class="form-group"><label for="if-type">Type</label><select id="if-type" onchange="updateTargetFromType(); onIntroTypeChange()">${typeOptions}${clinicOption}</select></div>
     <div class="form-group">
-      <label>Programme cible <span style="color:var(--muted);font-size:.8rem">(pour quel programme est cette introduction)</span></label>
+      <label for="if-target-program">Programme cible <span style="color:var(--muted);font-size:.8rem">(pour quel programme est cette introduction)</span></label>
       <select id="if-target-program" onchange="updateAnimateurList(); updateTitreFromProgram()">
         ${targetProgramOptions}
       </select>
       <p style="font-size:.78rem;color:var(--muted);margin-top:.3rem">Cours de communication = visible aux membres CAPO & CPCO.</p>
     </div>
-    <div class="form-group"><label>Titre *</label><input id="if-titre" value="${esc(intro.titre||'')}"></div>
-    <div class="form-group"><label>Thème</label><input id="if-theme" value="${esc(intro.theme||'')}"></div>
+    <div class="form-group"><label for="if-titre">Titre *</label><input id="if-titre" value="${esc(intro.titre||'')}"></div>
+    <div class="form-group"><label for="if-theme">Thème</label><input id="if-theme" value="${esc(intro.theme||'')}"></div>
     <div class="form-row">
-      <div class="form-group"><label>Date *</label><input id="if-date" type="date" value="${esc(intro.date||'')}"></div>
-      <div class="form-group"><label>Heure début</label><input id="if-heure" type="time" value="${esc(intro.heure||'')}" oninput="onHeureChange()"></div>
+      <div class="form-group"><label for="if-date">Date *</label><input id="if-date" type="date" value="${esc(intro.date||'')}"></div>
+      <div class="form-group"><label for="if-heure">Heure début</label><input id="if-heure" type="time" value="${esc(intro.heure||'')}" oninput="onHeureChange()"></div>
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>Durée (minutes) <span id="if-duree-display" style="color:var(--cyan);font-size:.85rem;font-weight:600">${durDisplay}</span></label>
+        <label for="if-duree">Durée (minutes) <span id="if-duree-display" style="color:var(--cyan);font-size:.85rem;font-weight:600">${durDisplay}</span></label>
         <input id="if-duree" type="number" min="15" step="15" placeholder="ex: 150 = 2h30" value="${durMin}" oninput="onDurationChange()">
       </div>
-      <div class="form-group"><label>Heure fin <span style="color:var(--muted);font-size:.8rem">(auto-calculée)</span></label><input id="if-heurefin" type="time" value="${esc(intro.heure_fin||'')}" oninput="onHeureFinChange()"></div>
+      <div class="form-group"><label for="if-heurefin">Heure fin <span style="color:var(--muted);font-size:.8rem">(auto-calculée)</span></label><input id="if-heurefin" type="time" value="${esc(intro.heure_fin||'')}" oninput="onHeureFinChange()"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>Format</label><select id="if-format">
+      <div class="form-group"><label for="if-format">Format</label><select id="if-format">
         <option value="presentiel" ${intro.format==='presentiel'?'selected':''}>Présentiel</option>
         <option value="zoom" ${intro.format==='zoom'?'selected':''}>Zoom</option>
       </select></div>
-      <div class="form-group"><label>Promesse de l'introduction / événement</label><input id="if-capacite" type="number" value="${intro.capacite||''}"></div>
+      <div class="form-group"><label for="if-capacite">Promesse de l'introduction / événement</label><input id="if-capacite" type="number" value="${intro.capacite||''}"></div>
     </div>
-    <div class="form-group"><label>Lieu</label><input id="if-location" value="${esc(intro.location||'')}"></div>
-    <div class="form-group"><label>Lien Zoom intro <span style="color:var(--muted);font-size:.8rem">(modifiable)</span></label><input id="if-zoom" value="${esc(zoomUrlVal)}"></div>
+    <div class="form-group"><label for="if-location">Lieu</label><input id="if-location" value="${esc(intro.location||'')}"></div>
+    <div class="form-group"><label for="if-zoom">Lien Zoom intro <span style="color:var(--muted);font-size:.8rem">(modifiable)</span></label><input id="if-zoom" value="${esc(zoomUrlVal)}"></div>
     <div class="form-group">
-      <label>Image / Vidéo <span style="color:var(--muted);font-size:.8rem">(optionnel)</span></label>
+      <label for="if-mediaUrl">Image / Vidéo <span style="color:var(--muted);font-size:.8rem">(optionnel)</span></label>
       <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
         <input id="if-mediaUrl" value="${esc(intro.media_url||'')}" placeholder="URL ou upload ci-dessous" style="flex:1;min-width:0">
         <label class="btn btn-ghost btn-sm" style="cursor:pointer;white-space:nowrap;flex-shrink:0">
@@ -4430,7 +4603,7 @@ async function openIntroForm(introId, prefillDate){
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>Animateur <span id="if-animateur-hint" style="color:var(--muted);font-size:.8rem">${initTargetProg ? '(leaders & gradués '+esc(initTargetProg)+')' : '(leaders uniquement)'}</span></label>
+        <label for="if-animateur">Animateur <span id="if-animateur-hint" style="color:var(--muted);font-size:.8rem">${initTargetProg ? '(leaders & gradués '+esc(initTargetProg)+')' : '(leaders uniquement)'}</span></label>
         <div id="if-animateur-wrap">${buildPersonSelect('if-animateur', intro.animateur||'', intro.animateur_email||'', initAnimateurMembers, true)}</div>
         <div id="if-animateur-custom-row" style="display:none;margin-top:.6rem">
           <div class="form-row">
@@ -4440,14 +4613,14 @@ async function openIntroForm(introId, prefillDate){
           <p style="font-size:.78rem;color:var(--muted);margin-top:.3rem">Ce leader sera animateur sans créer de compte.</p>
         </div>
       </div>
-      <div class="form-group"><label>RC <span style="color:var(--muted);font-size:.8rem">(leaders)</span></label>${buildNameSelect('if-rcName', intro.rc_name||'', leaders)}</div>
+      <div class="form-group"><label for="if-rcName">RC <span style="color:var(--muted);font-size:.8rem">(leaders)</span></label>${buildNameSelect('if-rcName', intro.rc_name||'', leaders)}</div>
     </div>
-    <div class="form-group"><label>OPM <span style="color:var(--muted);font-size:.8rem">(leaders &amp; gradués)</span></label>${buildNameSelect('if-opmName', intro.opm_name||'', leadersAndGrads)}</div>
+    <div class="form-group"><label for="if-opmName">OPM <span style="color:var(--muted);font-size:.8rem">(leaders &amp; gradués)</span></label>${buildNameSelect('if-opmName', intro.opm_name||'', leadersAndGrads)}</div>
     <div class="form-row">
-      <div class="form-group"><label>Date CC</label><input id="if-ccDate" type="date" value="${esc(intro.cc_date||'')}"></div>
-      <div class="form-group"><label>Heure CC</label><input id="if-ccHeure" type="time" value="${esc(intro.cc_heure||'')}"></div>
+      <div class="form-group"><label for="if-ccDate">Date CC</label><input id="if-ccDate" type="date" value="${esc(intro.cc_date||'')}"></div>
+      <div class="form-group"><label for="if-ccHeure">Heure CC</label><input id="if-ccHeure" type="time" value="${esc(intro.cc_heure||'')}"></div>
     </div>
-    <div class="form-group"><label>Zoom CC <span style="color:var(--muted);font-size:.8rem">(modifiable)</span></label><input id="if-zoomCC" value="${esc(zoomCCVal)}"></div>
+    <div class="form-group"><label for="if-zoomCC">Zoom CC <span style="color:var(--muted);font-size:.8rem">(modifiable)</span></label><input id="if-zoomCC" value="${esc(zoomCCVal)}"></div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal()">Annuler</button>
       <button class="btn btn-primary" onclick="saveIntro('${intro.id}', ${isNew})">Enregistrer</button>
@@ -4530,11 +4703,14 @@ async function uploadIntroMedia(event){
 }
 
 async function archiveIntro(introId){
-  if(!confirm('Archiver cet évènement ? Il ne sera plus visible publiquement.')) return;
+  const reasonInput = prompt("Cet évènement est-il annulé ? Si oui, indique la raison (un email sera envoyé au leader de l'introduction, aux team leaders et au staff). Laisse vide pour un simple archivage :");
+  if(reasonInput === null) return;
+  const reason = reasonInput.trim();
+  if(!confirm(reason ? 'Confirmer l\'annulation ? Un email va être envoyé au leader de l\'introduction, aux team leaders et au staff.' : 'Archiver cet évènement ? Il ne sera plus visible publiquement.')) return;
   try {
-    await apiFetch('/intros/'+introId, {method:'DELETE'});
+    await apiFetch('/intros/'+introId, {method:'DELETE', body: JSON.stringify({reason})});
     invalidateCache('/intros');
-    router(); toast('Évènement archivé', 'success');
+    router(); toast(reason ? 'Évènement annulé, email envoyé au leader, aux team leaders et au staff' : 'Évènement archivé', 'success');
   } catch(e){ toast(e.message, 'error'); }
 }
 
@@ -4559,9 +4735,9 @@ async function permanentDeleteIntro(introId){
 function openAddIntroTypeModal(){
   document.getElementById('modalContent').innerHTML = `
     <h3>Nouveau type d'évènement</h3>
-    <div class="form-group"><label>Libellé *</label><input id="it-label" placeholder="ex: Séminaire avancé"></div>
-    <div class="form-group"><label>Clé (identifiant) *</label><input id="it-key" placeholder="ex: seminaire_avance" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9_]/g,'_')"></div>
-    <div class="form-group"><label>Couleur</label><input id="it-color" type="color" value="#00C6D7" style="width:60px;height:38px;padding:2px;border-radius:8px;cursor:pointer"></div>
+    <div class="form-group"><label for="it-label">Libellé *</label><input id="it-label" placeholder="ex: Séminaire avancé"></div>
+    <div class="form-group"><label for="it-key">Clé (identifiant) *</label><input id="it-key" placeholder="ex: seminaire_avance" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9_]/g,'_')"></div>
+    <div class="form-group"><label for="it-color">Couleur</label><input id="it-color" type="color" value="#00C6D7" style="width:60px;height:38px;padding:2px;border-radius:8px;cursor:pointer"></div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal()">Annuler</button>
       <button class="btn btn-primary" onclick="saveIntroType()">Créer</button>
@@ -4617,12 +4793,13 @@ async function viewIntroRegistrations(introId){
 
   function fmtRegDate(d){
     if(!d) return '';
-    try { return new Date(d).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
+    try { return new Date(d).toLocaleString(LP_I18N.locale(),{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
     catch(e){ return ''; }
   }
   function guestRow(r) {
     const regDate = fmtRegDate(r.date);
-    const reminderBtn = !r.confirmed ? `<button class="btn btn-ghost btn-sm" style="font-size:.7rem;padding:.2rem .5rem" onclick="sendReminder('${intro.id}','${esc(r.email)}',this)">🔔 Rappel</button>` : '';
+    const accountPending = needsAccountActivation(r, statusByEmail[(r.email||'').toLowerCase()]);
+    const reminderBtn = accountPending ? `<button class="btn btn-ghost btn-sm" style="font-size:.7rem;padding:.2rem .5rem" onclick="sendReminder('${intro.id}','${esc(r.email)}',this)">🔔 Rappel</button>` : '';
     const gradInfo = r.invitedBy ? `<span style="font-size:.72rem;color:var(--cyan)">🎓 Invité·e par ${esc(r.invitedBy)}${r.invitedByEmail?' ('+esc(r.invitedByEmail)+')':''}</span>` : '';
     const emailInfo = statusByEmail[(r.email||'').toLowerCase()];
     const emailStatus = EMAIL_STATUS_BADGES[emailInfo && emailInfo.email_status] || null;
@@ -4640,6 +4817,7 @@ async function viewIntroRegistrations(introId){
         ${r.confirmed
           ? '<span style="font-size:.7rem;padding:.2rem .5rem;background:rgba(34,197,94,.15);color:#15803d;border-radius:999px;font-weight:600">✅ Confirmé</span>'
           : '<span style="font-size:.7rem;padding:.2rem .5rem;background:#FFF3E0;color:#E65100;border-radius:999px">⏳ En attente</span>'}
+        ${r.confirmed && accountPending ? '<span title="L\'invité n\'a pas encore cliqué sur « Je réserve ma place » dans l\'email" style="font-size:.7rem;padding:.2rem .5rem;background:#FFF3E0;color:#E65100;border-radius:999px;white-space:nowrap">📧 Pas encore cliqué sur l\'email</span>' : ''}
         ${emailBadge}
         ${reminderBtn}
         <button class="btn btn-danger btn-sm" onclick="removeRegistration('${intro.id}','${r.email}')">✕</button>
@@ -4809,21 +4987,24 @@ async function editMember(email){
   document.getElementById('modalContent').innerHTML = `
     <h3>Modifier ${esc(u.name)}</h3>
     <div class="form-row">
-      <div class="form-group"><label>Nom complet</label><input id="em-name" value="${esc(u.name||'')}"></div>
-      <div class="form-group"><label>Email</label><input id="em-email" type="email" value="${esc(u.email||'')}"></div>
+      <div class="form-group"><label for="em-name">Nom complet</label><input id="em-name" value="${esc(u.name||'')}"></div>
+      <div class="form-group"><label for="em-email">Email</label><input id="em-email" type="email" value="${esc(u.email||'')}"></div>
     </div>
     <div class="form-row">
-      <div class="form-group"><label>Téléphone</label>${buildPhoneGroup('em-phone', u.phone||'', '87 12 34 56')}</div>
-      <div class="form-group"><label>PID <span style="font-weight:400;color:var(--muted);font-size:.82rem">(7 chiffres)</span></label><input id="em-pid" placeholder="1234567" maxlength="7" value="${esc(u.pid||'')}"></div>
+      <div class="form-group"><label for="em-phone">Téléphone</label>${buildPhoneGroup('em-phone', u.phone||'', '87 12 34 56')}</div>
+      <div class="form-group"><label for="em-pid">PID <span style="font-weight:400;color:var(--muted);font-size:.82rem">(7 chiffres)</span></label><input id="em-pid" placeholder="1234567" maxlength="7" value="${esc(u.pid||'')}"></div>
     </div>
-    <div class="form-group"><label>Localisation</label><input id="em-location" placeholder="Tahiti, Moorea…" value="${esc(u.location||'')}"></div>
+    <div class="form-row">
+      <div class="form-group"><label for="em-location">Localisation</label><input id="em-location" placeholder="Tahiti, Moorea…" value="${esc(u.location||'')}"></div>
+      <div class="form-group"><label for="em-lang">Langue</label><select id="em-lang">${LP_I18N.languageOptionsHtml(u.lang||LP_I18N.defaultLang)}</select></div>
+    </div>
     <div class="form-row">
       <div class="form-group">
-        <label>Rôle <span style="color:var(--muted);font-weight:400;font-size:.8rem">(accès système)</span></label>
+        <label for="em-role">Rôle <span style="color:var(--muted);font-weight:400;font-size:.8rem">(accès système)</span></label>
         <select id="em-role" onchange="onRoleChangeOPM(this)">${roleOptions}</select>
       </div>
       <div class="form-group">
-        <label>Fonction <span style="color:var(--muted);font-weight:400;font-size:.8rem">(position Landmark)</span></label>
+        <label for="em-fonction">Fonction <span style="color:var(--muted);font-weight:400;font-size:.8rem">(position Landmark)</span></label>
         <select id="em-fonction" onchange="onFonctionChange(this)">${fonctionOptions}</select>
       </div>
     </div>
@@ -4898,6 +5079,7 @@ async function saveMember(email){
   const phone   = getPhoneValue('em-phone');
   const pid     = document.getElementById('em-pid').value.trim();
   const location = document.getElementById('em-location').value.trim();
+  const lang    = document.getElementById('em-lang').value;
   if(!name) return toast('Le nom est requis', 'error');
   if(pid && !/^\d{7}$/.test(pid)) return toast('Le PID doit contenir exactement 7 chiffres', 'error');
   const programs = [...document.querySelectorAll('#modalContent .checkbox-group input:checked')].map(i=>i.value);
@@ -4909,9 +5091,10 @@ async function saveMember(email){
   // ─── Permission "voir liste participants" par programme ───
   permissions.visibleParticipantsPrograms = Array.from(document.querySelectorAll('.vparts-prog:checked')).map(el=>el.value);
   try {
-    await apiFetch('/members/'+encodeURIComponent(email), {method:'PUT', body:JSON.stringify({role, fonction, name, email: newEmail, phone, pid, location, programs, permissions})});
+    await apiFetch('/members/'+encodeURIComponent(email), {method:'PUT', body:JSON.stringify({role, fonction, name, email: newEmail, phone, pid, location, lang, programs, permissions})});
     invalidateCache('/members');
     closeModal(); router(); toast('Membre mis à jour', 'success');
+    if(currentUser() && currentUser().email === email) applyAccountLanguage({lang});
   } catch(e){ toast(e.message, 'error'); }
 }
 
@@ -4987,10 +5170,10 @@ async function editProgram(key){
   document.getElementById('modalContent').innerHTML = `
     <h3>Modifier le programme</h3>
     <div class="form-group"><label>Clé (non modifiable)</label><input value="${esc(key)}" disabled style="background:var(--glass);color:var(--text)"></div>
-    <div class="form-group"><label>Icône</label><input id="ep-icon" value="${esc(p.icon||'')}"></div>
-    <div class="form-group"><label>Nom affiché</label><input id="ep-label" value="${esc(p.label||'')}"></div>
-    <div class="form-group"><label>Description courte</label><input id="ep-desc" value="${esc(p.desc||'')}"></div>
-    <div class="form-group"><label>Badge CSS</label><input id="ep-badge" value="${esc(p.badge||'')}"></div>
+    <div class="form-group"><label for="ep-icon">Icône</label><input id="ep-icon" value="${esc(p.icon||'')}"></div>
+    <div class="form-group"><label for="ep-label">Nom affiché</label><input id="ep-label" value="${esc(p.label||'')}"></div>
+    <div class="form-group"><label for="ep-desc">Description courte</label><input id="ep-desc" value="${esc(p.desc||'')}"></div>
+    <div class="form-group"><label for="ep-badge">Badge CSS</label><input id="ep-badge" value="${esc(p.badge||'')}"></div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal()">Annuler</button>
       <button class="btn btn-primary" onclick="saveProgram('${key}')">Enregistrer</button>
@@ -5191,11 +5374,11 @@ async function renderGuestRegisterPage(introId, user){
     <div class="card">
       <h3 style="font-family:Cormorant Garamond;margin-bottom:1.25rem">Informations de l'invité</h3>
       <div class="form-row">
-        <div class="form-group"><label>Prénom *</label><input id="gr-firstname" placeholder="Prénom de l'invité"></div>
-        <div class="form-group"><label>Nom *</label><input id="gr-lastname" placeholder="Nom de l'invité"></div>
+        <div class="form-group"><label for="gr-firstname">Prénom *</label><input id="gr-firstname" placeholder="Prénom de l'invité"></div>
+        <div class="form-group"><label for="gr-lastname">Nom *</label><input id="gr-lastname" placeholder="Nom de l'invité"></div>
       </div>
-      <div class="form-group"><label>Email *</label><input id="gr-email" type="email" placeholder="email@exemple.com"></div>
-      <div class="form-group"><label>Téléphone *</label>${buildPhoneGroup('gr-phone','','87 12 34 56')}</div>
+      <div class="form-group"><label for="gr-email">Email *</label><input id="gr-email" type="email" placeholder="email@exemple.com"></div>
+      <div class="form-group"><label for="gr-phone">Téléphone *</label>${buildPhoneGroup('gr-phone','','87 12 34 56')}</div>
       <div style="background:rgba(0,212,232,0.07);border:1px solid rgba(0,212,232,0.15);border-radius:10px;padding:.75rem 1rem;margin-top:.5rem;font-size:.88rem;color:var(--text)">
         🔔 Un email de confirmation sera envoyé automatiquement à votre invité.
       </div>
@@ -5497,7 +5680,7 @@ async function mountCalendar(user){
   if(!window.FullCalendar){ el.innerHTML = '<div class="empty">FullCalendar indisponible</div>'; return; }
   _calInstance = new FullCalendar.Calendar(el, {
     initialView: window.innerWidth<700 ? 'listWeek' : 'dayGridMonth',
-    locale: 'fr',
+    locale: LP_I18N.lang(),
     firstDay: 1,
     headerToolbar: { left:'prev,next today', center:'title', right:'dayGridMonth,timeGridWeek,listWeek' },
     height: 'auto',
@@ -5689,32 +5872,32 @@ function _fmtInput(item, k, d=''){ return esc((item && item[k]!=null) ? item[k] 
 function openCreateEventModal(item){
   const editing = !!item;
   const html = `
-    <label>Type</label>
-    <select name="kind" required>
+    <label for="ce-kind">Type</label>
+    <select id="ce-kind" name="kind" required>
       <option value="forum"         ${editing&&item.kind==='forum'?'selected':''}>Forum</option>
       <option value="advanced"      ${editing&&item.kind==='advanced'?'selected':''}>Cours Avancé</option>
       <option value="communication" ${editing&&item.kind==='communication'?'selected':''}>Cours de Communication</option>
       <option value="seminar"       ${editing&&item.kind==='seminar'?'selected':''}>Séminaire</option>
       <option value="special"       ${editing&&item.kind==='special'?'selected':''}>Événement spécial</option>
     </select>
-    <label>Nom du séminaire (si séminaire)</label>
-    <input name="seminar_name" value="${_fmtInput(item,'seminar_name')}" placeholder="Communication / Leadership / Création…">
-    <label>Titre *</label><input name="titre" required value="${_fmtInput(item,'titre')}">
-    <label>Description</label><textarea name="description" rows="2">${_fmtInput(item,'description')}</textarea>
-    <label>Date *</label><input type="date" name="date" required value="${_fmtInput(item,'date')}">
+    <label for="ce-seminar_name">Nom du séminaire (si séminaire)</label>
+    <input id="ce-seminar_name" name="seminar_name" value="${_fmtInput(item,'seminar_name')}" placeholder="Communication / Leadership / Création…">
+    <label for="ce-titre">Titre *</label><input id="ce-titre" name="titre" required value="${_fmtInput(item,'titre')}">
+    <label for="ce-description">Description</label><textarea id="ce-description" name="description" rows="2">${_fmtInput(item,'description')}</textarea>
+    <label for="ce-date">Date *</label><input id="ce-date" type="date" name="date" required value="${_fmtInput(item,'date')}">
     <div style="display:flex;gap:.5rem">
-      <div style="flex:1"><label>Heure début</label><input type="time" name="heure" value="${_fmtInput(item,'heure')}"></div>
-      <div style="flex:1"><label>Heure fin</label><input type="time" name="heure_fin" value="${_fmtInput(item,'heure_fin')}"></div>
+      <div style="flex:1"><label for="ce-heure">Heure début</label><input id="ce-heure" type="time" name="heure" value="${_fmtInput(item,'heure')}"></div>
+      <div style="flex:1"><label for="ce-heure_fin">Heure fin</label><input id="ce-heure_fin" type="time" name="heure_fin" value="${_fmtInput(item,'heure_fin')}"></div>
     </div>
-    <label>Format</label>
-    <select name="format">
+    <label for="ce-format">Format</label>
+    <select id="ce-format" name="format">
       <option value="presentiel" ${editing&&item.format==='presentiel'?'selected':''}>Présentiel</option>
       <option value="zoom"       ${editing&&item.format==='zoom'?'selected':''}>Zoom</option>
       <option value="hybride"    ${editing&&item.format==='hybride'?'selected':''}>Hybride</option>
     </select>
-    <label>Lieu (si présentiel)</label><input name="location" value="${_fmtInput(item,'location')}">
-    <label>Lien Zoom</label><input name="zoom_url" value="${_fmtInput(item,'zoom_url')}">
-    <label>Capacité</label><input type="number" name="capacite" value="${_fmtInput(item,'capacite')}">
+    <label for="ce-location">Lieu (si présentiel)</label><input id="ce-location" name="location" value="${_fmtInput(item,'location')}">
+    <label for="ce-zoom_url">Lien Zoom</label><input id="ce-zoom_url" name="zoom_url" value="${_fmtInput(item,'zoom_url')}">
+    <label for="ce-capacite">Capacité</label><input id="ce-capacite" type="number" name="capacite" value="${_fmtInput(item,'capacite')}">
   `;
   _calModalShell(editing?'Modifier l\'événement':'Nouvel événement', html, async (bd)=>{
     const fd = new FormData(bd.querySelector('form'));
@@ -5734,21 +5917,21 @@ async function openCreateCreationCallModal(item){
     .concat(introsList.map(i => `<option value="${i.id}" ${editing&&item.intro_id===i.id?'selected':''}>${esc(i.titre)} (${esc(i.date)})</option>`))
     .join('');
   const html = `
-    <label>Introduction associée (auto-inscription des gradués inscrits)</label>
-    <select name="intro_id">${introOpts}</select>
-    <label>Titre *</label><input name="titre" required value="${_fmtInput(item,'titre','Appel de création')}">
-    <label>Date *</label><input type="date" name="date" required value="${_fmtInput(item,'date')}">
+    <label for="cc-intro_id">Introduction associée (auto-inscription des gradués inscrits)</label>
+    <select id="cc-intro_id" name="intro_id">${introOpts}</select>
+    <label for="cc-titre">Titre *</label><input id="cc-titre" name="titre" required value="${_fmtInput(item,'titre','Appel de création')}">
+    <label for="cc-date">Date *</label><input id="cc-date" type="date" name="date" required value="${_fmtInput(item,'date')}">
     <div style="display:flex;gap:.5rem">
-      <div style="flex:1"><label>Heure début</label><input type="time" name="heure" value="${_fmtInput(item,'heure')}"></div>
-      <div style="flex:1"><label>Heure fin</label><input type="time" name="heure_fin" value="${_fmtInput(item,'heure_fin')}"></div>
+      <div style="flex:1"><label for="cc-heure">Heure début</label><input id="cc-heure" type="time" name="heure" value="${_fmtInput(item,'heure')}"></div>
+      <div style="flex:1"><label for="cc-heure_fin">Heure fin</label><input id="cc-heure_fin" type="time" name="heure_fin" value="${_fmtInput(item,'heure_fin')}"></div>
     </div>
-    <label>Format</label>
-    <select name="format">
+    <label for="cc-format">Format</label>
+    <select id="cc-format" name="format">
       <option value="zoom"       ${!editing||item.format==='zoom'?'selected':''}>Zoom</option>
       <option value="presentiel" ${editing&&item.format==='presentiel'?'selected':''}>Présentiel</option>
     </select>
-    <label>Lieu</label><input name="location" value="${_fmtInput(item,'location')}">
-    <label>Lien Zoom</label><input name="zoom_url" value="${_fmtInput(item,'zoom_url')}">
+    <label for="cc-location">Lieu</label><input id="cc-location" name="location" value="${_fmtInput(item,'location')}">
+    <label for="cc-zoom_url">Lien Zoom</label><input id="cc-zoom_url" name="zoom_url" value="${_fmtInput(item,'zoom_url')}">
   `;
   _calModalShell(editing?'Modifier l\'appel de création':'Nouvel appel de création', html, async (bd)=>{
     const fd = new FormData(bd.querySelector('form'));
@@ -5764,21 +5947,21 @@ async function openCreateCreationCallModal(item){
 function openCreateClinicCallModal(item){
   const editing = !!item;
   const html = `
-    <label>Thème *</label><input name="theme" required value="${_fmtInput(item,'theme')}" placeholder="Ex: Appeler sans peur">
-    <label>Titre affiché</label><input name="titre" value="${_fmtInput(item,'titre')}">
-    <label>Description</label><textarea name="description" rows="2">${_fmtInput(item,'description')}</textarea>
-    <label>Date *</label><input type="date" name="date" required value="${_fmtInput(item,'date')}">
+    <label for="cl-theme">Thème *</label><input id="cl-theme" name="theme" required value="${_fmtInput(item,'theme')}" placeholder="Ex: Appeler sans peur">
+    <label for="cl-titre">Titre affiché</label><input id="cl-titre" name="titre" value="${_fmtInput(item,'titre')}">
+    <label for="cl-description">Description</label><textarea id="cl-description" name="description" rows="2">${_fmtInput(item,'description')}</textarea>
+    <label for="cl-date">Date *</label><input id="cl-date" type="date" name="date" required value="${_fmtInput(item,'date')}">
     <div style="display:flex;gap:.5rem">
-      <div style="flex:1"><label>Heure début</label><input type="time" name="heure" value="${_fmtInput(item,'heure')}"></div>
-      <div style="flex:1"><label>Heure fin</label><input type="time" name="heure_fin" value="${_fmtInput(item,'heure_fin')}"></div>
+      <div style="flex:1"><label for="cl-heure">Heure début</label><input id="cl-heure" type="time" name="heure" value="${_fmtInput(item,'heure')}"></div>
+      <div style="flex:1"><label for="cl-heure_fin">Heure fin</label><input id="cl-heure_fin" type="time" name="heure_fin" value="${_fmtInput(item,'heure_fin')}"></div>
     </div>
-    <label>Format</label>
-    <select name="format">
+    <label for="cl-format">Format</label>
+    <select id="cl-format" name="format">
       <option value="zoom"       ${!editing||item.format==='zoom'?'selected':''}>Zoom</option>
       <option value="presentiel" ${editing&&item.format==='presentiel'?'selected':''}>Présentiel</option>
     </select>
-    <label>Lieu</label><input name="location" value="${_fmtInput(item,'location')}">
-    <label>Lien Zoom</label><input name="zoom_url" value="${_fmtInput(item,'zoom_url')}">
+    <label for="cl-location">Lieu</label><input id="cl-location" name="location" value="${_fmtInput(item,'location')}">
+    <label for="cl-zoom_url">Lien Zoom</label><input id="cl-zoom_url" name="zoom_url" value="${_fmtInput(item,'zoom_url')}">
   `;
   _calModalShell(editing?'Modifier la clinique call':'Nouvelle clinique call', html, async (bd)=>{
     const fd = new FormData(bd.querySelector('form'));
@@ -5834,7 +6017,7 @@ async function renderAgenda(user){
   let data = [];
   try { data = await apiFetch('/calendar'); } catch(e){ return '<div class="empty">Erreur chargement</div>'; }
 
-  const fmtDate = d => d ? new Date(d+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}) : '';
+  const fmtDate = d => d ? new Date(d+'T12:00:00').toLocaleDateString(LP_I18N.locale(),{weekday:'long',day:'numeric',month:'long'}) : '';
   const fmtTime = (h,hf) => h ? (h+(hf?' → '+hf:'')) : '';
   const fmtPlace = item => {
     if(item.format==='zoom'||item.format==='distanciel')
