@@ -59,7 +59,7 @@ function broadcast(event, payload) {
 }
 
 /* ─── CONSTANTES CALENDRIER ─── */
-const CALENDAR_ROLES = ['leader_intro', 'opm', 'room_captain', 'clinic_animator', 'translator', 'forum_expert'];
+const CALENDAR_ROLES = ['leader_intro', 'opm', 'room_captain', 'clinic_animator', 'translator', 'forum_expert', 'reg_expert'];
 const EVENT_KINDS    = ['forum', 'advanced', 'communication', 'seminar', 'ilp', 'special'];
 
 /* ─── CACHE UTILISATEUR (30s TTL) ─── */
@@ -2053,6 +2053,7 @@ app.get('/api/calendar', auth, async (req, res) => {
         date: e.date, heure: e.heure, heure_fin: e.heure_fin,
         format: e.format, location: e.location, zoom_url: e.zoom_url,
         capacite: e.capacite, media_url: e.media_url, target_program: e.target_program,
+        reg_experts_needed: e.reg_experts_needed,
         roles: rolesByKey['event:'+e.id] || [],
         regs_count: (regsByKey['event:'+e.id]||[]).length,
         registered: (regsByKey['event:'+e.id]||[]).map(x=>x.toLowerCase()).includes(userEmail),
@@ -2138,8 +2139,8 @@ app.post('/api/events', auth, async (req, res) => {
     if (!d.titre || !d.date || !d.kind) return res.status(400).json({ error: 'Titre, date et type requis' });
     if (!EVENT_KINDS.includes(d.kind)) return res.status(400).json({ error: 'Type invalide' });
     const id = 'e' + Date.now();
-    await sql`INSERT INTO events (id, kind, seminar_name, titre, description, date, heure, heure_fin, format, location, zoom_url, capacite, media_url, target_program, created_by)
-      VALUES (${id}, ${d.kind}, ${d.seminar_name||null}, ${d.titre}, ${d.description||''}, ${d.date}, ${d.heure||''}, ${d.heure_fin||''}, ${d.format||'presentiel'}, ${d.location||''}, ${d.zoom_url||''}, ${d.capacite||null}, ${d.media_url||null}, ${d.target_program||null}, ${u.email})`;
+    await sql`INSERT INTO events (id, kind, seminar_name, titre, description, date, heure, heure_fin, format, location, zoom_url, capacite, media_url, target_program, reg_experts_needed, created_by)
+      VALUES (${id}, ${d.kind}, ${d.seminar_name||null}, ${d.titre}, ${d.description||''}, ${d.date}, ${d.heure||''}, ${d.heure_fin||''}, ${d.format||'presentiel'}, ${d.location||''}, ${d.zoom_url||''}, ${d.capacite||null}, ${d.media_url||null}, ${d.target_program||null}, ${d.reg_experts_needed||null}, ${u.email})`;
     broadcast('event_created', { id, kind: d.kind, titre: d.titre, date: d.date });
     res.json({ ok: true, id });
   } catch (e) { res.status(500).json({ error: e.message }); }
@@ -2150,7 +2151,7 @@ app.put('/api/events/:id', auth, async (req, res) => {
     const u = await getUser(req.user.email);
     if (!canManageCalendar(u)) return res.status(403).json({ error: 'Accès refusé' });
     const d = req.body;
-    await sql`UPDATE events SET kind=${d.kind}, seminar_name=${d.seminar_name||null}, titre=${d.titre}, description=${d.description||''}, date=${d.date}, heure=${d.heure||''}, heure_fin=${d.heure_fin||''}, format=${d.format||'presentiel'}, location=${d.location||''}, zoom_url=${d.zoom_url||''}, capacite=${d.capacite||null}, media_url=${d.media_url||null}, target_program=${d.target_program||null} WHERE id=${req.params.id}`;
+    await sql`UPDATE events SET kind=${d.kind}, seminar_name=${d.seminar_name||null}, titre=${d.titre}, description=${d.description||''}, date=${d.date}, heure=${d.heure||''}, heure_fin=${d.heure_fin||''}, format=${d.format||'presentiel'}, location=${d.location||''}, zoom_url=${d.zoom_url||''}, capacite=${d.capacite||null}, media_url=${d.media_url||null}, target_program=${d.target_program||null}, reg_experts_needed=${d.reg_experts_needed||null} WHERE id=${req.params.id}`;
     broadcast('event_updated', { id: req.params.id });
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }

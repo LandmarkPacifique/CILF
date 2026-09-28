@@ -232,6 +232,7 @@ async function initDB() {
     )
   `;
   await sql`CREATE INDEX IF NOT EXISTS idx_events_date ON events(date)`;
+  await sql`ALTER TABLE events ADD COLUMN IF NOT EXISTS reg_experts_needed INTEGER`.catch(() => {});
 
   await sql`
     CREATE TABLE IF NOT EXISTS creation_calls (

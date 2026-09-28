@@ -4468,6 +4468,9 @@ function mountIntrosCalendar(){
     const color = OTHER_KIND_COLORS[x.type==='event' ? x.kind : x.type] || '#6B7A90';
     const icon = OTHER_KIND_ICONS[x.type==='event' ? x.kind : x.type] || '📌';
     const label = x.type==='event' ? (EVENT_KIND_LABELS[x.kind]||'Événement') : EVENT_KIND_LABELS[x.type];
+    const regExperts = x.type==='event' && x.reg_experts_needed
+      ? `${(x.roles||[]).filter(r=>r.role==='reg_expert').length}/${x.reg_experts_needed}`
+      : '';
     return {
       id: x.type+'-'+x.id,
       start: x.heure ? (x.date+'T'+x.heure) : x.date,
@@ -4475,7 +4478,7 @@ function mountIntrosCalendar(){
       allDay: !x.heure,
       backgroundColor: color,
       borderColor: color,
-      extendedProps: { kind:x.type, refType:x.type, refId:x.id, refItem:x, titre: x.titre||label, label, icon, heure: x.heure||'', heureFin: x.heure_fin||'' }
+      extendedProps: { kind:x.type, refType:x.type, refId:x.id, refItem:x, titre: x.titre||label, label, icon, heure: x.heure||'', heureFin: x.heure_fin||'', regExperts }
     };
   });
   _introsCalInstance = new FullCalendar.Calendar(el, {
@@ -4505,9 +4508,11 @@ function mountIntrosCalendar(){
         </div>` };
       }
       if(p.kind==='event' || p.kind==='creation_call' || p.kind==='clinic_call'){
+        const regExpertsLine = p.regExperts ? `<div class="fc-intro-sub">🧑‍💼 Reg Expert : ${esc(p.regExperts)}</div>` : '';
         return { html: `<div class="fc-intro-event-multiline" style="background:${bg}">
           <div class="fc-intro-title-wrap">${p.icon} ${esc(p.label||'')}</div>
           <div class="fc-intro-sub" style="opacity:.9">${esc(p.titre)}</div>
+          ${regExpertsLine}
           ${heureLine}
         </div>` };
       }
@@ -5666,11 +5671,12 @@ const CAL_ROLE_LABELS = {
   room_captain: "Room Captain",
   clinic_animator: "Animateur clinique call",
   translator: "Traducteur",
-  forum_expert: "Expert de forum"
+  forum_expert: "Expert de forum",
+  reg_expert: "Reg Expert"
 };
 const CAL_ROLES_FOR_TYPE = {
   intro:          ['leader_intro','opm','room_captain','translator','forum_expert'],
-  event:          ['leader_intro','opm','room_captain','translator','forum_expert'],
+  event:          ['leader_intro','opm','room_captain','translator','forum_expert','reg_expert'],
   creation_call:  ['leader_intro','opm','translator'],
   clinic_call:    ['clinic_animator','translator']
 };
@@ -5827,7 +5833,8 @@ function openCalDetail(item){
     const btn = leader
       ? (meTaken ? '' : `<button class="btn btn-small" onclick="assignRole('${item.type}','${item.id}','${r}')">Se positionner</button>`)
       : '';
-    return `<div class="role-slot"><h5>${esc(CAL_ROLE_LABELS[r])}</h5>${takersHtml}${btn}</div>`;
+    const quota = (r==='reg_expert' && item.reg_experts_needed) ? ` <span style="color:#888;font-weight:400">(${takers.length}/${item.reg_experts_needed})</span>` : '';
+    return `<div class="role-slot"><h5>${esc(CAL_ROLE_LABELS[r])}${quota}</h5>${takersHtml}${btn}</div>`;
   }).join('');
 
   const regBtn = (item.type==='intro')
@@ -5983,11 +5990,14 @@ function openCreateEventModal(item){
     <label for="ce-location">Lieu (si présentiel)</label><input id="ce-location" name="location" value="${_fmtInput(item,'location')}">
     <label for="ce-zoom_url">Lien Zoom</label><input id="ce-zoom_url" name="zoom_url" value="${_fmtInput(item,'zoom_url')}">
     <label for="ce-capacite">Capacité</label><input id="ce-capacite" type="number" name="capacite" value="${_fmtInput(item,'capacite')}">
+    <label for="ce-reg_experts_needed">Nombre de Reg Experts requis <span style="color:var(--muted);font-size:.8rem">(Forum, Avancé, Communication, Séminaire)</span></label>
+    <input id="ce-reg_experts_needed" type="number" min="0" name="reg_experts_needed" value="${_fmtInput(item,'reg_experts_needed')}">
   `;
   _calModalShell(editing?'Modifier l\'événement':'Nouvel événement', html, async (bd)=>{
     const fd = new FormData(bd.querySelector('form'));
     const body = Object.fromEntries(fd.entries());
     if(body.capacite==='') body.capacite=null; else body.capacite=parseInt(body.capacite,10);
+    if(body.reg_experts_needed==='') body.reg_experts_needed=null; else body.reg_experts_needed=parseInt(body.reg_experts_needed,10);
     if(editing) await apiFetch('/events/'+item.id, { method:'PUT', body: JSON.stringify(body) });
     else await apiFetch('/events', { method:'POST', body: JSON.stringify(body) });
     toast(editing?'Événement mis à jour':'Événement créé');
