@@ -60,7 +60,7 @@ function broadcast(event, payload) {
 
 /* ─── CONSTANTES CALENDRIER ─── */
 const CALENDAR_ROLES = ['leader_intro', 'opm', 'room_captain', 'clinic_animator', 'translator', 'forum_expert'];
-const EVENT_KINDS    = ['forum', 'advanced', 'communication', 'seminar', 'special'];
+const EVENT_KINDS    = ['forum', 'advanced', 'communication', 'seminar', 'ilp', 'special'];
 
 /* ─── CACHE UTILISATEUR (30s TTL) ─── */
 const _userCache = new Map(); // email -> { user, at }

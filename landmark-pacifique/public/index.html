@@ -1436,6 +1436,7 @@ label {
 .fc-event.evt-event-advanced{background:#F472B6!important;color:#fff!important}
 .fc-event.evt-event-communication{background:#60A5FA!important;color:#fff!important}
 .fc-event.evt-event-seminar{background:#F59E0B!important;color:#fff!important}
+.fc-event.evt-event-ilp{background:#14B8A6!important;color:#fff!important}
 .fc-event.evt-event-special{background:#EF4444!important;color:#fff!important}
 .calendar-legend{display:flex;flex-wrap:wrap;gap:.75rem;margin-bottom:1rem;font-size:.8rem}
 .calendar-legend span{display:inline-flex;align-items:center;gap:.35rem}
@@ -4001,13 +4002,15 @@ async function renderAdmin(user, tab, subtab){
         <span><i style="background:#22C55E"></i>Équipe complète (RC + OPM)</span>
         <span><i style="background:#F59E0B"></i>RC ou OPM manquant</span>
         <span><i style="background:#EF4444"></i>RC et OPM manquants</span>
-        <span><i style="background:#36D399"></i>Forum</span>
-        <span><i style="background:#F472B6"></i>Cours Avancé</span>
-        <span><i style="background:#60A5FA"></i>Cours Communication</span>
-        <span><i style="background:#F59E0B"></i>Séminaire</span>
-        <span><i style="background:#E8B86A"></i>Appel de création</span>
-        <span><i style="background:#9F7AEA"></i>Clinique call</span>
-        <span><i style="background:#3B82F6"></i>Appel de création (lié à une intro)</span>
+        <span><i style="background:#06B6D4"></i>Forum</span>
+        <span><i style="background:#EC4899"></i>Cours Avancé</span>
+        <span><i style="background:#3B82F6"></i>Cours Communication</span>
+        <span><i style="background:#8B5CF6"></i>Séminaire</span>
+        <span><i style="background:#14B8A6"></i>Week-end ILP</span>
+        <span><i style="background:#78716C"></i>Événement spécial</span>
+        <span><i style="background:#6366F1"></i>Appel de création</span>
+        <span><i style="background:#A855F7"></i>Clinique call</span>
+        <span><i style="background:#0EA5E9"></i>Appel de création (lié à une intro)</span>
         <span><i style="background:#6B7A90"></i>Archivé</span>
         <span><i style="background:#7C2D12"></i>Annulé</span>
       </div>
@@ -4435,8 +4438,8 @@ function mountIntrosCalendar(){
   const data = window._introsCalData || [];
   const ccData = window._ccCalData || [];
   const otherData = window._introsCalOtherData || [];
-  const OTHER_KIND_COLORS = { forum:'#36D399', advanced:'#F472B6', communication:'#60A5FA', seminar:'#F59E0B', special:'#F43F5E', creation_call:'#E8B86A', clinic_call:'#9F7AEA' };
-  const OTHER_KIND_ICONS  = { forum:'📚', advanced:'📚', communication:'📚', seminar:'📚', special:'⭐', creation_call:'🌱', clinic_call:'💬' };
+  const OTHER_KIND_COLORS = { forum:'#06B6D4', advanced:'#EC4899', communication:'#3B82F6', seminar:'#8B5CF6', ilp:'#14B8A6', special:'#78716C', creation_call:'#6366F1', clinic_call:'#A855F7' };
+  const OTHER_KIND_ICONS  = { forum:'📚', advanced:'📚', communication:'📚', seminar:'📚', ilp:'🏕️', special:'⭐', creation_call:'🌱', clinic_call:'💬' };
   const introEvents = data.map(i => {
     const missingRc = !i.rc_name, missingOpm = !i.opm_name;
     const color = i.cancel_reason ? '#7C2D12' : i._archived ? '#6B7A90'
@@ -4458,8 +4461,8 @@ function mountIntrosCalendar(){
       start: cc.heure ? (cc.date+'T'+cc.heure) : cc.date,
       end: cc.heure_fin ? (cc.date+'T'+cc.heure_fin) : null,
       allDay: !cc.heure,
-      backgroundColor: '#3B82F6',
-      borderColor: '#3B82F6',
+      backgroundColor: '#0EA5E9',
+      borderColor: '#0EA5E9',
       extendedProps: { kind:'cc_legacy', titre: cc.titre||'Appel de création', introTitre: cc.introTitre||'', introDateLabel: dm.day?(dm.day+' '+dm.month):'', heure: cc.heure||'' }
     };
   });
@@ -5675,7 +5678,7 @@ const CAL_ROLES_FOR_TYPE = {
 };
 const EVENT_KIND_LABELS = {
   forum: 'Forum', advanced: 'Cours Avancé', communication: 'Cours Communication',
-  seminar: 'Séminaire', special: 'Événement spécial',
+  seminar: 'Séminaire', ilp: 'Week-end ILP', special: 'Événement spécial',
   creation_call: 'Appel de création', clinic_call: 'Clinique call'
 };
 let _calInstance = null;
@@ -5736,6 +5739,7 @@ function renderCalendarShell(user){
         <span><i style="background:#F472B6"></i>Cours Avancé</span>
         <span><i style="background:#60A5FA"></i>Communication</span>
         <span><i style="background:#F59E0B"></i>Séminaire</span>
+        <span><i style="background:#14B8A6"></i>Week-end ILP</span>
         <span><i style="background:#EF4444"></i>Spécial</span>` : ''}
     </div>
     <div id="fullCalendar"></div>
@@ -5960,6 +5964,7 @@ function openCreateEventModal(item){
       <option value="advanced"      ${editing&&item.kind==='advanced'?'selected':''}>Cours Avancé</option>
       <option value="communication" ${editing&&item.kind==='communication'?'selected':''}>Cours de Communication</option>
       <option value="seminar"       ${editing&&item.kind==='seminar'?'selected':''}>Séminaire</option>
+      <option value="ilp"           ${editing&&item.kind==='ilp'?'selected':''}>Week-end ILP</option>
       <option value="special"       ${editing&&item.kind==='special'?'selected':''}>Événement spécial</option>
     </select>
     <label for="ce-seminar_name">Nom du séminaire (si séminaire)</label>
