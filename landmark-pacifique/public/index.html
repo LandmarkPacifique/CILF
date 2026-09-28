@@ -3989,14 +3989,13 @@ async function renderAdmin(user, tab, subtab){
         <div class="calendar-toolbar" style="margin-bottom:.75rem">
           <button class="btn btn-sm" onclick="openIntroForm()">🌅 Intro</button>
           <button class="btn btn-sm" onclick="openCreateEventModal()">📚 Cours / Événement</button>
-          <button class="btn btn-sm" onclick="openCreationCallFromIntrosCal()">🌱 Appel de création</button>
           <button class="btn btn-sm" onclick="openCreateClinicCallModal()">💬 Clinique call</button>
         </div>` : isGradUser ? `
         <div class="calendar-toolbar" style="margin-bottom:.75rem">
           <button class="btn btn-sm" onclick="openIntroForm()">🌅 Intro</button>
           <button class="btn btn-sm" onclick="openCreateClinicCallModal()">💬 Clinique call</button>
         </div>` : '';
-      html += `<div style="margin-bottom:1rem;color:var(--muted);font-size:.9rem">Vue calendrier de toute l'équipe (y compris les évènements archivés/annulés). Cliquez sur une date pour ajouter directement une intro, ou utilisez les boutons ci-dessous pour un cours, un appel de création ou une clinique call.</div>
+      html += `<div style="margin-bottom:1rem;color:var(--muted);font-size:.9rem">Vue calendrier de toute l'équipe (y compris les évènements archivés/annulés). Cliquez sur une date pour ajouter directement une intro, ou utilisez les boutons ci-dessous pour un cours ou une clinique call. L'appel de création se règle directement dans la fiche de l'introduction.</div>
       ${calToolbar}
       <div class="calendar-legend">
         <span><i style="background:#22C55E"></i>Équipe complète (RC + OPM)</span>
@@ -4008,7 +4007,6 @@ async function renderAdmin(user, tab, subtab){
         <span><i style="background:#8B5CF6"></i>Séminaire</span>
         <span><i style="background:#14B8A6"></i>Week-end ILP</span>
         <span><i style="background:#78716C"></i>Événement spécial</span>
-        <span><i style="background:#6366F1"></i>Appel de création</span>
         <span><i style="background:#A855F7"></i>Clinique call</span>
         <span><i style="background:#0EA5E9"></i>Appel de création (lié à une intro)</span>
         <span><i style="background:#6B7A90"></i>Archivé</span>
