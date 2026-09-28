@@ -1082,6 +1082,17 @@ label {
   padding: 1rem;
 }
 .modal-overlay.active { display: flex; }
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 9, 20, 0.82);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 1rem;
+}
 .modal {
   background: rgba(10, 22, 40, 0.94);
   backdrop-filter: blur(28px);
