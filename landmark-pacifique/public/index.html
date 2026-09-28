@@ -3969,22 +3969,35 @@ async function renderAdmin(user, tab, subtab){
       }).join('');
     }
     else if(currentSub==='calendrier'){
-      let archivedForCal = [];
+      let archivedForCal = [], calendarDataForCal = [];
       try { archivedForCal = await apiFetch('/intros?archived=true'); } catch(e){ archivedForCal = []; }
-      window._introsCalData = [...allIntros, ...archivedForCal.map(i=>({...i, _archived:true}))];
-      window._ccCalData = allIntros.filter(i=>i.cc_date).map(i=>({
-        id: 'cc-of-'+i.id,
-        titre: 'Appel de création',
-        introTitre: i.titre||'Introduction',
-        introDate: i.date,
-        date: i.cc_date, heure: i.cc_heure, zoom_url: i.zoom_cc
-      }));
-      html += `<div style="margin-bottom:1rem;color:var(--muted);font-size:.9rem">Vue calendrier de toute l'équipe (y compris les évènements archivés/annulés). Cliquez sur une date pour ajouter directement un évènement, ou sur un évènement pour voir qui manque dans l'équipe.</div>
+      try { calendarDataForCal = await apiFetch('/calendar'); } catch(e){ calendarDataForCal = []; }
+      buildIntrosCalGlobals(allIntros, archivedForCal, calendarDataForCal);
+      const isGradUser = (user.fonction||'').toLowerCase()==='gradué';
+      const calToolbar = isLeaderLike(user) ? `
+        <div class="calendar-toolbar" style="margin-bottom:.75rem">
+          <button class="btn btn-sm" onclick="openIntroForm()">🌅 Intro</button>
+          <button class="btn btn-sm" onclick="openCreateEventModal()">📚 Cours / Événement</button>
+          <button class="btn btn-sm" onclick="openCreationCallFromIntrosCal()">🌱 Appel de création</button>
+          <button class="btn btn-sm" onclick="openCreateClinicCallModal()">💬 Clinique call</button>
+        </div>` : isGradUser ? `
+        <div class="calendar-toolbar" style="margin-bottom:.75rem">
+          <button class="btn btn-sm" onclick="openIntroForm()">🌅 Intro</button>
+          <button class="btn btn-sm" onclick="openCreateClinicCallModal()">💬 Clinique call</button>
+        </div>` : '';
+      html += `<div style="margin-bottom:1rem;color:var(--muted);font-size:.9rem">Vue calendrier de toute l'équipe (y compris les évènements archivés/annulés). Cliquez sur une date pour ajouter directement une intro, ou utilisez les boutons ci-dessous pour un cours, un appel de création ou une clinique call.</div>
+      ${calToolbar}
       <div class="calendar-legend">
         <span><i style="background:#22C55E"></i>Équipe complète (RC + OPM)</span>
         <span><i style="background:#F59E0B"></i>RC ou OPM manquant</span>
         <span><i style="background:#EF4444"></i>RC et OPM manquants</span>
-        <span><i style="background:#3B82F6"></i>Appel de création</span>
+        <span><i style="background:#36D399"></i>Forum</span>
+        <span><i style="background:#F472B6"></i>Cours Avancé</span>
+        <span><i style="background:#60A5FA"></i>Cours Communication</span>
+        <span><i style="background:#F59E0B"></i>Séminaire</span>
+        <span><i style="background:#E8B86A"></i>Appel de création</span>
+        <span><i style="background:#9F7AEA"></i>Clinique call</span>
+        <span><i style="background:#3B82F6"></i>Appel de création (lié à une intro)</span>
         <span><i style="background:#6B7A90"></i>Archivé</span>
         <span><i style="background:#7C2D12"></i>Annulé</span>
       </div>
@@ -4373,6 +4386,36 @@ function onIntroTypeChange(){
   if(themeGroup) themeGroup.querySelector('label').textContent = isClinic ? 'Thème *' : 'Thème';
 }
 
+function buildIntrosCalGlobals(allIntros, archivedIntros, calendarData){
+  window._introsCalData = [...allIntros, ...(archivedIntros||[]).map(i=>({...i, _archived:true}))];
+  window._ccCalData = allIntros.filter(i=>i.cc_date).map(i=>({
+    id: 'cc-of-'+i.id,
+    titre: 'Appel de création',
+    introTitre: i.titre||'Introduction',
+    introDate: i.date,
+    date: i.cc_date, heure: i.cc_heure, zoom_url: i.zoom_cc
+  }));
+  window._introsCalOtherData = (calendarData||[]).filter(x=>x.type!=='intro');
+}
+
+async function refreshIntrosCalendarIfMounted(){
+  if(!document.getElementById('introsCalendar')) return;
+  try {
+    const [allIntros, archivedIntros, calendarData] = await Promise.all([
+      apiGet('/intros'),
+      apiFetch('/intros?archived=true').catch(()=>[]),
+      apiFetch('/calendar').catch(()=>[])
+    ]);
+    buildIntrosCalGlobals(allIntros, archivedIntros, calendarData);
+    mountIntrosCalendar();
+  } catch(e){}
+}
+
+async function openCreationCallFromIntrosCal(){
+  await reloadCalendar();
+  openCreateCreationCallModal();
+}
+
 let _introsCalInstance = null;
 function mountIntrosCalendar(){
   const el = document.getElementById('introsCalendar');
@@ -4381,6 +4424,9 @@ function mountIntrosCalendar(){
   if(_introsCalInstance){ _introsCalInstance.destroy(); _introsCalInstance = null; }
   const data = window._introsCalData || [];
   const ccData = window._ccCalData || [];
+  const otherData = window._introsCalOtherData || [];
+  const OTHER_KIND_COLORS = { forum:'#36D399', advanced:'#F472B6', communication:'#60A5FA', seminar:'#F59E0B', special:'#F43F5E', creation_call:'#E8B86A', clinic_call:'#9F7AEA' };
+  const OTHER_KIND_ICONS  = { forum:'📚', advanced:'📚', communication:'📚', seminar:'📚', special:'⭐', creation_call:'🌱', clinic_call:'💬' };
   const introEvents = data.map(i => {
     const missingRc = !i.rc_name, missingOpm = !i.opm_name;
     const color = i.cancel_reason ? '#7C2D12' : i._archived ? '#6B7A90'
@@ -4395,7 +4441,7 @@ function mountIntrosCalendar(){
       extendedProps: { kind:'intro', introId: i.id, titre: i.titre||'Évènement', leader: i.animateur||'—', opm: i.opm_name||'—', rc: i.rc_name||'—', heure: i.heure||'', heureFin: i.heure_fin||'', archived: !!i._archived, cancelReason: i.cancel_reason||'' }
     };
   });
-  const ccEvents = ccData.map(cc => {
+  const ccLegacyEvents = ccData.map(cc => {
     const dm = fmtDayMonth(cc.introDate);
     return {
       id: cc.id,
@@ -4404,7 +4450,21 @@ function mountIntrosCalendar(){
       allDay: !cc.heure,
       backgroundColor: '#3B82F6',
       borderColor: '#3B82F6',
-      extendedProps: { kind:'creation_call', titre: cc.titre||'Appel de création', introTitre: cc.introTitre||'', introDateLabel: dm.day?(dm.day+' '+dm.month):'', heure: cc.heure||'' }
+      extendedProps: { kind:'cc_legacy', titre: cc.titre||'Appel de création', introTitre: cc.introTitre||'', introDateLabel: dm.day?(dm.day+' '+dm.month):'', heure: cc.heure||'' }
+    };
+  });
+  const otherEvents = otherData.map(x => {
+    const color = OTHER_KIND_COLORS[x.type==='event' ? x.kind : x.type] || '#6B7A90';
+    const icon = OTHER_KIND_ICONS[x.type==='event' ? x.kind : x.type] || '📌';
+    const label = x.type==='event' ? (EVENT_KIND_LABELS[x.kind]||'Événement') : EVENT_KIND_LABELS[x.type];
+    return {
+      id: x.type+'-'+x.id,
+      start: x.heure ? (x.date+'T'+x.heure) : x.date,
+      end: x.heure_fin ? (x.date+'T'+x.heure_fin) : null,
+      allDay: !x.heure,
+      backgroundColor: color,
+      borderColor: color,
+      extendedProps: { kind:x.type, refType:x.type, refId:x.id, refItem:x, titre: x.titre||label, label, icon, heure: x.heure||'', heureFin: x.heure_fin||'' }
     };
   });
   _introsCalInstance = new FullCalendar.Calendar(el, {
@@ -4417,16 +4477,26 @@ function mountIntrosCalendar(){
     eventClick: (info) => {
       const p = info.event.extendedProps;
       if(p.kind==='intro') openIntroForm(p.introId);
+      else if(p.kind==='event') openCreateEventModal(p.refItem);
+      else if(p.kind==='creation_call') openCreationCallFromIntrosCal().then(()=>openCreateCreationCallModal(p.refItem));
+      else if(p.kind==='clinic_call') openCreateClinicCallModal(p.refItem);
     },
     eventContent: (arg) => {
       const p = arg.event.extendedProps;
       const bg = arg.event.backgroundColor;
       const heureRange = p.heure ? (p.heure + (p.heureFin ? ' → '+p.heureFin : '')) : '';
       const heureLine = heureRange?`<div class="fc-intro-heure">🕐 ${esc(heureRange)}</div>`:'';
-      if(p.kind==='creation_call'){
+      if(p.kind==='cc_legacy'){
         return { html: `<div class="fc-intro-event-multiline" style="background:${bg}">
           <div class="fc-intro-title-wrap">📞 Appel de création</div>
           <div class="fc-intro-sub">→ Intro du ${esc(p.introDateLabel||'—')}</div>
+          ${heureLine}
+        </div>` };
+      }
+      if(p.kind==='event' || p.kind==='creation_call' || p.kind==='clinic_call'){
+        return { html: `<div class="fc-intro-event-multiline" style="background:${bg}">
+          <div class="fc-intro-title-wrap">${p.icon} ${esc(p.label||'')}</div>
+          <div class="fc-intro-sub" style="opacity:.9">${esc(p.titre)}</div>
           ${heureLine}
         </div>` };
       }
@@ -4448,11 +4518,13 @@ function mountIntrosCalendar(){
       const p = arg.event.extendedProps;
       const heureRange = p.heure ? (p.heure + (p.heureFin ? ' → '+p.heureFin : '')) : '';
       const statusTxt = p.cancelReason ? `\n❌ Annulé — Raison : ${p.cancelReason}` : p.archived ? '\n🗄 Archivé' : '';
-      arg.el.title = p.kind==='creation_call'
+      arg.el.title = p.kind==='cc_legacy'
         ? `Appel de création\nPour l'introduction : ${p.introTitre} (${p.introDateLabel})${heureRange?'\n🕐 '+heureRange:''}`
-        : `${p.titre}${statusTxt}\n👤 Leader : ${p.leader}\n💎 OPM : ${p.opm}\n🎯 RC : ${p.rc}${heureRange?'\n🕐 '+heureRange:''}`;
+        : (p.kind==='event' || p.kind==='creation_call' || p.kind==='clinic_call')
+          ? `${p.label}\n${p.titre}${heureRange?'\n🕐 '+heureRange:''}`
+          : `${p.titre}${statusTxt}\n👤 Leader : ${p.leader}\n💎 OPM : ${p.opm}\n🎯 RC : ${p.rc}${heureRange?'\n🕐 '+heureRange:''}`;
     },
-    events: [...introEvents, ...ccEvents]
+    events: [...introEvents, ...ccLegacyEvents, ...otherEvents]
   });
   _introsCalInstance.render();
 }
@@ -4669,7 +4741,7 @@ async function saveIntro(introId, isNew){
       if(isNew) await apiFetch('/clinic-calls', {method:'POST', body:JSON.stringify(ccBody)});
       else await apiFetch('/clinic-calls/'+introId, {method:'PUT', body:JSON.stringify(ccBody)});
       invalidateCache('/calendar');
-      closeModal(); await reloadCalendar(); toast(isNew?'Clinique call créée':'Clinique call modifiée', 'success');
+      closeModal(); await reloadCalendar(); await refreshIntrosCalendarIfMounted(); toast(isNew?'Clinique call créée':'Clinique call modifiée', 'success');
       return;
     }
     if(isNew){ await apiFetch('/intros', {method:'POST', body:JSON.stringify(data)}); }
@@ -5907,6 +5979,7 @@ function openCreateEventModal(item){
     else await apiFetch('/events', { method:'POST', body: JSON.stringify(body) });
     toast(editing?'Événement mis à jour':'Événement créé');
     await reloadCalendar();
+    await refreshIntrosCalendarIfMounted();
   });
 }
 
@@ -5941,6 +6014,7 @@ async function openCreateCreationCallModal(item){
     else await apiFetch('/creation-calls', { method:'POST', body: JSON.stringify(body) });
     toast(editing?'Appel mis à jour':'Appel de création créé');
     await reloadCalendar();
+    await refreshIntrosCalendarIfMounted();
   });
 }
 
@@ -5970,6 +6044,7 @@ function openCreateClinicCallModal(item){
     else await apiFetch('/clinic-calls', { method:'POST', body: JSON.stringify(body) });
     toast(editing?'Clinique mise à jour':'Clinique call créée');
     await reloadCalendar();
+    await refreshIntrosCalendarIfMounted();
   });
 }
 
