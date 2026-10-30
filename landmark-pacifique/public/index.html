@@ -3335,9 +3335,28 @@ async function saveComment(postId, commentIndex){
 }
 
 /* ============ EVENTS / INTROS (connected view) ============ */
+/* Introductions à venir hors fenêtre d'affichage (14 jours) : le leader peut quand même partager leur lien d'invitation */
+function renderOutOfWindowShareSection(allIntros, upcoming, user){
+  const upcomingIds = new Set(upcoming.map(i=>i.id));
+  const shareable = allIntros
+    .filter(i=>!upcomingIds.has(i.id) && new Date(i.date+'T23:59:59-10:00') >= new Date())
+    .filter(i=>!i.target_program || i.target_program==='Forum')
+    .sort((a,b)=>a.date.localeCompare(b.date));
+  if(!shareable.length) return '';
+  const cards = shareable.map(i=>`<div class="card">
+      <h4 style="font-family:Cormorant Garamond;margin-bottom:.5rem">${esc(i.titre)}</h4>
+      <div class="detail"><span class="ic">📅</span><span>${esc(fmtDate(i.date))}</span></div>
+      <button class="btn btn-ghost btn-sm" style="width:100%;margin-top:.75rem" onclick="copyGuestInviteLink('${i.id}','${esc(user.email)}')">📋 Copier le lien d'invitation</button>
+    </div>`).join('');
+  return `<h3 style="font-family:Cormorant Garamond;margin:2rem 0 1rem">🔗 Introductions à partager</h3>
+  <p style="color:var(--muted);font-size:.85rem;margin-bottom:1rem">Ces introductions ne sont pas encore affichées sur le site public. Partagez leur lien d'invitation dès maintenant pour inscrire vos invités.</p>
+  <div class="intros-grid">${cards}</div>`;
+}
+
 async function renderEvents(user){
   const allIntros = await apiGet('/intros');
   const upcoming = allIntros.filter(i=>new Date(i.date+'T23:59:59-10:00') >= new Date() && new Date(i.date+'T00:00:00-10:00') <= new Date(Date.now()+14*86400000)).sort((a,b)=>a.date.localeCompare(b.date));
+  const shareHtml = isLeader(user) ? renderOutOfWindowShareSection(allIntros, upcoming, user) : '';
 
   let bannerHtml = '';
   if(user.programs.length === 0){
@@ -3399,7 +3418,8 @@ async function renderEvents(user){
   return `<div class="page-header"><h2>Introductions & Événements</h2><p>Sessions d'introduction et événements selon votre parcours</p></div>
   ${bannerHtml}
   ${sectionsHtml}
-  ${specialHtml}`;
+  ${specialHtml}
+  ${shareHtml}`;
 }
 
 async function renderMyRegistrations(user){
