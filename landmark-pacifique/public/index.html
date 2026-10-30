@@ -3356,7 +3356,7 @@ function renderOutOfWindowShareSection(allIntros, upcoming, user){
 async function renderEvents(user){
   const allIntros = await apiGet('/intros');
   const upcoming = allIntros.filter(i=>new Date(i.date+'T23:59:59-10:00') >= new Date() && new Date(i.date+'T00:00:00-10:00') <= new Date(Date.now()+14*86400000)).sort((a,b)=>a.date.localeCompare(b.date));
-  const shareHtml = isLeader(user) ? renderOutOfWindowShareSection(allIntros, upcoming, user) : '';
+  const shareHtml = isLeaderLike(user) ? renderOutOfWindowShareSection(allIntros, upcoming, user) : '';
 
   let bannerHtml = '';
   if(user.programs.length === 0){
